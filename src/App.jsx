@@ -28,6 +28,11 @@ const instagramUrl = 'https://instagram.com/doms_concepts'
 const etsyShopName = 'DomsConcepts'
 const etsyShopUrl = 'https://www.etsy.com/shop/DomsConcepts'
 const icoNumber = '14010615'
+const heroImagePath = '/images/hero-workshop-board.jpg' // Replace with the main homepage hero photo.
+const workshopStoryImagePath = '/images/workshop-process.jpg' // Replace with the workshop story photo.
+const careGuideImagePath = '/images/wood-butter.jpg' // Replace with the care guide product photo.
+const aboutImagePath = '/images/workshop-process.jpg' // Replace with the about page workshop photo.
+const partnersImagePath = '/images/partner-tools.jpg' // Replace with the partners or tools photo.
 const footerLinks = [
   { label: 'Contact', path: '/contact' },
   { label: 'Care Guide', path: '/care-guide' },
@@ -254,15 +259,14 @@ function HomePage() {
             </div>
           </div>
 
-          <div className="rounded-[2rem] border border-white/10 bg-gradient-to-br from-amber-100/10 via-stone-900 to-black p-5 shadow-2xl shadow-black/30">
-            <div className="h-full rounded-[1.6rem] border border-white/10 bg-gradient-to-br from-amber-200/10 via-amber-900/25 to-stone-950 p-6">
-              <div className="grid h-full min-h-[360px] gap-4 sm:grid-cols-2">
-                <ImagePlaceholder label="End grain craftsmanship" className="sm:col-span-2" />
-                <ImagePlaceholder label="Walnut and oak" />
-                <ImagePlaceholder label="Signature finish" />
-              </div>
-            </div>
-          </div>
+          <PhotoFrame
+            src={heroImagePath}
+            alt="Dom's Concepts workshop board hero"
+            label="Workshop and signature board"
+            className="min-h-[420px]"
+            overlay="dark"
+            priority
+          />
         </div>
       </section>
 
@@ -274,9 +278,15 @@ function HomePage() {
         />
         <div className="grid gap-5 md:grid-cols-2 xl:grid-cols-3">
           {featuredCategories.map((category) => (
-            <Card key={category}>
-              <div className="mb-5 h-40 rounded-[1.4rem] bg-gradient-to-br from-amber-100/10 via-stone-800 to-black" />
-              <h3 className="font-serif text-2xl text-white">{category}</h3>
+            <Card key={category.name}>
+              <PhotoFrame
+                src={category.image}
+                alt={category.name}
+                label={category.name}
+                className="mb-5 h-40"
+                overlay="dark"
+              />
+              <h3 className="font-serif text-2xl text-white">{category.name}</h3>
               <p className="mt-3 text-sm leading-7 text-stone-300">
                 Crafted for daily use, gifting, restaurant service, and custom
                 logo projects with a premium handmade finish.
@@ -295,6 +305,12 @@ function HomePage() {
             <h2 className="font-serif text-3xl text-white sm:text-4xl">
               Handmade in a small Prague workshop since 2016.
             </h2>
+            <PhotoFrame
+              src={workshopStoryImagePath}
+              alt="Dom's Concepts workshop process"
+              label="Workshop process"
+              className="mt-6 h-72"
+            />
           </div>
           <div className="space-y-5 text-base leading-8 text-stone-300">
             <p>
@@ -475,9 +491,14 @@ function GalleryPage() {
     >
       <div className="grid gap-5 md:grid-cols-2 xl:grid-cols-3">
         {galleryItems.map((item, index) => (
-          <Card key={item} className={index % 3 === 0 ? 'xl:col-span-2' : ''}>
-            <div className="mb-5 h-64 rounded-[1.6rem] bg-gradient-to-br from-amber-100/10 via-stone-800 to-black" />
-            <h2 className="font-serif text-2xl text-white">{item}</h2>
+          <Card key={item.title} className={index % 3 === 0 ? 'xl:col-span-2' : ''}>
+            <PhotoFrame
+              src={item.image}
+              alt={item.title}
+              label={item.title}
+              className="mb-5 h-64"
+            />
+            <h2 className="font-serif text-2xl text-white">{item.title}</h2>
             <p className="mt-3 text-sm leading-7 text-stone-300">
               Placeholder for premium photography of product details, joinery,
               surface finish, and workshop setting.
@@ -553,16 +574,40 @@ function CareGuidePage() {
       title="Simple care that keeps solid wood performing beautifully."
       intro="Every piece is made to be used, but hardwood lasts best when it is cleaned, dried, and nourished properly."
     >
-      <div className="grid gap-8 lg:grid-cols-[0.9fr_1.1fr]">
+      <div className="grid gap-6">
+        <Card className="bg-white/[0.03]">
+          <div className="flex flex-col gap-5 lg:flex-row lg:items-center lg:justify-between">
+            <div className="max-w-3xl">
+              <p className="text-xs uppercase tracking-[0.35em] text-amber-200/80">
+                QR-Code Friendly Care Guide
+              </p>
+              <p className="mt-3 text-lg leading-8 text-stone-300">
+                This page is designed to be easy to scan from a printed board
+                care card, with clear sections and direct product care guidance.
+              </p>
+            </div>
+            <a
+              href={etsyShopUrl}
+              target="_blank"
+              rel="noreferrer"
+              className="inline-flex items-center justify-center rounded-full border border-white/15 bg-white/5 px-6 py-3 text-sm font-medium text-stone-100 transition hover:border-amber-300/40 hover:bg-white/10"
+            >
+              Reorder Wood Butter
+            </a>
+          </div>
+        </Card>
+
+        <div className="grid gap-8 lg:grid-cols-[0.9fr_1.1fr]">
         <Card>
-          <h2 className="font-serif text-3xl text-white">Everyday care</h2>
+          <h2 className="font-serif text-3xl text-white">Board care essentials</h2>
           <div className="mt-6 space-y-4">
             {careGuidePoints.map((point) => (
               <div
-                key={point}
+                key={point.title}
                 className="rounded-2xl border border-white/10 bg-black/20 p-5 text-stone-200"
               >
-                {point}
+                <h3 className="font-serif text-2xl text-white">{point.title}</h3>
+                <p className="mt-3 leading-8 text-stone-300">{point.text}</p>
               </div>
             ))}
           </div>
@@ -575,11 +620,27 @@ function CareGuidePage() {
             deepens the tone, and keeps boards and trays conditioned between
             uses.
           </p>
-          <div className="mt-8 h-72 rounded-[1.8rem] bg-gradient-to-br from-amber-100/10 via-stone-800 to-black" />
+          <PhotoFrame
+            src={careGuideImagePath}
+            alt="Dom's Concepts wood butter"
+            label="Wood butter / board conditioner"
+            className="mt-8 h-72"
+          />
           <div className="mt-8 rounded-2xl border border-amber-300/20 bg-amber-200/8 p-5 text-sm leading-7 text-amber-50">
             Avoid dishwashers, prolonged soaking, and direct heat exposure.
           </div>
+          <div className="mt-6">
+            <a
+              href={etsyShopUrl}
+              target="_blank"
+              rel="noreferrer"
+              className="inline-flex items-center justify-center rounded-full bg-amber-200 px-6 py-3 text-sm font-medium text-stone-950 transition hover:bg-amber-100"
+            >
+              Reorder wood butter
+            </a>
+          </div>
         </Card>
+      </div>
       </div>
     </PageShell>
   )
@@ -595,7 +656,12 @@ function PartnersPage() {
       <div className="grid gap-5 md:grid-cols-2 xl:grid-cols-4">
         {partnerItems.map((partner) => (
           <Card key={partner}>
-            <div className="mb-6 h-36 rounded-[1.4rem] bg-gradient-to-br from-white/6 via-stone-800 to-black" />
+            <PhotoFrame
+              src={partnersImagePath}
+              alt={`${partner} partner tools`}
+              label={partner}
+              className="mb-6 h-36"
+            />
             <h2 className="font-serif text-2xl text-white">{partner}</h2>
             <p className="mt-3 text-sm leading-7 text-stone-300">
               Placeholder partner profile ready for future logo, materials, or
@@ -656,7 +722,12 @@ function AboutPage() {
           </div>
         </Card>
         <Card>
-          <div className="h-80 rounded-[1.8rem] bg-gradient-to-br from-amber-100/10 via-stone-800 to-black" />
+          <PhotoFrame
+            src={aboutImagePath}
+            alt="Dom's Concepts workshop"
+            label="Prague workshop"
+            className="h-80"
+          />
           <div className="mt-6 grid gap-4 sm:grid-cols-2">
             <Stat value="2016" label="Handmade brand active since" />
             <Stat value="Prague, Czechia" label="Workshop location" />
@@ -741,11 +812,13 @@ function ProductCard({ piece, detailed = false }) {
 
   return (
     <Card className="overflow-hidden p-0">
-      <div className={`relative h-64 bg-gradient-to-br ${piece.tone}`}>
-        <div className="absolute left-5 top-5 rounded-full border border-white/10 bg-black/35 px-4 py-2 text-xs uppercase tracking-[0.3em] text-stone-100">
-          Handmade Piece
-        </div>
-      </div>
+      <PhotoFrame
+        src={piece.image}
+        alt={piece.name}
+        label="Handmade Piece"
+        className="h-64 rounded-none rounded-t-[2rem]"
+        overlay="dark"
+      />
       <div className="space-y-5 p-7">
         <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
           <div>
@@ -1015,17 +1088,43 @@ function Card({ children, className = '' }) {
   )
 }
 
-function ImagePlaceholder({ label, className = '' }) {
+function PhotoFrame({
+  src,
+  alt,
+  label,
+  className = '',
+  overlay = 'default',
+  priority = false,
+}) {
+  const [hasError, setHasError] = useState(false)
+
   return (
     <div
       className={[
-        'relative overflow-hidden rounded-[1.6rem] border border-white/10 bg-gradient-to-br from-amber-100/10 via-stone-800 to-black p-5',
+        'relative overflow-hidden rounded-[1.6rem] border border-white/10 bg-gradient-to-br from-amber-100/10 via-stone-800 to-black',
         className,
       ].join(' ')}
     >
+      {!hasError ? (
+        <img
+          src={src}
+          alt={alt}
+          loading={priority ? 'eager' : 'lazy'}
+          onError={() => setHasError(true)}
+          className="h-full w-full object-cover"
+        />
+      ) : null}
       <div className="absolute inset-0 bg-[radial-gradient(circle_at_top_left,_rgba(255,255,255,0.12),_transparent_35%)]" />
-      <div className="relative flex h-full min-h-32 items-end">
-        <p className="text-sm uppercase tracking-[0.3em] text-stone-200">{label}</p>
+      <div
+        className={[
+          'absolute inset-0',
+          overlay === 'dark'
+            ? 'bg-gradient-to-t from-black/70 via-black/25 to-black/10'
+            : 'bg-gradient-to-t from-black/55 via-black/10 to-transparent',
+        ].join(' ')}
+      />
+      <div className="absolute inset-x-0 bottom-0 p-5">
+        <p className="text-sm uppercase tracking-[0.3em] text-stone-100">{label}</p>
       </div>
     </div>
   )
