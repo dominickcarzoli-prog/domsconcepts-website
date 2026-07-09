@@ -147,14 +147,78 @@ export const galleryItems = [
 ]
 
 export const partnerItems = [
-  'IGM',
-  'Mirka',
-  'Rubio Monocoat',
-  'Sakuro',
-  'Kraftprotz',
-  'Sortwall',
-  'Iluka Designs',
-  'Bleispitz',
+  {
+    name: 'IGM',
+    description:
+      'Professional woodworking tools and workshop equipment used throughout the Dom\'s Concepts studio.',
+    url: 'https://igmtools.com/',
+    logo: '/images/partners/igm-logo.png',
+    fallbackInitial: 'IGM',
+    fallbackName: 'IGM',
+  },
+  {
+    name: 'Mirka',
+    description:
+      'Abrasives and dust-free sanding systems for smooth, refined hardwood surfaces.',
+    url: 'https://www.mirka.com/en/',
+    logo: '/images/partners/mirka-logo.png',
+    fallbackInitial: 'M',
+    fallbackName: 'Mirka',
+  },
+  {
+    name: 'Rubio Monocoat',
+    description:
+      'Hardwax oil and finish systems for durable, natural wood protection.',
+    url: 'https://www.rubiomonocoat.com/en',
+    logo: '/images/partners/rubio-monocoat-logo.png',
+    fallbackInitial: 'RM',
+    fallbackName: 'Rubio Monocoat',
+  },
+  {
+    name: 'Sakuro',
+    description:
+      'Workshop supplies and tooling from a trusted Czech partner.',
+    url: 'https://www.sakuro.cz/',
+    logo: '/images/partners/sakuro-logo.png',
+    fallbackInitial: 'S',
+    fallbackName: 'Sakuro',
+  },
+  {
+    name: 'Kraftprotz',
+    description:
+      'Specialty wood treatment products for conditioning and surface care.',
+    url: 'https://www.arka-biotech.de/en/products/kraftprotz-universal',
+    logo: '/images/partners/kraftprotz-logo.png',
+    fallbackInitial: 'K',
+    fallbackName: 'Kraftprotz',
+  },
+  {
+    name: 'Sortwall',
+    description:
+      'Workshop collaborator supporting Dom\'s Concepts projects and finishes.',
+    url: 'SORTWALL_URL_PLACEHOLDER',
+    logo: '/images/partners/sortwall-logo.png',
+    fallbackInitial: 'S',
+    fallbackName: 'Sortwall',
+  },
+  {
+    name: 'Iluka Designs',
+    description:
+      'Design collaborator connected to custom work and creative workshop projects.',
+    url: 'ILUKA_DESIGNS_URL_PLACEHOLDER',
+    logo: '/images/partners/iluka-designs-logo.png',
+    fallbackInitial: 'ID',
+    fallbackName: 'Iluka Designs',
+  },
+  {
+    name: 'Bleispitz',
+    description:
+      'European workshop tools and equipment trusted for precision craft work.',
+    url: 'https://bleispitz.de/en',
+    logo: '/images/partners/bleispitz-logo.png',
+    fallbackInitial: 'B',
+    fallbackName: 'Bleispitz',
+  },
 ]
 
 export const careGuidePoints = [
@@ -195,3 +259,206 @@ export const budgetRanges = [
   '5 000 - 10 000 CZK',
   '10 000 CZK+',
 ]
+
+export const youtubeChannelUrl = 'YOUTUBE_CHANNEL_URL'
+
+export const workshopVideos = [
+  {
+    id: 'latest-build',
+    title: 'Latest build',
+    description:
+      'A behind-the-scenes look at shaping, sanding, and finishing a handmade piece in the Prague workshop.',
+    thumbnail: '/images/youtube/latest-build.jpg',
+    url: 'YOUTUBE_SHORT_1_URL',
+  },
+  {
+    id: 'board-care',
+    title: 'Board care',
+    description:
+      'Quick guidance on washing, drying, and refreshing boards with wood butter for a smooth, lasting finish.',
+    thumbnail: '/images/youtube/board-care.jpg',
+    url: 'YOUTUBE_SHORT_2_URL',
+  },
+  {
+    id: 'custom-pieces',
+    title: 'Custom pieces',
+    description:
+      'How custom sizes, wood choices, and engraving requests move from first idea to finished work.',
+    thumbnail: '/images/youtube/custom-pieces.jpg',
+    url: 'YOUTUBE_SHORT_3_URL',
+  },
+]
+
+export const faqItems = [
+  {
+    question: 'Do you make custom sizes?',
+    answer:
+      'Yes. Most boards and serving pieces can be made to a custom length, width, and thickness after a short consultation.',
+  },
+  {
+    question: 'Can you engrave logos?',
+    answer:
+      'Yes. Logo engraving and personalised text are available on selected pieces for gifts, brands, and hospitality projects.',
+  },
+  {
+    question: 'How long does a custom order take?',
+    answer:
+      'Timelines depend on the piece and current workshop schedule. A personal quote will include an estimated lead time.',
+  },
+  {
+    question: 'Do you ship or offer pickup in Prague?',
+    answer:
+      'Both are possible. Pickup in Prague can be arranged, and shipping is available for many ready and made-to-order pieces.',
+  },
+  {
+    question: 'How do I care for a wooden board?',
+    answer:
+      'Hand wash, dry promptly, and refresh the surface with wood butter or board conditioner when it starts to look dry.',
+  },
+  {
+    question: 'Can I order wood butter separately?',
+    answer:
+      'Yes. Wood butter and natural board conditioner are available as standalone products from the available pieces collection.',
+  },
+]
+
+export const legalPages = [
+  {
+    slug: 'terms',
+    path: '/terms',
+    title: 'Terms & Conditions',
+    intro: 'Placeholder terms for reservations, enquiries, and workshop services.',
+    body: [
+      'Dom\'s Concepts provides handmade woodworking pieces through direct enquiry, reservation, and custom order flows.',
+      'Full legal wording will be added before full checkout/payment launch.',
+      'Until then, all orders, timelines, and delivery details are confirmed personally by email.',
+    ],
+  },
+  {
+    slug: 'privacy',
+    path: '/privacy',
+    title: 'Privacy Policy',
+    intro: 'How contact details and enquiry information are handled.',
+    body: [
+      'When you send an enquiry, Dom\'s Concepts may store your name, email, phone number, and project details to respond and prepare a quote.',
+      'Full legal wording will be added before full checkout/payment launch.',
+      'No payment card data is collected on this website at this stage.',
+    ],
+  },
+  {
+    slug: 'returns',
+    path: '/returns',
+    title: 'Returns & Custom Orders',
+    intro: 'Placeholder guidance for ready pieces and made-to-order work.',
+    body: [
+      'Ready pieces and custom commissions may have different return conditions depending on the item and production stage.',
+      'Full legal wording will be added before full checkout/payment launch.',
+      'Custom-made pieces are generally non-returnable once production has started unless otherwise agreed in writing.',
+    ],
+  },
+  {
+    slug: 'shipping-pickup',
+    path: '/shipping-pickup',
+    title: 'Shipping / Pickup',
+    intro: 'How delivery and Prague pickup are arranged.',
+    body: [
+      'Pickup in Prague can be coordinated after a piece is reserved or completed.',
+      'Shipping options and costs depend on the size, weight, and destination of each piece.',
+      'Full legal wording will be added before full checkout/payment launch.',
+    ],
+  },
+]
+
+export const pageSeo = {
+  home: {
+    title: 'Dom\'s Concepts | Handmade Woodworking in Prague',
+    description:
+      'Premium handmade cutting boards, serving pieces, breadboards, coasters, wood care products, and custom woodworking from a Prague workshop.',
+  },
+  availablePieces: {
+    title: 'Available Pieces | Dom\'s Concepts',
+    description:
+      'Browse handmade boards, serving pieces, wood care, and workshop pieces available to reserve from Dom\'s Concepts in Prague.',
+  },
+  customOrders: {
+    title: 'Custom Orders | Dom\'s Concepts',
+    description:
+      'Request a custom cutting board, serving piece, engraved gift, or hospitality project with personal sizing and wood selection.',
+  },
+  careGuide: {
+    title: 'Care Guide | Dom\'s Concepts',
+    description:
+      'Learn how to clean, dry, oil, and maintain hardwood boards and serving pieces from Dom\'s Concepts.',
+  },
+  about: {
+    title: 'About | Dom\'s Concepts',
+    description:
+      'Dom\'s Concepts is a small Prague workshop crafting honest handmade wood and epoxy pieces since 2016.',
+  },
+  faq: {
+    title: 'FAQ | Dom\'s Concepts',
+    description:
+      'Answers about custom sizes, engraving, lead times, shipping, pickup, board care, and wood butter from Dom\'s Concepts.',
+  },
+}
+
+export const boardCareUpsellCategories = [
+  'Cutting Boards',
+  'Serving Boards',
+  'Breadboards',
+  'Epoxy Pieces',
+  'Coasters',
+]
+
+export const boardCarePricing = {
+  normalPrice: 'CZK 253.39',
+  addonPrice: 'CZK 177.37',
+  discountLabel: '30%',
+}
+
+export const boardCareProducts = [
+  {
+    id: 'wood-butter',
+    title: "Dom's Concepts Wood Butter",
+    image: '/images/products/natural-wood-butter-beeswax/01.jpg',
+    description:
+      'A soft board conditioner for routine care. Helps refresh the surface, deepen the wood tone, and keep boards protected between uses.',
+    ctaLabel: 'Add Wood Butter to board order',
+    addonParam: 'wood-butter',
+  },
+  {
+    id: 'wood-wax',
+    title: "Dom's Concepts Wood Wax",
+    image: '/images/products/beeswax-wood-wax-natural-wood-conditioner/01.jpg',
+    description:
+      'A protective wax blend with mineral oil, beeswax, and carnauba wax. Good for wood pieces that need a stronger protective finish.',
+    ctaLabel: 'Add Wood Wax to board order',
+    addonParam: 'wood-wax',
+  },
+]
+
+export const boardCareAddonOptions = [
+  { value: 'none', label: 'No add-on' },
+  { value: 'wood-butter', label: 'Wood Butter -30%' },
+  { value: 'wood-wax', label: 'Wood Wax -30%' },
+  { value: 'unsure', label: 'Not sure yet' },
+]
+
+export const boardCareProductAddonOptions = [
+  { value: 'none', label: 'No care add-on' },
+  { value: 'wood-butter', label: 'Wood Butter — CZK 177.37 with board order' },
+  { value: 'wood-wax', label: 'Wood Wax — CZK 177.37 with board order' },
+]
+
+export function resolveBoardCareAddon(searchParams) {
+  const addon = searchParams.get('addon') || searchParams.get('care') || 'none'
+  return boardCareAddonOptions.some((option) => option.value === addon) ? addon : 'none'
+}
+
+export function isBoardCareEligible(category) {
+  return boardCareUpsellCategories.includes(category)
+}
+
+export function getBoardCareAddonLabel(value) {
+  return boardCareAddonOptions.find((option) => option.value === value)?.label || value
+}

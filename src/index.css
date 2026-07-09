@@ -1,5 +1,74 @@
 @import "tailwindcss";
 
+@layer components {
+  .btn-gold,
+  .gold-button,
+  a.btn-gold,
+  a.gold-button,
+  button.btn-gold,
+  button.gold-button {
+    @apply inline-flex items-center justify-center rounded-full border font-semibold transition;
+    background-color: #f5c84c;
+    border-color: rgba(251, 191, 36, 0.7);
+  }
+
+  .btn-gold:hover,
+  .btn-gold:focus,
+  .btn-gold:active,
+  .gold-button:hover,
+  .gold-button:focus,
+  .gold-button:active,
+  a.btn-gold:hover,
+  a.btn-gold:focus,
+  a.btn-gold:active,
+  a.gold-button:hover,
+  a.gold-button:focus,
+  a.gold-button:active,
+  button.btn-gold:hover,
+  button.btn-gold:focus,
+  button.btn-gold:active,
+  button.gold-button:hover,
+  button.gold-button:focus,
+  button.gold-button:active {
+    background-color: #f0c040;
+    border-color: rgba(120, 53, 15, 0.2);
+  }
+
+  .chip-gold-active {
+    background-color: #f5c84c !important;
+    border-color: rgba(251, 191, 36, 0.7) !important;
+  }
+}
+
+/* Outside Tailwind layers — utilities cannot override gold button text color */
+.btn-gold,
+.btn-gold *,
+.gold-button,
+.gold-button *,
+.chip-gold-active,
+.chip-gold-active * {
+  color: #111111 !important;
+}
+
+.btn-gold:hover,
+.btn-gold:hover *,
+.btn-gold:focus,
+.btn-gold:focus *,
+.btn-gold:active,
+.btn-gold:active *,
+.gold-button:hover,
+.gold-button:hover *,
+.gold-button:focus,
+.gold-button:focus *,
+.gold-button:active,
+.gold-button:active *,
+.chip-gold-active:hover,
+.chip-gold-active:hover *,
+.chip-gold-active:focus,
+.chip-gold-active:focus * {
+  color: #111111 !important;
+}
+
 :root {
   color-scheme: dark;
   font-family:
