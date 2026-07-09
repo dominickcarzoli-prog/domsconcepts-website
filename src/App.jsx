@@ -4,12 +4,12 @@ import {
   Link,
   NavLink,
   useLocation,
+  useParams,
   useSearchParams,
   Route,
   Routes,
 } from 'react-router-dom'
 import {
-  availablePieces,
   budgetRanges,
   careGuidePoints,
   customOrderSteps,
@@ -21,6 +21,7 @@ import {
   shippingOptions,
   woodPreferences,
 } from './siteData'
+import { productCategories, products } from './data/products'
 
 const contactEmail = 'hello@domsconcepts.com'
 const instagramHandle = '@doms_concepts'
@@ -28,6 +29,7 @@ const instagramUrl = 'https://instagram.com/doms_concepts'
 const etsyShopName = 'DomsConcepts'
 const etsyShopUrl = 'https://www.etsy.com/shop/DomsConcepts'
 const icoNumber = '14010615'
+const logoImagePath = '/images/doms-concepts-logo.png' // Replace with the final navbar logo if this file changes.
 const heroImagePath = '/images/hero-workshop-board.jpg' // Replace with the main homepage hero photo.
 const workshopStoryImagePath = '/images/workshop-process.jpg' // Replace with the workshop story photo.
 const careGuideImagePath = '/images/wood-butter.jpg' // Replace with the care guide product photo.
@@ -88,16 +90,14 @@ function SiteLayout() {
   return (
     <div className="min-h-screen bg-stone-950 text-stone-100">
       <div className="fixed inset-x-0 top-0 z-50 border-b border-white/10 bg-stone-950/88 backdrop-blur">
-        <div className="mx-auto flex max-w-7xl items-center justify-between px-4 py-4 sm:px-6 lg:px-8">
-          <Link to="/" className="flex items-center gap-3">
-            <div className="flex h-11 w-11 items-center justify-center rounded-full border border-amber-200/20 bg-amber-200/8 text-sm font-semibold tracking-[0.28em] text-amber-100">
-              DC
-            </div>
-            <div>
-              <p className="font-serif text-lg tracking-wide text-white">
+        <div className="mx-auto flex max-w-7xl items-center justify-between gap-4 px-4 py-4 sm:px-6 lg:px-8">
+          <Link to="/" className="flex min-w-0 items-center gap-2.5 sm:gap-3.5 lg:gap-4">
+            <BrandMark />
+            <div className="min-w-0 pt-0.5">
+              <p className="truncate font-serif text-[0.98rem] leading-none tracking-[0.01em] text-white sm:text-[1.08rem] lg:text-[1.22rem]">
                 Dom&apos;s Concepts
               </p>
-              <p className="text-xs uppercase tracking-[0.3em] text-stone-400">
+              <p className="mt-1 truncate text-[10px] uppercase tracking-[0.24em] text-stone-300 sm:text-[11px]">
                 Handmade in Prague
               </p>
             </div>
@@ -105,7 +105,7 @@ function SiteLayout() {
 
           <button
             type="button"
-            className="rounded-full border border-white/10 px-4 py-2 text-sm text-stone-200 transition hover:border-amber-300/50 hover:text-white lg:hidden"
+            className="rounded-full border border-amber-200/35 bg-stone-900 px-4 py-2 text-sm font-medium text-amber-50 transition hover:border-amber-200 hover:bg-stone-800 lg:hidden"
             onClick={() => setMenuOpen((open) => !open)}
           >
             Menu
@@ -133,6 +133,7 @@ function SiteLayout() {
         <Routes>
           <Route index element={<HomePage />} />
           <Route path="available-pieces" element={<AvailablePiecesPage />} />
+          <Route path="available-pieces/:productId" element={<ProductDetailPage />} />
           <Route path="gallery" element={<GalleryPage />} />
           <Route path="custom-orders" element={<CustomOrdersPage />} />
           <Route path="care-guide" element={<CareGuidePage />} />
@@ -198,6 +199,24 @@ function SiteLayout() {
   )
 }
 
+function BrandMark() {
+  const [hasError, setHasError] = useState(false)
+
+  if (hasError) {
+    return null
+  }
+
+  return (
+    <img
+      src={logoImagePath}
+      alt="Dom's Concepts logo"
+      loading="eager"
+      onError={() => setHasError(true)}
+      className="h-auto w-12 shrink-0 object-contain sm:w-[3.4rem] lg:w-[4.1rem]"
+    />
+  )
+}
+
 function NavItem({ item, mobile = false }) {
   return (
     <NavLink
@@ -207,7 +226,7 @@ function NavItem({ item, mobile = false }) {
           mobile ? 'rounded-2xl px-4 py-3' : 'px-0 py-2',
           'text-sm tracking-wide transition',
           isActive ? 'text-amber-200' : 'text-stone-300 hover:text-white',
-          mobile ? 'border border-white/10 bg-white/5' : '',
+          mobile ? 'border border-amber-200/20 bg-stone-900/90 text-amber-50' : '',
         ].join(' ')
       }
     >
@@ -218,15 +237,15 @@ function NavItem({ item, mobile = false }) {
 
 function PageShell({ eyebrow, title, intro, children }) {
   return (
-    <section className="mx-auto max-w-7xl px-4 py-16 sm:px-6 lg:px-8 lg:py-24">
-      <div className="mb-12 max-w-3xl space-y-4">
+    <section className="mx-auto max-w-7xl px-4 py-14 sm:px-6 lg:px-8 lg:py-20">
+      <div className="mb-10 max-w-3xl space-y-4 sm:space-y-5">
         <p className="text-xs uppercase tracking-[0.35em] text-amber-200/80">
           {eyebrow}
         </p>
-        <h1 className="font-serif text-4xl leading-tight text-white sm:text-5xl lg:text-6xl">
+        <h1 className="font-serif text-[2.2rem] leading-[1.08] text-white sm:text-[2.9rem] lg:text-[3.6rem]">
           {title}
         </h1>
-        <p className="text-lg leading-8 text-stone-300">{intro}</p>
+        <p className="max-w-2xl text-base leading-7 text-stone-300 sm:text-lg sm:leading-8">{intro}</p>
       </div>
       {children}
     </section>
@@ -234,6 +253,8 @@ function PageShell({ eyebrow, title, intro, children }) {
 }
 
 function HomePage() {
+  const featuredProducts = products.slice(0, 4)
+
   return (
     <>
       <section className="relative overflow-hidden">
@@ -244,7 +265,7 @@ function HomePage() {
               Premium Handmade Woodworking Since 2016
             </p>
             <div className="space-y-6">
-              <h1 className="max-w-3xl font-serif text-5xl leading-tight text-white sm:text-6xl lg:text-7xl">
+              <h1 className="max-w-3xl font-serif text-[2.8rem] leading-[1.04] text-white sm:text-[3.8rem] lg:text-[4.7rem]">
                 Handmade wooden pieces built with care in Prague.
               </h1>
               <p className="max-w-2xl text-lg leading-8 text-stone-300">
@@ -370,7 +391,7 @@ function HomePage() {
               href={etsyShopUrl}
               target="_blank"
               rel="noreferrer"
-              className="inline-flex items-center justify-center rounded-full bg-amber-200 px-6 py-3 text-sm font-medium text-stone-950 transition hover:bg-amber-100"
+              className="inline-flex items-center justify-center rounded-full border border-amber-100/70 bg-amber-300 px-6 py-3 text-sm font-semibold text-stone-950 transition hover:bg-amber-200"
             >
               View Etsy Shop
             </a>
@@ -378,18 +399,63 @@ function HomePage() {
         </Card>
       </section>
 
+      <section className="mx-auto max-w-7xl px-4 pb-16 sm:px-6 lg:px-8">
+        <Card className="bg-white/[0.03]">
+          <div className="space-y-6">
+            <div className="max-w-3xl">
+              <p className="text-xs uppercase tracking-[0.35em] text-amber-200/80">
+                5-star feedback from Etsy customers
+              </p>
+              <h2 className="mt-3 font-serif text-3xl text-white">
+                5-star feedback from Etsy customers
+              </h2>
+              <p className="mt-4 leading-8 text-stone-300">
+                Dom&apos;s Concepts has received 5-star feedback from Etsy customers
+                for handmade boards, wood butter, shipping, and service.
+              </p>
+            </div>
+            <div className="grid gap-4 md:grid-cols-3">
+              {[
+                'VERY NICE ITEM, WOULD PURCHASE AGAIN',
+                'Great love the butter it got a lovely smell',
+                'Crazy fast shipping!',
+              ].map((review) => (
+                <div
+                  key={review}
+                  className="rounded-[1.6rem] border border-white/10 bg-black/20 p-5"
+                >
+                  <p className="text-sm uppercase tracking-[0.18em] text-amber-50">
+                    {review}
+                  </p>
+                </div>
+              ))}
+            </div>
+            <div>
+              <a
+                href={etsyShopUrl}
+                target="_blank"
+                rel="noreferrer"
+                className="inline-flex items-center justify-center rounded-full border border-amber-200/35 bg-stone-900 px-6 py-3 text-sm font-medium text-amber-50 transition hover:border-amber-200 hover:bg-stone-800"
+              >
+                View all Etsy reviews
+              </a>
+            </div>
+          </div>
+        </Card>
+      </section>
+
       <section className="mx-auto max-w-7xl px-4 py-16 sm:px-6 lg:px-8">
         <div className="mb-10 flex flex-col gap-6 lg:flex-row lg:items-end lg:justify-between">
           <SectionHeading
-            eyebrow="Available Pieces"
+            eyebrow="Featured Available Pieces"
             title="Ready pieces available for reservation."
-            intro="Selected finished work from the current collection, with placeholders for photography and pricing until live inventory is connected."
+            intro="A selected set of current pieces pulled directly from the product catalog, ready to browse and reserve."
             compact
           />
           <SecondaryLink to="/available-pieces">Browse all available pieces</SecondaryLink>
         </div>
         <div className="grid gap-6 xl:grid-cols-2">
-          {availablePieces.map((piece) => (
+          {featuredProducts.map((piece) => (
             <ProductCard key={piece.name} piece={piece} />
           ))}
         </div>
@@ -425,7 +491,7 @@ function HomePage() {
                 {partnerItems.map((partner) => (
                   <div
                     key={partner}
-                    className="rounded-2xl border border-white/10 bg-black/25 px-4 py-4 text-center transition hover:border-amber-300/40 hover:bg-white/5"
+                    className="rounded-2xl border border-amber-200/20 bg-stone-900/90 px-4 py-4 text-center text-amber-50 transition hover:border-amber-200/45 hover:bg-stone-800"
                   >
                     {partner}
                   </div>
@@ -441,6 +507,11 @@ function HomePage() {
 }
 
 function AvailablePiecesPage() {
+  const [activeCategory, setActiveCategory] = useState('All')
+  const filteredProducts = activeCategory === 'All'
+    ? products
+    : products.filter((product) => product.category === activeCategory)
+
   return (
     <PageShell
       eyebrow="Available Pieces"
@@ -469,14 +540,203 @@ function AvailablePiecesPage() {
         <Card>
           <div className="grid gap-4 sm:grid-cols-2">
             <ProductMeta label="Statuses" value="Available / Reserved / Sold" />
-            <ProductMeta label="Reservation CTA" value="Reserve This Piece" />
+            <ProductMeta label="Reservation CTA" value="Reserve This Piece / Request This Piece" />
           </div>
         </Card>
       </div>
+      <div className="mb-8 flex flex-wrap gap-3">
+        {['All', ...productCategories].map((category) => {
+          const isActive = activeCategory === category
+
+          return (
+            <button
+              key={category}
+              type="button"
+              onClick={() => setActiveCategory(category)}
+              className={[
+                'rounded-full border px-4 py-2 text-sm font-medium transition',
+                isActive
+                  ? 'border-amber-100/70 bg-amber-300 text-stone-950'
+                  : 'border-amber-200/35 bg-stone-900 text-amber-50 hover:border-amber-200 hover:bg-stone-800',
+              ].join(' ')}
+            >
+              {category}
+            </button>
+          )
+        })}
+      </div>
       <div className="grid gap-6 xl:grid-cols-2">
-        {availablePieces.map((piece) => (
+        {filteredProducts.map((piece) => (
           <ProductCard key={piece.name} piece={piece} detailed />
         ))}
+      </div>
+    </PageShell>
+  )
+}
+
+function ProductDetailPage() {
+  const { productId } = useParams()
+  const product = products.find((item) => item.id === productId)
+  const [activeImage, setActiveImage] = useState(product?.mainImage || '')
+
+  useEffect(() => {
+    setActiveImage(product?.mainImage || '')
+  }, [product?.mainImage])
+
+  if (!product) {
+    return (
+      <PageShell
+        eyebrow="Available Pieces"
+        title="Product not found"
+        intro="This piece may have moved or the link may be incomplete. You can still browse the current collection below."
+      >
+        <PrimaryLink to="/available-pieces">Back to Available Pieces</PrimaryLink>
+      </PageShell>
+    )
+  }
+
+  const statusClasses = {
+    Available: 'border-emerald-300/35 bg-emerald-950/85 text-emerald-100',
+    Reserved: 'border-amber-300/35 bg-amber-950/85 text-amber-100',
+    Sold: 'border-stone-500/50 bg-stone-900 text-stone-200',
+    'Made to order': 'border-sky-300/35 bg-sky-950/85 text-sky-100',
+    'Low in stock, only 1 left': 'border-rose-300/35 bg-rose-950/85 text-rose-100',
+  }
+
+  return (
+    <PageShell
+      eyebrow={product.category}
+      title={product.name}
+      intro={product.description}
+    >
+      <div className="grid gap-10 lg:grid-cols-[1.05fr_0.95fr]">
+        <div className="space-y-4">
+          <PhotoFrame
+            src={activeImage}
+            alt={product.name}
+            className="h-[26rem]"
+            overlay="none"
+            priority
+            showLabels={false}
+            imageFit="contain"
+          />
+          <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+            {product.galleryImages.map((image, index) => (
+              <button
+                key={`${product.id}-${index + 1}`}
+                type="button"
+                onClick={() => setActiveImage(image)}
+                className={[
+                  'overflow-hidden rounded-[1.2rem] border transition',
+                  activeImage === image
+                    ? 'border-amber-100/70'
+                    : 'border-white/10 hover:border-amber-200/45',
+                ].join(' ')}
+              >
+                <PhotoFrame
+                  src={image}
+                  alt={`${product.name} photo ${index + 1}`}
+                  className="h-32 rounded-none border-0"
+                  overlay="none"
+                  showLabels={false}
+                />
+              </button>
+            ))}
+          </div>
+        </div>
+
+        <div className="space-y-6">
+          <Card>
+            <div className="flex flex-wrap items-center gap-3">
+              <span className="rounded-full border border-amber-200/35 bg-stone-900 px-3 py-1.5 text-sm text-amber-50">
+                {product.category}
+              </span>
+              <span
+                className={[
+                  'rounded-full border px-3 py-1.5 text-sm',
+                  statusClasses[product.status],
+                ].join(' ')}
+              >
+                {product.status}
+              </span>
+            </div>
+            <div className="mt-6 grid gap-4 sm:grid-cols-2">
+              <ProductMeta label="Price" value={product.price} />
+              <ProductMeta label="Dimensions" value={product.dimensions} />
+              <ProductMeta label="Wood Type" value={product.woodType} />
+              <ProductMeta label="Materials" value={product.materials || 'Selected materials'} />
+              <ProductMeta label="Photos" value={`${product.galleryImages.length} image${product.galleryImages.length === 1 ? '' : 's'}`} />
+            </div>
+            <p className="mt-6 leading-8 text-stone-300">{product.description}</p>
+            <div className="mt-8 flex flex-col gap-3 sm:flex-row">
+              <PrimaryLink to={`/custom-orders?product=${encodeURIComponent(product.id)}`}>
+                {product.requestCtaText}
+              </PrimaryLink>
+              <SecondaryLink to="/available-pieces">Back to collection</SecondaryLink>
+            </div>
+          </Card>
+          {product.features?.length ? (
+            <Card>
+              <h2 className="font-serif text-3xl text-white">Features</h2>
+              <ul className="mt-5 space-y-3 text-stone-300">
+                {product.features.map((feature) => (
+                  <li key={feature} className="rounded-2xl border border-white/10 bg-black/20 px-4 py-3">
+                    {feature}
+                  </li>
+                ))}
+              </ul>
+            </Card>
+          ) : null}
+          {product.perfectFor?.length ? (
+            <Card>
+              <h2 className="font-serif text-3xl text-white">Perfect For</h2>
+              <ul className="mt-5 space-y-3 text-stone-300">
+                {product.perfectFor.map((item) => (
+                  <li key={item} className="rounded-2xl border border-white/10 bg-black/20 px-4 py-3">
+                    {item}
+                  </li>
+                ))}
+              </ul>
+            </Card>
+          ) : null}
+          {product.whyThisPiece || product.whyEndGrain ? (
+            <Card>
+              <h2 className="font-serif text-3xl text-white">
+                {product.whyEndGrain ? 'Why End Grain' : 'Why This Piece'}
+              </h2>
+              <p className="mt-5 leading-8 text-stone-300">
+                {product.whyEndGrain || product.whyThisPiece}
+              </p>
+            </Card>
+          ) : null}
+          {product.careInstructions ? (
+            <Card>
+              <h2 className="font-serif text-3xl text-white">Care Instructions</h2>
+              <p className="mt-5 leading-8 text-stone-300">{product.careInstructions}</p>
+            </Card>
+          ) : null}
+          {product.returnsShippingNote ? (
+            <Card>
+              <h2 className="font-serif text-3xl text-white">Returns / Shipping</h2>
+              <p className="mt-5 leading-8 text-stone-300">{product.returnsShippingNote}</p>
+            </Card>
+          ) : null}
+          {product.etsyUrl ? (
+            <Card>
+              <p className="text-sm leading-7 text-stone-300">
+                This piece is also listed externally.
+              </p>
+              <a
+                href={product.etsyUrl}
+                target="_blank"
+                rel="noreferrer"
+                className="mt-4 inline-flex rounded-full border border-amber-200/35 bg-stone-900 px-5 py-3 text-sm font-medium text-amber-50 transition hover:border-amber-200 hover:bg-stone-800"
+              >
+                View on Etsy
+              </a>
+            </Card>
+          ) : null}
+        </div>
       </div>
     </PageShell>
   )
@@ -512,7 +772,9 @@ function GalleryPage() {
 
 function CustomOrdersPage() {
   const [searchParams] = useSearchParams()
-  const selectedPiece = searchParams.get('product') || ''
+  const selectedProductId = searchParams.get('product') || ''
+  const selectedProduct = products.find((item) => item.id === selectedProductId)
+  const selectedPiece = selectedProduct?.name || selectedProductId
 
   return (
     <PageShell
@@ -590,7 +852,7 @@ function CareGuidePage() {
               href={etsyShopUrl}
               target="_blank"
               rel="noreferrer"
-              className="inline-flex items-center justify-center rounded-full border border-white/15 bg-white/5 px-6 py-3 text-sm font-medium text-stone-100 transition hover:border-amber-300/40 hover:bg-white/10"
+              className="inline-flex items-center justify-center rounded-full border border-amber-200/35 bg-stone-900 px-6 py-3 text-sm font-medium text-amber-50 transition hover:border-amber-200 hover:bg-stone-800"
             >
               Reorder Wood Butter
             </a>
@@ -634,7 +896,7 @@ function CareGuidePage() {
               href={etsyShopUrl}
               target="_blank"
               rel="noreferrer"
-              className="inline-flex items-center justify-center rounded-full bg-amber-200 px-6 py-3 text-sm font-medium text-stone-950 transition hover:bg-amber-100"
+              className="inline-flex items-center justify-center rounded-full border border-amber-100/70 bg-amber-300 px-6 py-3 text-sm font-semibold text-stone-950 transition hover:bg-amber-200"
             >
               Reorder wood butter
             </a>
@@ -753,7 +1015,7 @@ function AboutPage() {
               href={etsyShopUrl}
               target="_blank"
               rel="noreferrer"
-              className="inline-flex items-center justify-center rounded-full border border-white/15 bg-white/5 px-6 py-3 text-sm font-medium text-stone-100 transition hover:border-amber-300/40 hover:bg-white/10"
+              className="inline-flex items-center justify-center rounded-full border border-amber-200/35 bg-stone-900 px-6 py-3 text-sm font-medium text-amber-50 transition hover:border-amber-200 hover:bg-stone-800"
             >
               View Etsy Shop
             </a>
@@ -805,24 +1067,31 @@ function ContactPage() {
 function ProductCard({ piece, detailed = false }) {
   const isSold = piece.status === 'Sold'
   const statusClasses = {
-    Available: 'border-emerald-300/20 bg-emerald-300/10 text-emerald-100',
-    Reserved: 'border-amber-300/20 bg-amber-300/10 text-amber-100',
-    Sold: 'border-white/10 bg-white/8 text-stone-300',
+    Available: 'border-emerald-300/35 bg-emerald-950/85 text-emerald-100',
+    Reserved: 'border-amber-300/35 bg-amber-950/85 text-amber-100',
+    Sold: 'border-stone-500/50 bg-stone-900 text-stone-200',
+    'Made to order': 'border-sky-300/35 bg-sky-950/85 text-sky-100',
+    'Low in stock, only 1 left': 'border-rose-300/35 bg-rose-950/85 text-rose-100',
   }
 
   return (
     <Card className="overflow-hidden p-0">
-      <PhotoFrame
-        src={piece.image}
-        alt={piece.name}
-        label="Handmade Piece"
-        className="h-64 rounded-none rounded-t-[2rem]"
-        overlay="dark"
-      />
+      <Link to={`/available-pieces/${piece.id}`} className="block">
+        <PhotoFrame
+          src={piece.mainImage}
+          alt={piece.name}
+          className="h-64 rounded-none rounded-t-[2rem]"
+          overlay="none"
+          showLabels={false}
+        />
+      </Link>
       <div className="space-y-5 p-7">
         <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
           <div>
-            <h2 className="font-serif text-3xl text-white">{piece.name}</h2>
+            <Link to={`/available-pieces/${piece.id}`} className="transition hover:text-amber-200">
+              <h2 className="font-serif text-3xl text-white">{piece.name}</h2>
+            </Link>
+            <p className="mt-2 text-sm text-stone-300">{piece.category}</p>
             <p
               className={[
                 'mt-3 inline-flex rounded-full border px-3 py-1 text-xs uppercase tracking-[0.25em]',
@@ -832,23 +1101,36 @@ function ProductCard({ piece, detailed = false }) {
               {piece.status}
             </p>
           </div>
-          <span className="rounded-full border border-amber-300/25 bg-amber-200/8 px-4 py-2 text-sm text-amber-100">
+          <span className="rounded-full border border-amber-200/35 bg-stone-900 px-4 py-2 text-sm font-medium text-amber-50">
             {piece.price}
           </span>
         </div>
 
         <div className="grid gap-4 text-sm text-stone-300 sm:grid-cols-3">
           <ProductMeta label="Dimensions" value={piece.dimensions} />
-          <ProductMeta label="Wood Type" value={piece.wood} />
+          <ProductMeta label="Wood Type" value={piece.woodType} />
           <ProductMeta label="Status" value={piece.status} />
+        </div>
+
+        <div className="flex flex-wrap items-center gap-3 text-sm text-stone-300">
+          <span className="rounded-full border border-white/10 bg-black/20 px-3 py-1.5">
+            {piece.galleryImages.length > 1 ? `+ ${piece.galleryImages.length - 1} more photos` : 'Single photo'}
+          </span>
+          {piece.etsyUrl ? (
+            <a
+              href={piece.etsyUrl}
+              target="_blank"
+              rel="noreferrer"
+              className="rounded-full border border-amber-200/35 bg-stone-900 px-3 py-1.5 text-amber-50 transition hover:border-amber-200 hover:bg-stone-800"
+            >
+              View on Etsy
+            </a>
+          ) : null}
         </div>
 
         {detailed ? (
           <div className="rounded-[1.6rem] border border-white/10 bg-black/20 p-5">
-            <p className="leading-8 text-stone-300">
-              Placeholder layout for detailed product photography, grain notes,
-              finish details, and any future shipping or pickup information.
-            </p>
+            <p className="leading-8 text-stone-300">{piece.description}</p>
           </div>
         ) : null}
 
@@ -858,10 +1140,10 @@ function ProductCard({ piece, detailed = false }) {
             not included.
           </p>
           <PrimaryLink
-            to={`/custom-orders?product=${encodeURIComponent(piece.name)}`}
+            to={`/custom-orders?product=${encodeURIComponent(piece.id)}`}
             className={isSold ? 'pointer-events-none opacity-50' : ''}
           >
-            Reserve This Piece
+            {piece.requestCtaText}
           </PrimaryLink>
         </div>
       </div>
@@ -927,6 +1209,15 @@ function OrderForm({ title, presetProduct = '', defaultMessage = '' }) {
         {contactEmail}. It can later be connected to Formspree, Basin,
         Cloudflare Forms, or an email API.
       </p>
+
+      {presetProduct ? (
+        <div className="mt-6 rounded-[1.4rem] border border-amber-200/25 bg-amber-200/8 p-4">
+          <p className="text-xs uppercase tracking-[0.28em] text-amber-100">
+            Selected Product
+          </p>
+          <p className="mt-2 text-lg text-white">{presetProduct}</p>
+        </div>
+      ) : null}
 
       <form className="mt-8 grid gap-5" action={mailtoHref}>
         <div className="grid gap-5 sm:grid-cols-2">
@@ -1004,7 +1295,7 @@ function OrderForm({ title, presetProduct = '', defaultMessage = '' }) {
         <div className="pt-2">
           <button
             type="submit"
-            className="inline-flex rounded-full bg-amber-200 px-6 py-3 text-sm font-medium text-stone-950 transition hover:bg-amber-100"
+            className="inline-flex rounded-full border border-amber-100/70 bg-amber-300 px-6 py-3 text-sm font-semibold text-stone-950 transition hover:bg-amber-200"
           >
             Submit
           </button>
@@ -1091,10 +1382,12 @@ function Card({ children, className = '' }) {
 function PhotoFrame({
   src,
   alt,
-  label,
+  label = '',
   className = '',
   overlay = 'default',
   priority = false,
+  showLabels = true,
+  imageFit = 'cover',
 }) {
   const [hasError, setHasError] = useState(false)
 
@@ -1111,21 +1404,41 @@ function PhotoFrame({
           alt={alt}
           loading={priority ? 'eager' : 'lazy'}
           onError={() => setHasError(true)}
-          className="h-full w-full object-cover"
+          className={[
+            'h-full w-full',
+            imageFit === 'contain' ? 'object-contain bg-stone-950' : 'object-cover',
+          ].join(' ')}
         />
       ) : null}
-      <div className="absolute inset-0 bg-[radial-gradient(circle_at_top_left,_rgba(255,255,255,0.12),_transparent_35%)]" />
-      <div
-        className={[
-          'absolute inset-0',
-          overlay === 'dark'
-            ? 'bg-gradient-to-t from-black/70 via-black/25 to-black/10'
-            : 'bg-gradient-to-t from-black/55 via-black/10 to-transparent',
-        ].join(' ')}
-      />
-      <div className="absolute inset-x-0 bottom-0 p-5">
-        <p className="text-sm uppercase tracking-[0.3em] text-stone-100">{label}</p>
-      </div>
+      {hasError ? (
+        <>
+          <div className="absolute inset-0 bg-[radial-gradient(circle_at_top_left,_rgba(255,255,255,0.12),_transparent_35%)]" />
+          <div className="absolute inset-0 bg-gradient-to-t from-black/75 via-black/25 to-black/10" />
+          <div className="absolute inset-x-0 bottom-0 p-5">
+            <p className="text-sm uppercase tracking-[0.3em] text-stone-100">
+              Photo coming soon
+            </p>
+          </div>
+        </>
+      ) : (
+        <>
+          {overlay !== 'none' ? (
+            <div
+              className={[
+                'absolute inset-0',
+                overlay === 'dark'
+                  ? 'bg-gradient-to-t from-black/70 via-black/25 to-black/10'
+                  : 'bg-gradient-to-t from-black/55 via-black/10 to-transparent',
+              ].join(' ')}
+            />
+          ) : null}
+          {showLabels ? (
+            <div className="absolute inset-x-0 bottom-0 p-5">
+              <p className="text-sm uppercase tracking-[0.3em] text-stone-100">{label}</p>
+            </div>
+          ) : null}
+        </>
+      )}
     </div>
   )
 }
@@ -1144,7 +1457,7 @@ function PrimaryLink({ to, children, className = '' }) {
     <Link
       to={to}
       className={[
-        'inline-flex items-center justify-center rounded-full bg-amber-200 px-6 py-3 text-sm font-medium text-stone-950 transition hover:bg-amber-100',
+        'inline-flex items-center justify-center rounded-full border border-amber-100/70 bg-amber-300 px-6 py-3 text-sm font-semibold text-stone-950 transition hover:bg-amber-200',
         className,
       ].join(' ')}
     >
@@ -1158,7 +1471,7 @@ function SecondaryLink({ to, children, className = '' }) {
     <Link
       to={to}
       className={[
-        'inline-flex items-center justify-center rounded-full border border-white/15 bg-white/5 px-6 py-3 text-sm font-medium text-stone-100 transition hover:border-amber-300/40 hover:bg-white/10',
+        'inline-flex items-center justify-center rounded-full border border-amber-200/35 bg-stone-900 px-6 py-3 text-sm font-medium text-amber-50 transition hover:border-amber-200 hover:bg-stone-800',
         className,
       ].join(' ')}
     >
