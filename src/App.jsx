@@ -10,16 +10,48 @@ import {
 } from 'react-router-dom'
 import {
   availablePieces,
+  budgetRanges,
   careGuidePoints,
   customOrderSteps,
+  engravingOptions,
   featuredCategories,
   galleryItems,
   navItems,
   partnerItems,
   shippingOptions,
+  woodPreferences,
 } from './siteData'
 
 const contactEmail = 'hello@domsconcepts.com'
+const instagramHandle = '@doms_concepts'
+const instagramUrl = 'https://instagram.com/doms_concepts'
+const etsyShopName = 'DomsConcepts'
+const etsyShopUrl = 'https://www.etsy.com/shop/DomsConcepts'
+const icoNumber = '14010615'
+const footerLinks = [
+  { label: 'Contact', path: '/contact' },
+  { label: 'Care Guide', path: '/care-guide' },
+  { label: 'Custom Orders', path: '/custom-orders' },
+  { label: 'Workshop Partners', path: '/partners' },
+]
+const legalPlaceholders = [
+  {
+    title: 'Terms & Conditions',
+    text: 'Placeholder for final terms governing orders, reservations, and workshop services.',
+  },
+  {
+    title: 'Privacy Policy',
+    text: 'Placeholder for how enquiry data, contact details, and future form submissions will be handled.',
+  },
+  {
+    title: 'Returns / Custom Orders',
+    text: 'Placeholder note for made-to-order timelines, approval steps, and custom order return conditions.',
+  },
+  {
+    title: 'Cookies',
+    text: 'Placeholder for a future cookies notice if analytics or embedded services are added.',
+  },
+]
 
 function App() {
   return (
@@ -105,28 +137,55 @@ function SiteLayout() {
         </Routes>
       </main>
 
-      <footer className="border-t border-white/10 bg-black/30">
-        <div className="mx-auto grid max-w-7xl gap-10 px-4 py-12 sm:px-6 lg:grid-cols-[1.2fr_0.8fr] lg:px-8">
-          <div className="space-y-3">
-            <p className="font-serif text-2xl text-white">Dom&apos;s Concepts</p>
-            <p className="max-w-2xl text-sm leading-7 text-stone-300">
-              Premium handmade woodworking from a small Prague workshop. Built
-              for kitchens, tables, gifting, and custom projects that deserve
-              real materials and careful finish work.
-            </p>
-          </div>
-          <div className="space-y-3 text-sm text-stone-300">
-            <p className="text-white">Contact</p>
-            <a className="inline-block transition hover:text-amber-200" href={`mailto:${contactEmail}`}>
-              {contactEmail}
-            </a>
-            <div className="flex flex-wrap gap-4 pt-2">
-              {navItems.map((item) => (
-                <Link key={item.path} to={item.path} className="transition hover:text-amber-200">
-                  {item.label}
-                </Link>
-              ))}
+      <footer className="border-t border-white/10 bg-black/40">
+        <div className="mx-auto max-w-7xl px-4 py-14 sm:px-6 lg:px-8">
+          <div className="grid gap-10 lg:grid-cols-[1.15fr_0.85fr_1fr]">
+            <div className="space-y-4">
+              <p className="font-serif text-2xl text-white">Dom&apos;s Concepts</p>
+              <p className="text-sm uppercase tracking-[0.3em] text-stone-400">
+                Handmade woodworking in Prague
+              </p>
+              <a
+                className="inline-block text-stone-200 transition hover:text-amber-200"
+                href={`mailto:${contactEmail}`}
+              >
+                Email: {contactEmail}
+              </a>
             </div>
+
+            <div className="space-y-4 text-sm text-stone-300">
+              <p className="text-white">Links</p>
+              <div className="grid gap-3">
+                {footerLinks.map((item) => (
+                  <Link key={item.path} to={item.path} className="transition hover:text-amber-200">
+                    {item.label}
+                  </Link>
+                ))}
+              </div>
+            </div>
+
+            <div className="space-y-4 text-sm text-stone-300">
+              <p className="text-white">Studio Notes</p>
+              <a href={instagramUrl} target="_blank" rel="noreferrer" className="block transition hover:text-amber-200">
+                Instagram: {instagramHandle}
+              </a>
+              <a href={etsyShopUrl} target="_blank" rel="noreferrer" className="block transition hover:text-amber-200">
+                Etsy: {etsyShopName}
+              </a>
+              <p>IČO: {icoNumber}</p>
+            </div>
+          </div>
+
+          <div className="mt-12 grid gap-4 md:grid-cols-2 xl:grid-cols-4">
+            {legalPlaceholders.map((item) => (
+              <div
+                key={item.title}
+                className="rounded-[1.6rem] border border-white/10 bg-white/[0.03] p-5"
+              >
+                <p className="font-serif text-xl text-white">{item.title}</p>
+                <p className="mt-3 text-sm leading-7 text-stone-400">{item.text}</p>
+              </div>
+            ))}
           </div>
         </div>
       </footer>
@@ -184,8 +243,9 @@ function HomePage() {
                 Handmade wooden pieces built with care in Prague.
               </h1>
               <p className="max-w-2xl text-lg leading-8 text-stone-300">
-                Cutting boards, butcher blocks, trays, coasters, and custom
-                pieces made from premium hardwoods.
+                End grain cutting boards, edge grain cutting boards, butcher
+                blocks, serving boards, breadboards, coasters, wood butter, and
+                custom handmade pieces made from premium hardwoods.
               </p>
             </div>
             <div className="flex flex-col gap-4 sm:flex-row">
@@ -218,8 +278,8 @@ function HomePage() {
               <div className="mb-5 h-40 rounded-[1.4rem] bg-gradient-to-br from-amber-100/10 via-stone-800 to-black" />
               <h3 className="font-serif text-2xl text-white">{category}</h3>
               <p className="mt-3 text-sm leading-7 text-stone-300">
-                Crafted with premium hardwoods and finished for daily use,
-                gifting, or custom kitchen projects.
+                Crafted for daily use, gifting, restaurant service, and custom
+                logo projects with a premium handmade finish.
               </p>
             </Card>
           ))}
@@ -248,6 +308,10 @@ function HomePage() {
               small-batch collections as well as tailored pieces for homes,
               gifts, and hospitality spaces.
             </p>
+            <p className="text-amber-100">
+              Custom sizes, wood combinations, logo engraving, and special
+              pieces are available on request.
+            </p>
           </div>
         </div>
       </section>
@@ -268,6 +332,34 @@ function HomePage() {
             </Card>
           ))}
         </div>
+      </section>
+
+      <section className="mx-auto max-w-7xl px-4 py-4 pb-16 sm:px-6 lg:px-8">
+        <Card className="bg-gradient-to-r from-amber-200/10 via-stone-900/75 to-black/85">
+          <div className="flex flex-col gap-5 lg:flex-row lg:items-center lg:justify-between">
+            <div className="max-w-3xl">
+              <p className="text-xs uppercase tracking-[0.35em] text-amber-200/80">
+                Trusted by Etsy customers
+              </p>
+              <h2 className="mt-3 font-serif text-3xl text-white">
+                Trusted by Etsy customers
+              </h2>
+              <p className="mt-4 leading-8 text-stone-300">
+                Dom&apos;s Concepts also sells handmade pieces through Etsy and
+                has received 5-star customer feedback for craftsmanship,
+                service, and wood care products.
+              </p>
+            </div>
+            <a
+              href={etsyShopUrl}
+              target="_blank"
+              rel="noreferrer"
+              className="inline-flex items-center justify-center rounded-full bg-amber-200 px-6 py-3 text-sm font-medium text-stone-950 transition hover:bg-amber-100"
+            >
+              View Etsy Shop
+            </a>
+          </div>
+        </Card>
       </section>
 
       <section className="mx-auto max-w-7xl px-4 py-16 sm:px-6 lg:px-8">
@@ -339,6 +431,32 @@ function AvailablePiecesPage() {
       title="Current handmade pieces ready to reserve."
       intro="This static product page is designed for direct enquiries and reservations, without checkout or cart flow."
     >
+      <div className="mb-8 grid gap-5 lg:grid-cols-[1.15fr_0.85fr]">
+        <Card>
+          <p className="text-xs uppercase tracking-[0.35em] text-amber-200/80">
+            Reservation First
+          </p>
+          <h2 className="mt-4 font-serif text-3xl text-white">
+            Premium pieces listed for direct reservation, not instant checkout.
+          </h2>
+          <p className="mt-4 leading-8 text-stone-300">
+            Each piece can be reserved through the enquiry flow so delivery,
+            pickup, custom details, and final confirmation stay personal.
+          </p>
+          <p className="mt-4 text-stone-200">
+            End grain cutting boards, edge grain cutting boards, butcher
+            blocks, serving boards, breadboards, coasters, wall-mounted bottle
+            openers, and epoxy serving boards are all part of the current
+            direction.
+          </p>
+        </Card>
+        <Card>
+          <div className="grid gap-4 sm:grid-cols-2">
+            <ProductMeta label="Statuses" value="Available / Reserved / Sold" />
+            <ProductMeta label="Reservation CTA" value="Reserve This Piece" />
+          </div>
+        </Card>
+      </div>
       <div className="grid gap-6 xl:grid-cols-2">
         {availablePieces.map((piece) => (
           <ProductCard key={piece.name} piece={piece} detailed />
@@ -383,7 +501,19 @@ function CustomOrdersPage() {
     >
       <div className="grid gap-8 lg:grid-cols-[0.9fr_1.1fr]">
         <Card>
-          <h2 className="font-serif text-3xl text-white">How custom orders work</h2>
+          <p className="text-xs uppercase tracking-[0.35em] text-amber-200/80">
+            Built Around Your Request
+          </p>
+          <h2 className="mt-4 font-serif text-3xl text-white">How custom orders work</h2>
+          <p className="mt-4 leading-8 text-stone-300">
+            Share the product type, wood direction, size, and whether you want
+            engraving or logo work. Every order is reviewed personally before a
+            quote is confirmed.
+          </p>
+          <div className="mt-6 rounded-[1.6rem] border border-white/10 bg-black/20 p-5 text-sm leading-7 text-stone-300">
+            Custom sizes, wood combinations, logo engraving, and special pieces
+            are available on request.
+          </div>
           <div className="mt-6 space-y-4">
             {customOrderSteps.map((step, index) => (
               <div
@@ -396,6 +526,10 @@ function CustomOrdersPage() {
                 <p className="text-stone-200">{step}</p>
               </div>
             ))}
+          </div>
+          <div className="mt-8 rounded-[1.6rem] border border-amber-300/20 bg-amber-200/8 p-5 text-sm leading-7 text-amber-50">
+            No checkout or cart yet. The current flow is enquiry-based so each
+            custom order can be quoted and confirmed directly.
           </div>
         </Card>
         <OrderForm
@@ -455,7 +589,7 @@ function PartnersPage() {
   return (
     <PageShell
       eyebrow="Workshop Partners"
-      title="Partners and suppliers that support the workshop."
+      title="Workshop Partners"
       intro="A curated set of trusted brands and collaborators connected to the materials, finish systems, and workshop environment behind Dom&apos;s Concepts."
     >
       <div className="grid gap-5 md:grid-cols-2 xl:grid-cols-4">
@@ -470,6 +604,21 @@ function PartnersPage() {
           </Card>
         ))}
       </div>
+      <div className="mt-10">
+        <Card className="bg-gradient-to-r from-amber-200/10 via-stone-900/80 to-black/80">
+          <div className="flex flex-col gap-5 lg:flex-row lg:items-center lg:justify-between">
+            <div>
+              <p className="text-xs uppercase tracking-[0.35em] text-amber-200/80">
+                Partnership Enquiries
+              </p>
+              <h2 className="mt-3 font-serif text-3xl text-white">
+                Interested in partnering with Dom&apos;s Concepts?
+              </h2>
+            </div>
+            <PrimaryLink to="/contact">Start the conversation</PrimaryLink>
+          </div>
+        </Card>
+      </div>
     </PageShell>
   )
 }
@@ -483,28 +632,60 @@ function AboutPage() {
     >
       <div className="grid gap-8 lg:grid-cols-[1fr_0.9fr]">
         <Card>
+          <p className="text-xs uppercase tracking-[0.35em] text-amber-200/80">
+            Slow wood. Honest craft. Handmade wood and epoxy pieces from Prague.
+          </p>
           <div className="space-y-5 leading-8 text-stone-300">
             <p>
-              The studio focuses on cutting boards, butcher blocks, trays,
-              coasters, wood care products, and custom hardwood builds. Each
-              design is intended to feel refined without losing the character
-              of handmade work.
+              Dom&apos;s Concepts is a small handmade woodworking brand based in
+              Prague. Since 2016, the workshop has focused on premium wooden
+              pieces, cutting boards, butcher blocks, serving boards, coasters,
+              wood care products, and selected epoxy projects.
             </p>
             <p>
-              Dom&apos;s Concepts values durable materials, premium finishing,
-              balanced proportions, and practical use. Whether a piece is made
-              for a personal kitchen, gifting, or a hospitality setting, the
-              goal stays the same: warm craftsmanship you can trust.
+              The brand also sells through Etsy under {etsyShopName} and has
+              been on Etsy since 2019. Dom&apos;s Concepts values durable
+              materials, premium finishing, balanced proportions, and practical
+              use across kitchen pieces, corporate gifts, restaurant boards,
+              and custom logo work.
+            </p>
+            <p className="text-stone-200">
+              Custom sizes, wood combinations, logo engraving, and special
+              pieces are available on request.
             </p>
           </div>
         </Card>
         <Card>
           <div className="h-80 rounded-[1.8rem] bg-gradient-to-br from-amber-100/10 via-stone-800 to-black" />
           <div className="mt-6 grid gap-4 sm:grid-cols-2">
-            <Stat value="2016" label="Founded in Prague" />
-            <Stat value="Small-batch" label="Workshop approach" />
-            <Stat value="Premium hardwoods" label="Core material focus" />
-            <Stat value="Custom ready" label="Engraving and bespoke pieces" />
+            <Stat value="2016" label="Handmade brand active since" />
+            <Stat value="Prague, Czechia" label="Workshop location" />
+            <Stat value="5-star Etsy shop" label="Trusted by Etsy customers" />
+            <Stat value="Since 2019" label="On Etsy" />
+          </div>
+        </Card>
+      </div>
+      <div className="mt-8">
+        <Card className="bg-white/[0.03]">
+          <div className="flex flex-col gap-5 lg:flex-row lg:items-center lg:justify-between">
+            <div>
+              <p className="text-xs uppercase tracking-[0.35em] text-amber-200/80">
+                Trusted by Etsy customers
+              </p>
+              <p className="mt-3 max-w-3xl leading-8 text-stone-300">
+                Dom&apos;s Concepts also sells handmade pieces through Etsy and
+                has received 5-star customer feedback for craftsmanship,
+                service, and wood care products.
+              </p>
+            </div>
+            <a
+              href={etsyShopUrl}
+              target="_blank"
+              rel="noreferrer"
+              className="inline-flex items-center justify-center rounded-full border border-white/15 bg-white/5 px-6 py-3 text-sm font-medium text-stone-100 transition hover:border-amber-300/40 hover:bg-white/10"
+            >
+              View Etsy Shop
+            </a>
           </div>
         </Card>
       </div>
@@ -531,9 +712,17 @@ function ContactPage() {
               {contactEmail}
             </a>
             <p className="pt-4 leading-8">
-              Based in Prague. Pickup and shipping options can be discussed per
-              order request.
+              Based in Prague, Czechia. Pickup and shipping options can be
+              discussed per order request.
             </p>
+            <a
+              href={etsyShopUrl}
+              target="_blank"
+              rel="noreferrer"
+              className="inline-block text-stone-200 transition hover:text-amber-200"
+            >
+              Etsy: {etsyShopName}
+            </a>
           </div>
         </Card>
         <OrderForm title="Send an enquiry" />
@@ -544,15 +733,29 @@ function ContactPage() {
 
 function ProductCard({ piece, detailed = false }) {
   const isSold = piece.status === 'Sold'
+  const statusClasses = {
+    Available: 'border-emerald-300/20 bg-emerald-300/10 text-emerald-100',
+    Reserved: 'border-amber-300/20 bg-amber-300/10 text-amber-100',
+    Sold: 'border-white/10 bg-white/8 text-stone-300',
+  }
 
   return (
     <Card className="overflow-hidden p-0">
-      <div className={`h-64 bg-gradient-to-br ${piece.tone}`} />
+      <div className={`relative h-64 bg-gradient-to-br ${piece.tone}`}>
+        <div className="absolute left-5 top-5 rounded-full border border-white/10 bg-black/35 px-4 py-2 text-xs uppercase tracking-[0.3em] text-stone-100">
+          Handmade Piece
+        </div>
+      </div>
       <div className="space-y-5 p-7">
         <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
           <div>
             <h2 className="font-serif text-3xl text-white">{piece.name}</h2>
-            <p className="mt-2 text-sm uppercase tracking-[0.25em] text-stone-400">
+            <p
+              className={[
+                'mt-3 inline-flex rounded-full border px-3 py-1 text-xs uppercase tracking-[0.25em]',
+                statusClasses[piece.status],
+              ].join(' ')}
+            >
               {piece.status}
             </p>
           </div>
@@ -568,10 +771,12 @@ function ProductCard({ piece, detailed = false }) {
         </div>
 
         {detailed ? (
-          <p className="leading-8 text-stone-300">
-            Placeholder layout for detailed product photography, grain notes,
-            finish details, and any future shipping or pickup information.
-          </p>
+          <div className="rounded-[1.6rem] border border-white/10 bg-black/20 p-5">
+            <p className="leading-8 text-stone-300">
+              Placeholder layout for detailed product photography, grain notes,
+              finish details, and any future shipping or pickup information.
+            </p>
+          </div>
         ) : null}
 
         <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
@@ -597,7 +802,11 @@ function OrderForm({ title, presetProduct = '', defaultMessage = '' }) {
     email: '',
     phone: '',
     product: presetProduct,
+    woodPreference: woodPreferences[0],
+    size: '',
+    engraving: engravingOptions[1],
     shipping: shippingOptions[0],
+    budget: budgetRanges[1],
     message: defaultMessage,
   })
 
@@ -619,7 +828,11 @@ function OrderForm({ title, presetProduct = '', defaultMessage = '' }) {
       `Email: ${formState.email}`,
       `Phone: ${formState.phone || 'Not provided'}`,
       `Product / request type: ${formState.product || 'Not specified'}`,
+      `Wood preference: ${formState.woodPreference}`,
+      `Size: ${formState.size || 'Not specified'}`,
+      `Logo / engraving: ${formState.engraving}`,
       `Pickup or shipping: ${formState.shipping}`,
+      `Budget range: ${formState.budget}`,
       '',
       'Message:',
       formState.message || 'No additional message.',
@@ -643,45 +856,64 @@ function OrderForm({ title, presetProduct = '', defaultMessage = '' }) {
       </p>
 
       <form className="mt-8 grid gap-5" action={mailtoHref}>
-        <FormField label="Name" name="name" value={formState.name} onChange={updateField} required />
-        <FormField
-          label="Email"
-          name="email"
-          type="email"
-          value={formState.email}
-          onChange={updateField}
-          required
-        />
+        <div className="grid gap-5 sm:grid-cols-2">
+          <FormField label="Name" name="name" value={formState.name} onChange={updateField} required />
+          <FormField
+            label="Email"
+            name="email"
+            type="email"
+            value={formState.email}
+            onChange={updateField}
+            required
+          />
+        </div>
         <FormField
           label="Phone optional"
           name="phone"
           value={formState.phone}
           onChange={updateField}
         />
-        <FormField
-          label="Product / request type"
-          name="product"
-          value={formState.product}
-          onChange={updateField}
-          required
-        />
-        <div className="grid gap-2">
-          <label className="text-sm text-stone-200" htmlFor="shipping">
-            Pickup or shipping
-          </label>
-          <select
-            id="shipping"
+        <div className="grid gap-5 sm:grid-cols-2">
+          <FormField
+            label="Product type"
+            name="product"
+            value={formState.product}
+            onChange={updateField}
+            required
+          />
+          <SelectField
+            label="Wood preference"
+            name="woodPreference"
+            value={formState.woodPreference}
+            onChange={updateField}
+            options={woodPreferences}
+          />
+        </div>
+        <div className="grid gap-5 sm:grid-cols-2">
+          <FormField label="Size" name="size" value={formState.size} onChange={updateField} />
+          <SelectField
+            label="Logo/engraving yes/no"
+            name="engraving"
+            value={formState.engraving}
+            onChange={updateField}
+            options={engravingOptions}
+          />
+        </div>
+        <div className="grid gap-5 sm:grid-cols-2">
+          <SelectField
+            label="Pickup or shipping"
             name="shipping"
             value={formState.shipping}
             onChange={updateField}
-            className="rounded-2xl border border-white/10 bg-black/25 px-4 py-3 text-stone-100 outline-none transition focus:border-amber-300/50"
-          >
-            {shippingOptions.map((option) => (
-              <option key={option} value={option}>
-                {option}
-              </option>
-            ))}
-          </select>
+            options={shippingOptions}
+          />
+          <SelectField
+            label="Budget range"
+            name="budget"
+            value={formState.budget}
+            onChange={updateField}
+            options={budgetRanges}
+          />
         </div>
         <div className="grid gap-2">
           <label className="text-sm text-stone-200" htmlFor="message">
@@ -724,6 +956,29 @@ function FormField({ label, name, type = 'text', value, onChange, required = fal
         required={required}
         className="rounded-2xl border border-white/10 bg-black/25 px-4 py-3 text-stone-100 outline-none transition focus:border-amber-300/50"
       />
+    </div>
+  )
+}
+
+function SelectField({ label, name, value, onChange, options }) {
+  return (
+    <div className="grid gap-2">
+      <label className="text-sm text-stone-200" htmlFor={name}>
+        {label}
+      </label>
+      <select
+        id={name}
+        name={name}
+        value={value}
+        onChange={onChange}
+        className="rounded-2xl border border-white/10 bg-black/25 px-4 py-3 text-stone-100 outline-none transition focus:border-amber-300/50"
+      >
+        {options.map((option) => (
+          <option key={option} value={option}>
+            {option}
+          </option>
+        ))}
+      </select>
     </div>
   )
 }

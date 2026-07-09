@@ -11,11 +11,16 @@ export const navItems = [
 
 export const featuredCategories = [
   'End Grain Cutting Boards',
-  'Edge Grain Boards',
+  'Edge Grain Cutting Boards',
   'Butcher Blocks',
-  'Serving Trays',
+  'Serving Boards',
+  'Breadboards',
   'Coasters',
-  'Custom Epoxy Pieces',
+  'Wall-Mounted Bottle Openers',
+  'Wood Butter / Board Conditioner',
+  'Epoxy Serving Boards',
+  'Custom Logo Pieces',
+  'Corporate Gifts and Restaurant Boards',
 ]
 
 export const customOrderSteps = [
@@ -64,10 +69,13 @@ export const availablePieces = [
 export const galleryItems = [
   'Walnut end grain board',
   'Oak butcher block',
-  'Serving tray with brass handles',
+  'Serving board with brass handles',
+  'Breadboard in warm oak finish',
   'Custom engraved board',
   'Coaster set in smoked finish',
-  'Epoxy feature piece',
+  'Wall-mounted bottle opener',
+  'Wood butter and board conditioner',
+  'Epoxy serving board',
   'Workshop finishing station',
   'Hardwood selection shelf',
 ]
@@ -91,3 +99,21 @@ export const careGuidePoints = [
 ]
 
 export const shippingOptions = ['Pickup in Prague', 'Shipping']
+
+export const woodPreferences = [
+  'No preference yet',
+  'Walnut',
+  'Oak',
+  'Maple',
+  'Ash',
+  'Mixed hardwoods',
+]
+
+export const engravingOptions = ['Yes', 'No']
+
+export const budgetRanges = [
+  'Under 2 500 CZK',
+  '2 500 - 5 000 CZK',
+  '5 000 - 10 000 CZK',
+  '10 000 CZK+',
+]
