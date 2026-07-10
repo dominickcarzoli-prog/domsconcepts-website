@@ -1,3 +1,5 @@
+import productImageInventory from './product-image-inventory.json'
+
 export type ProductStatus =
   | 'Available'
   | 'Reserved'
@@ -105,6 +107,47 @@ export const productCategories: ProductCategory[] = [
 
 const PLACEHOLDER_DESCRIPTION =
   'Handmade piece from the Dom\'s Concepts workshop. Full details and photos can be updated soon.'
+
+const PLACEHOLDER_IMAGE_PATH_RE = /placeholder|coming-soon|photo-coming/i
+
+type ProductImageInventory = Record<string, string[]>
+
+const imageInventory = productImageInventory as ProductImageInventory
+
+function isLikelyPlaceholderPath(imagePath: string) {
+  return PLACEHOLDER_IMAGE_PATH_RE.test(imagePath)
+}
+
+export function getProductRealImages(product: Pick<Product, 'id' | 'galleryImages' | 'mainImage'>) {
+  const fromInventory = imageInventory[product.id]
+  if (fromInventory?.length) {
+    return fromInventory
+  }
+
+  const candidates =
+    product.galleryImages.length > 0 ? product.galleryImages : [product.mainImage]
+
+  return candidates.filter(Boolean).filter((image) => !isLikelyPlaceholderPath(image))
+}
+
+export function hasProductMainImage(product: Pick<Product, 'id' | 'galleryImages' | 'mainImage'>) {
+  return getProductRealImages(product).length > 0
+}
+
+function applyRealImages(product: Product): Product {
+  const realImages = getProductRealImages(product)
+
+  if (realImages.length === 0) {
+    return product
+  }
+
+  return {
+    ...product,
+    mainImage: realImages[0],
+    image: realImages[0],
+    galleryImages: realImages,
+  }
+}
 
 // Product photo rule:
 // Upload product images into public/images/products/{product.id}/
@@ -430,7 +473,7 @@ function listing(
   })
 }
 
-export const products: Product[] = [
+const rawProducts: Product[] = [
   listing(
     'american-black-walnut-oak-maple-padouk-cutting-board',
     'American Black Walnut, Oak, Maple & Padouk Cutting Board',
@@ -960,6 +1003,8 @@ export const products: Product[] = [
   }),
 ]
 
+export const products: Product[] = rawProducts.map(applyRealImages)
+
 export function isShopGridVisible(product: Product): boolean {
   if (product.hidden || product.isDraft) {
     return false
@@ -975,6 +1020,10 @@ export function isShopGridVisible(product: Product): boolean {
 
   const priceLabel = product.priceFrom || product.price
   if (!priceLabel?.trim()) {
+    return false
+  }
+
+  if (!hasProductMainImage(product)) {
     return false
   }
 

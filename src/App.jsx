@@ -42,6 +42,7 @@ import {
   getHomepageFeaturedProducts,
   getProductEtsyHref,
   getProductPrimaryAction,
+  getProductRealImages,
   getProductSecondaryAction,
   getShopCollections,
   productIdRedirects,
@@ -252,6 +253,13 @@ function SiteLayout() {
 
 const heroCarouselFallbackImagePath = '/images/hero-workshop-board.jpg'
 
+const kitchenBoardHeroSlide = homepageCarouselSlides.find((slide) => slide.id === 'kitchen-board')
+const staticHeroImage =
+  kitchenBoardHeroSlide?.image ?? '/images/carousel/premium-cutting-boards.jpg'
+const staticHeroAlt = kitchenBoardHeroSlide?.label ?? 'Kitchen board on counter'
+const staticHeroFallbackImage =
+  kitchenBoardHeroSlide?.fallbackImage ?? heroCarouselFallbackImagePath
+
 function BrandMark() {
   const [logoSrc, setLogoSrc] = useState(logoImagePath)
 
@@ -306,13 +314,16 @@ function PageShell({ eyebrow, title, intro, children }) {
 }
 
 function HeroCarousel() {
+  // Hero carousel disabled for v1 — using static premium hero image.
+  const HERO_CAROUSEL_ENABLED = false
+
   // Carousel images are portfolio/hero images, not product inventory images.
   const [activeIndex, setActiveIndex] = useState(0)
   const [isPaused, setIsPaused] = useState(false)
   const [touchStartX, setTouchStartX] = useState(null)
 
   useEffect(() => {
-    if (isPaused || homepageCarouselSlides.length <= 1) {
+    if (!HERO_CAROUSEL_ENABLED || isPaused || homepageCarouselSlides.length <= 1) {
       return undefined
     }
 
@@ -327,46 +338,62 @@ function HeroCarousel() {
     setActiveIndex((index + homepageCarouselSlides.length) % homepageCarouselSlides.length)
   }
 
+  const carouselInteractionProps = HERO_CAROUSEL_ENABLED
+    ? {
+        'aria-roledescription': 'carousel',
+        onMouseEnter: () => setIsPaused(true),
+        onMouseLeave: () => setIsPaused(false),
+        onFocusCapture: () => setIsPaused(true),
+        onBlurCapture: (event) => {
+          if (!event.currentTarget.contains(event.relatedTarget)) {
+            setIsPaused(false)
+          }
+        },
+        onTouchStart: (event) => setTouchStartX(event.touches[0].clientX),
+        onTouchEnd: (event) => {
+          if (touchStartX === null) return
+          const delta = touchStartX - event.changedTouches[0].clientX
+          if (Math.abs(delta) > 48) {
+            goToSlide(activeIndex + (delta > 0 ? 1 : -1))
+          }
+          setTouchStartX(null)
+        },
+      }
+    : {}
+
   return (
     <section
       className="dark-section relative w-full min-h-[36rem] overflow-hidden sm:min-h-[40rem] lg:min-h-[46rem]"
-      aria-roledescription="carousel"
       aria-label="Dom's Concepts signature woodwork"
-      onMouseEnter={() => setIsPaused(true)}
-      onMouseLeave={() => setIsPaused(false)}
-      onFocusCapture={() => setIsPaused(true)}
-      onBlurCapture={(event) => {
-        if (!event.currentTarget.contains(event.relatedTarget)) {
-          setIsPaused(false)
-        }
-      }}
-      onTouchStart={(event) => setTouchStartX(event.touches[0].clientX)}
-      onTouchEnd={(event) => {
-        if (touchStartX === null) return
-        const delta = touchStartX - event.changedTouches[0].clientX
-        if (Math.abs(delta) > 48) {
-          goToSlide(activeIndex + (delta > 0 ? 1 : -1))
-        }
-        setTouchStartX(null)
-      }}
+      {...carouselInteractionProps}
     >
       <div className="absolute inset-0 bg-[#14100e]">
-        {homepageCarouselSlides.map((slide, index) => (
-          <div
-            key={slide.id}
-            className={[
-              'absolute inset-0 transition-opacity duration-1000 ease-in-out',
-              index === activeIndex ? 'opacity-100' : 'pointer-events-none opacity-0',
-            ].join(' ')}
-            aria-hidden={index !== activeIndex}
-          >
+        {HERO_CAROUSEL_ENABLED ? (
+          homepageCarouselSlides.map((slide, index) => (
+            <div
+              key={slide.id}
+              className={[
+                'absolute inset-0 transition-opacity duration-1000 ease-in-out',
+                index === activeIndex ? 'opacity-100' : 'pointer-events-none opacity-0',
+              ].join(' ')}
+              aria-hidden={index !== activeIndex}
+            >
+              <HeroCarouselImage
+                src={slide.image}
+                alt={slide.label}
+                fallbackSrc={slide.fallbackImage ?? heroCarouselFallbackImagePath}
+              />
+            </div>
+          ))
+        ) : (
+          <div className="absolute inset-0">
             <HeroCarouselImage
-              src={slide.image}
-              alt={slide.label}
-              fallbackSrc={slide.fallbackImage ?? heroCarouselFallbackImagePath}
+              src={staticHeroImage}
+              alt={staticHeroAlt}
+              fallbackSrc={staticHeroFallbackImage}
             />
           </div>
-        ))}
+        )}
       </div>
 
       <div className="pointer-events-none absolute inset-0 bg-gradient-to-r from-[#14100e]/92 via-[#14100e]/62 to-[#14100e]/25" />
@@ -397,43 +424,45 @@ function HeroCarousel() {
           </p>
         </div>
 
-        <div className="mt-12 flex items-center justify-between gap-4 border-t border-white/10 pt-8">
-          <div className="flex items-center gap-2">
-            {homepageCarouselSlides.map((slide, index) => (
+        {HERO_CAROUSEL_ENABLED ? (
+          <div className="mt-12 flex items-center justify-between gap-4 border-t border-white/10 pt-8">
+            <div className="flex items-center gap-2">
+              {homepageCarouselSlides.map((slide, index) => (
+                <button
+                  key={slide.id}
+                  type="button"
+                  aria-label={`Show ${slide.label}`}
+                  aria-current={index === activeIndex ? 'true' : undefined}
+                  onClick={() => goToSlide(index)}
+                  className={[
+                    'h-2 rounded-full transition',
+                    index === activeIndex
+                      ? 'w-7 bg-amber-200/90'
+                      : 'w-2 bg-white/30 hover:bg-white/50',
+                  ].join(' ')}
+                />
+              ))}
+            </div>
+            <div className="flex items-center gap-2">
               <button
-                key={slide.id}
                 type="button"
-                aria-label={`Show ${slide.label}`}
-                aria-current={index === activeIndex ? 'true' : undefined}
-                onClick={() => goToSlide(index)}
-                className={[
-                  'h-2 rounded-full transition',
-                  index === activeIndex
-                    ? 'w-7 bg-amber-200/90'
-                    : 'w-2 bg-white/30 hover:bg-white/50',
-                ].join(' ')}
-              />
-            ))}
+                aria-label="Previous slide"
+                onClick={() => goToSlide(activeIndex - 1)}
+                className="inline-flex h-10 w-10 items-center justify-center rounded-full border border-white/20 bg-black/35 text-white transition hover:border-amber-200/40 hover:bg-black/55"
+              >
+                ←
+              </button>
+              <button
+                type="button"
+                aria-label="Next slide"
+                onClick={() => goToSlide(activeIndex + 1)}
+                className="inline-flex h-10 w-10 items-center justify-center rounded-full border border-white/20 bg-black/35 text-white transition hover:border-amber-200/40 hover:bg-black/55"
+              >
+                →
+              </button>
+            </div>
           </div>
-          <div className="flex items-center gap-2">
-            <button
-              type="button"
-              aria-label="Previous slide"
-              onClick={() => goToSlide(activeIndex - 1)}
-              className="inline-flex h-10 w-10 items-center justify-center rounded-full border border-white/20 bg-black/35 text-white transition hover:border-amber-200/40 hover:bg-black/55"
-            >
-              ←
-            </button>
-            <button
-              type="button"
-              aria-label="Next slide"
-              onClick={() => goToSlide(activeIndex + 1)}
-              className="inline-flex h-10 w-10 items-center justify-center rounded-full border border-white/20 bg-black/35 text-white transition hover:border-amber-200/40 hover:bg-black/55"
-            >
-              →
-            </button>
-          </div>
-        </div>
+        ) : null}
       </div>
     </section>
   )
@@ -864,11 +893,13 @@ function ProductDetailPage() {
   const { productId } = useParams()
   const redirectTarget = productId ? productIdRedirects[productId] : undefined
   const product = products.find((item) => item.id === productId)
-  const [activeImage, setActiveImage] = useState(product?.mainImage || '')
+  const galleryImages = product ? getProductRealImages(product) : []
+  const primaryGalleryImage = galleryImages[0] || ''
+  const [activeImage, setActiveImage] = useState(primaryGalleryImage)
 
   useEffect(() => {
-    setActiveImage(product?.mainImage || '')
-  }, [product?.mainImage])
+    setActiveImage(primaryGalleryImage)
+  }, [product?.id, primaryGalleryImage])
 
   if (redirectTarget) {
     return <Navigate to={`/available-pieces/${redirectTarget}`} replace />
@@ -898,39 +929,32 @@ function ProductDetailPage() {
     >
       <div className="grid gap-10 lg:grid-cols-[1.05fr_0.95fr]">
         <div className="space-y-4">
-          <PhotoFrame
-            src={activeImage}
-            alt={product.name}
-            className="h-[26rem]"
-            overlay="none"
-            priority
-            showLabels={false}
-            imageFit="contain"
-          />
-          <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-            {product.galleryImages.map((image, index) => (
-              <button
-                key={`${product.id}-${index + 1}`}
-                type="button"
-                onClick={() => setActiveImage(image)}
-                className={[
-                  'overflow-hidden rounded-[1.2rem] border transition',
-                  activeImage === image
-                    ? 'border-amber-100/70'
-                    : 'border-white/10 hover:border-amber-200/45',
-                ].join(' ')}
-              >
-                <PhotoFrame
-                  src={image}
+          {galleryImages.length > 0 ? (
+            <PhotoFrame
+              src={activeImage}
+              alt={product.name}
+              className="h-[26rem]"
+              overlay="none"
+              priority
+              showLabels={false}
+              imageFit="contain"
+            />
+          ) : (
+            <ProductDetailImageFallback productName={product.name} />
+          )}
+          {galleryImages.length > 1 ? (
+            <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+              {galleryImages.map((image, index) => (
+                <GalleryThumbnail
+                  key={`${product.id}-${image}`}
+                  image={image}
                   alt={`${product.name} photo ${index + 1}`}
-                  className="h-32 rounded-none border-0"
-                  overlay="none"
-                  showLabels={false}
-                  imageFit="contain"
+                  isActive={activeImage === image}
+                  onSelect={() => setActiveImage(image)}
                 />
-              </button>
-            ))}
-          </div>
+              ))}
+            </div>
+          ) : null}
         </div>
 
         <div className="space-y-6">
@@ -958,7 +982,14 @@ function ProductDetailPage() {
               <ProductMeta label="Dimensions" value={product.dimensions} />
               <ProductMeta label="Wood Type" value={product.woodType} />
               <ProductMeta label="Materials" value={product.materials || 'Selected materials'} />
-              <ProductMeta label="Photos" value={`${product.galleryImages.length} image${product.galleryImages.length === 1 ? '' : 's'}`} />
+              <ProductMeta
+                label="Photos"
+                value={
+                  galleryImages.length > 0
+                    ? `${galleryImages.length} image${galleryImages.length === 1 ? '' : 's'}`
+                    : 'Photos coming soon'
+                }
+              />
             </div>
             <p className="mt-6 leading-8 text-stone-300">{product.longDescription}</p>
             <div className="mt-8 flex flex-col gap-3">
@@ -2103,6 +2134,54 @@ function Card({ children, className = '', luxury = false }) {
     >
       {children}
     </div>
+  )
+}
+
+function ProductDetailImageFallback({ productName }) {
+  return (
+    <div
+      className="relative flex h-[26rem] items-center justify-center overflow-hidden rounded-[1.6rem] border border-white/10 bg-gradient-to-br from-[#1c1511] via-stone-950 to-black shadow-[inset_0_1px_0_rgba(251,191,36,0.07),0_18px_40px_-28px_rgba(0,0,0,0.85)]"
+      aria-label={`${productName} photo coming soon`}
+    >
+      <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(ellipse_at_center,_rgba(120,53,15,0.14)_0%,_transparent_72%)]" />
+      <div className="pointer-events-none absolute inset-0 bg-gradient-to-t from-black/35 via-transparent to-black/20" />
+      <p className="relative z-[1] px-6 text-center text-sm uppercase tracking-[0.3em] text-stone-300">
+        Workshop photos coming soon
+      </p>
+    </div>
+  )
+}
+
+function GalleryThumbnail({ image, alt, isActive, onSelect }) {
+  const [hasError, setHasError] = useState(false)
+
+  useEffect(() => {
+    setHasError(false)
+  }, [image])
+
+  if (hasError) {
+    return null
+  }
+
+  return (
+    <button
+      type="button"
+      onClick={onSelect}
+      className={[
+        'overflow-hidden rounded-[1.2rem] border transition',
+        isActive
+          ? 'border-amber-100/70'
+          : 'border-white/10 hover:border-amber-200/45',
+      ].join(' ')}
+    >
+      <img
+        src={image}
+        alt={alt}
+        loading="lazy"
+        onError={() => setHasError(true)}
+        className="h-32 w-full object-contain object-center bg-gradient-to-br from-[#1c1511] via-stone-950 to-black p-2"
+      />
+    </button>
   )
 }
 
