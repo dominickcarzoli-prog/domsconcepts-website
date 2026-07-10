@@ -60,23 +60,17 @@ const footerLinks = [
   { label: 'Reviews', path: '/#reviews' },
   { label: 'Contact', path: '/contact' },
 ]
-const productBadgeClasses = {
-  Available: 'border-emerald-700/15 bg-emerald-50 text-emerald-800',
-  'Made to Order': 'border-sky-700/15 bg-sky-50 text-sky-900',
-  'One-of-One': 'border-amber-700/20 bg-amber-50 text-amber-900',
-  Sold: 'border-stone-400/25 bg-stone-100 text-stone-600',
+const productBadgeClassesLuxury = {
+  Available: 'border-emerald-400/25 bg-emerald-950/40 text-emerald-200',
+  'Made to Order': 'border-sky-400/25 bg-sky-950/40 text-sky-200',
+  'One-of-One': 'border-amber-300/30 bg-amber-950/40 text-amber-200',
+  Sold: 'border-stone-400/30 bg-stone-800/60 text-stone-300',
 }
 const productBadgeLabels = {
   Available: 'AVAILABLE',
   'Made to Order': 'MADE TO ORDER',
   'One-of-One': 'ONE-OF-ONE',
   Sold: 'SOLD',
-}
-const productBadgeClassesLuxury = {
-  Available: 'border-emerald-400/25 bg-emerald-950/40 text-emerald-200',
-  'Made to Order': 'border-sky-400/25 bg-sky-950/40 text-sky-200',
-  'One-of-One': 'border-amber-300/30 bg-amber-950/40 text-amber-200',
-  Sold: 'border-stone-400/30 bg-stone-800/60 text-stone-300',
 }
 const icoNumber = '14010615'
 const logoImagePath = '/images/doms-concepts-logo-gold.png'
@@ -710,7 +704,6 @@ function HomePage() {
             title="Loved by customers"
             intro="A few words from Etsy buyers who have ordered boards, care products, and workshop pieces."
             compact
-            dark
           />
           <div className="mt-8 grid gap-5 md:grid-cols-3">
             {premiumReviews.map((review) => (
@@ -832,7 +825,7 @@ function AvailablePiecesPage() {
       <PageShell
         eyebrow="Shop the Collection"
         title="Available Pieces"
-        intro="Browse current workshop pieces. Available items link to Etsy for secure checkout. Custom and sold pieces can be requested directly."
+        intro="Browse current workshop pieces. Available items link to Etsy for checkout. Custom and sold pieces can be requested directly."
       >
         <div className="mb-8 flex flex-wrap gap-2">
           {['All', ...productCollections].map((collection) => {
@@ -846,7 +839,7 @@ function AvailablePiecesPage() {
                 className={[
                   isActive
                     ? goldChipActiveClassName
-                    : 'rounded-full border border-white/12 bg-white/5 px-3 py-1.5 text-xs font-medium text-stone-300 transition hover:border-amber-200/35 hover:text-stone-100',
+                    : 'rounded-full border border-[rgba(212,170,86,0.22)] bg-[rgba(24,18,14,0.72)] px-3 py-1.5 text-xs font-medium text-stone-200 transition hover:border-amber-200/40 hover:text-stone-100',
                 ].join(' ')}
               >
                 {collection}
@@ -856,7 +849,7 @@ function AvailablePiecesPage() {
         </div>
         <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3 2xl:grid-cols-4">
           {filteredProducts.map((piece) => (
-            <ProductCard key={piece.id} piece={piece} />
+            <ProductCard key={piece.id} piece={piece} variant="luxury" />
           ))}
         </div>
       </PageShell>
@@ -939,19 +932,19 @@ function ProductDetailPage() {
         <div className="space-y-6">
           <Card>
             <div className="flex flex-wrap items-center gap-3">
-              <span className="rounded-full border border-stone-900/10 bg-stone-50 px-3 py-1.5 text-sm text-stone-700">
+              <span className="rounded-full border border-white/10 bg-black/25 px-3 py-1.5 text-sm text-stone-200">
                 {product.collection}
               </span>
               <span
                 className={[
                   'rounded-full border px-3 py-1.5 text-sm',
-                  productBadgeClasses[product.badge],
+                  productBadgeClassesLuxury[product.badge],
                 ].join(' ')}
               >
-                {product.badge}
+                {productBadgeLabels[product.badge] ?? product.badge}
               </span>
               {product.freeShipping ? (
-                <span className="rounded-full border border-emerald-700/15 bg-emerald-50 px-3 py-1.5 text-sm text-emerald-800">
+                <span className="rounded-full border border-emerald-400/25 bg-emerald-950/40 px-3 py-1.5 text-sm text-emerald-200">
                   Free shipping
                 </span>
               ) : null}
@@ -963,7 +956,7 @@ function ProductDetailPage() {
               <ProductMeta label="Materials" value={product.materials || 'Selected materials'} />
               <ProductMeta label="Photos" value={`${product.galleryImages.length} image${product.galleryImages.length === 1 ? '' : 's'}`} />
             </div>
-            <p className="mt-6 leading-8 text-stone-600">{product.longDescription}</p>
+            <p className="mt-6 leading-8 text-stone-300">{product.longDescription}</p>
             {showBoardCareUpsell ? (
               <BoardCareUpsell productId={product.id} />
             ) : (
@@ -1050,7 +1043,7 @@ function GalleryPage() {
     <PageShell
       eyebrow="Gallery"
       title="A visual gallery of finished work and workshop atmosphere."
-      intro="Large placeholders are ready for future product and process photography while keeping the layout premium and image-led from day one."
+      intro="Selected pieces, details and workshop moments from Dom's Concepts."
     >
       <div className="grid gap-5 md:grid-cols-2 xl:grid-cols-3">
         {galleryItems.map((item, index) => (
@@ -1061,10 +1054,9 @@ function GalleryPage() {
               label={item.title}
               className="mb-5 h-64"
             />
-            <h2 className="font-serif text-2xl text-white">{item.title}</h2>
-            <p className="mt-3 text-sm leading-7 text-stone-300">
-              Placeholder for premium photography of product details, joinery,
-              surface finish, and workshop setting.
+            <h2 className="font-serif text-2xl text-stone-100">{item.title}</h2>
+            <p className="mt-3 text-sm leading-7 text-stone-400">
+              Handmade hardwood work, surface detail, and workshop atmosphere from Dom&apos;s Concepts.
             </p>
           </Card>
         ))}
@@ -1094,8 +1086,8 @@ function CustomOrdersPage() {
         <div className="grid gap-8 lg:grid-cols-[0.9fr_1.1fr]">
           <Card>
             <p className="section-eyebrow">How it works</p>
-            <h2 className="mt-4 font-display text-3xl text-stone-900">Custom orders, quoted personally</h2>
-            <p className="mt-4 leading-8 text-stone-600">
+            <h2 className="mt-4 font-display text-3xl text-stone-100">Custom orders, quoted personally</h2>
+            <p className="mt-4 leading-8 text-stone-300">
               Share the product type, wood direction, size, and whether you want engraving
               or logo work. Every order is reviewed personally before a quote is confirmed.
             </p>
@@ -1103,12 +1095,12 @@ function CustomOrdersPage() {
               {customOrderSteps.map((step, index) => (
                 <div
                   key={step}
-                  className="flex items-start gap-4 rounded-2xl border border-stone-900/8 bg-stone-50 p-4"
+                  className="flex items-start gap-4 rounded-2xl border border-white/10 bg-black/20 p-4"
                 >
-                  <span className="mt-1 text-xs uppercase tracking-[0.3em] text-[var(--color-accent)]">
+                  <span className="mt-1 text-xs uppercase tracking-[0.3em] text-amber-200/80">
                     0{index + 1}
                   </span>
-                  <p className="text-stone-700">{step}</p>
+                  <p className="text-stone-300">{step}</p>
                 </div>
               ))}
             </div>
@@ -1117,7 +1109,7 @@ function CustomOrdersPage() {
                 href={instagramUrl}
                 target="_blank"
                 rel="noreferrer"
-                className={outlineButtonClassName}
+                className={outlineButtonLightClassName}
               >
                 Message on Instagram
               </a>
@@ -1699,7 +1691,7 @@ function BoardCareUpsell({ productId }) {
   )
 }
 
-function ProductCardImage({ src, alt, luxury = false }) {
+function ProductCardImage({ src, alt }) {
   const [hasError, setHasError] = useState(false)
 
   useEffect(() => {
@@ -1707,17 +1699,7 @@ function ProductCardImage({ src, alt, luxury = false }) {
   }, [src])
 
   if (hasError) {
-    if (luxury) {
-      return <div className="signature-image-placeholder h-full w-full" aria-hidden="true" />
-    }
-
-    return (
-      <div className="flex h-full w-full items-end bg-gradient-to-br from-[#ebe4d8] via-[#f5f0e8] to-[#e8dfd2] p-4">
-        <p className="text-xs uppercase tracking-[0.25em] text-stone-500">
-          Photo coming soon
-        </p>
-      </div>
-    )
+    return <div className="signature-image-placeholder h-full w-full" aria-hidden="true" />
   }
 
   return (
@@ -1760,7 +1742,7 @@ function ProductActionButton({ action, className = goldButtonClassNameCompact })
   )
 }
 
-function ProductCard({ piece, variant = 'default' }) {
+function ProductCard({ piece, variant = 'luxury' }) {
   const action = getProductButtonAction(piece)
   const isLuxury = variant === 'luxury'
   const badgeLabel = productBadgeLabels[piece.badge] ?? piece.badge
@@ -1780,12 +1762,11 @@ function ProductCard({ piece, variant = 'default' }) {
       >
         <div
           className={[
-            'relative aspect-[4/5] overflow-hidden',
-            isLuxury ? 'bg-[#1c1511]' : 'bg-[#ece6dc]',
+            'relative aspect-[4/5] overflow-hidden bg-[#1c1511]',
             piece.isSold ? 'grayscale-[0.2]' : '',
           ].join(' ')}
         >
-          <ProductCardImage src={piece.image} alt={piece.name} luxury={isLuxury} />
+          <ProductCardImage src={piece.image} alt={piece.name} />
           {piece.isSold ? (
             <div className="pointer-events-none absolute inset-0 bg-stone-900/20" />
           ) : null}
@@ -1797,43 +1778,26 @@ function ProductCard({ piece, variant = 'default' }) {
           <span
             className={[
               'inline-flex rounded-md border px-2.5 py-1 text-[10px] uppercase tracking-[0.16em]',
-              isLuxury ? productBadgeClassesLuxury[piece.badge] : productBadgeClasses[piece.badge],
+              productBadgeClassesLuxury[piece.badge],
             ].join(' ')}
           >
             {badgeLabel}
           </span>
           <Link
             to={`/available-pieces/${piece.id}`}
-            className={[
-              'line-clamp-2 font-display text-xl leading-snug transition',
-              isLuxury
-                ? 'text-stone-100 hover:text-amber-200'
-                : 'text-stone-900 hover:text-[var(--color-accent)]',
-            ].join(' ')}
+            className="line-clamp-2 font-display text-xl leading-snug text-stone-100 transition hover:text-amber-200"
           >
             {piece.name}
           </Link>
-          <p
-            className={[
-              'line-clamp-2 text-sm leading-6',
-              isLuxury ? 'text-stone-400' : 'text-stone-600',
-            ].join(' ')}
-          >
+          <p className="line-clamp-2 text-sm leading-6 text-stone-400">
             {piece.shortDescription}
           </p>
         </div>
 
         <div className="mt-auto space-y-3">
-          <p className={['text-base font-medium', isLuxury ? 'text-stone-200' : 'text-stone-900'].join(' ')}>
-            {piece.priceFrom}
-          </p>
+          <p className="text-base font-medium text-stone-200">{piece.priceFrom}</p>
           {piece.freeShipping ? (
-            <p
-              className={[
-                'text-[11px] uppercase tracking-[0.18em]',
-                isLuxury ? 'text-emerald-400/85' : 'text-emerald-700',
-              ].join(' ')}
-            >
+            <p className="text-[11px] uppercase tracking-[0.18em] text-emerald-400/85">
               Free shipping
             </p>
           ) : null}
@@ -1861,13 +1825,13 @@ function ReviewCard({ review, luxury = false }) {
 
   return (
     <div className="premium-card h-full p-6">
-      <div className="flex gap-1 text-[var(--color-accent)]" aria-label={`${review.rating} out of 5 stars`}>
+      <div className="flex gap-1 text-amber-200/90" aria-label={`${review.rating} out of 5 stars`}>
         {Array.from({ length: review.rating }).map((_, index) => (
           <span key={index}>★</span>
         ))}
       </div>
-      <p className="mt-4 text-sm leading-7 text-stone-700">&ldquo;{review.quote}&rdquo;</p>
-      <p className="mt-5 text-sm font-medium text-stone-900">{review.name}</p>
+      <p className="mt-4 text-sm leading-7 text-stone-300">&ldquo;{review.quote}&rdquo;</p>
+      <p className="mt-5 text-sm font-medium text-stone-100">{review.name}</p>
     </div>
   )
 }
@@ -1936,26 +1900,26 @@ function OrderForm({ title, presetProduct = '', presetCareAddon = 'none', defaul
 
   return (
     <Card>
-      <h2 className="font-display text-3xl text-stone-900">{title}</h2>
-      <p className="mt-4 leading-8 text-stone-600">
+      <h2 className="font-display text-3xl text-stone-100">{title}</h2>
+      <p className="mt-4 leading-8 text-stone-300">
         This form opens your email client to send the request to {contactEmail}.
       </p>
 
       {presetProduct ? (
-        <div className="mt-6 rounded-[1.4rem] border border-[var(--color-accent)]/20 bg-[var(--color-accent-soft)]/50 p-4">
-          <p className="text-xs uppercase tracking-[0.28em] text-[var(--color-accent)]">
+        <div className="form-highlight mt-6">
+          <p className="text-xs uppercase tracking-[0.28em] text-amber-200/80">
             Selected Product
           </p>
-          <p className="mt-2 text-lg text-stone-900">{presetProduct}</p>
+          <p className="mt-2 text-lg text-stone-100">{presetProduct}</p>
         </div>
       ) : null}
 
       {presetCareAddon !== 'none' ? (
-        <div className="mt-4 rounded-[1.4rem] border border-emerald-700/15 bg-emerald-50 p-4">
-          <p className="text-xs uppercase tracking-[0.28em] text-emerald-800">
+        <div className="form-highlight-muted mt-4">
+          <p className="text-xs uppercase tracking-[0.28em] text-emerald-200/85">
             Board Care Add-on
           </p>
-          <p className="mt-2 text-sm text-stone-700">
+          <p className="mt-2 text-sm text-stone-200">
             {getBoardCareAddonLabel(presetCareAddon)}
             {presetCareAddon === 'wood-butter' || presetCareAddon === 'wood-wax'
               ? ` · ${boardCarePricing.addonPrice} (normally ${boardCarePricing.normalPrice})`
@@ -1997,7 +1961,7 @@ function OrderForm({ title, presetProduct = '', presetCareAddon = 'none', defaul
           options={budgetRanges}
         />
         <div className="grid gap-2">
-          <label className="text-sm text-stone-700" htmlFor="message">
+          <label className="form-label" htmlFor="message">
             Message
           </label>
           <textarea
@@ -2006,10 +1970,10 @@ function OrderForm({ title, presetProduct = '', presetCareAddon = 'none', defaul
             rows="5"
             value={formState.message}
             onChange={updateField}
-            className="rounded-2xl border border-stone-900/10 bg-white px-4 py-3 text-stone-900 outline-none transition focus:border-[var(--color-accent)]/40"
+            className="form-textarea"
           />
         </div>
-        <div className="rounded-2xl border border-dashed border-stone-900/15 bg-stone-50 px-4 py-5 text-sm text-stone-600">
+        <div className="form-note">
           Reference image upload placeholder — attach your reference photo in the email after submitting.
         </div>
         <div className="flex flex-col gap-3 pt-2 sm:flex-row">
@@ -2020,7 +1984,7 @@ function OrderForm({ title, presetProduct = '', presetCareAddon = 'none', defaul
             href={instagramUrl}
             target="_blank"
             rel="noreferrer"
-            className={outlineButtonClassName}
+            className={outlineButtonLightClassName}
           >
             Message on Instagram
           </a>
@@ -2033,7 +1997,7 @@ function OrderForm({ title, presetProduct = '', presetCareAddon = 'none', defaul
 function FormField({ label, name, type = 'text', value, onChange, required = false }) {
   return (
     <div className="grid gap-2">
-      <label className="text-sm text-stone-200" htmlFor={name}>
+      <label className="form-label" htmlFor={name}>
         {label}
       </label>
       <input
@@ -2043,7 +2007,7 @@ function FormField({ label, name, type = 'text', value, onChange, required = fal
         value={value}
         onChange={onChange}
         required={required}
-        className="rounded-2xl border border-white/10 bg-black/25 px-4 py-3 text-stone-100 outline-none transition focus:border-amber-300/50"
+        className="form-input"
       />
     </div>
   )
@@ -2059,7 +2023,7 @@ function SelectField({ label, name, value, onChange, options, optionValues }) {
 
   return (
     <div className="grid gap-2">
-      <label className="text-sm text-stone-200" htmlFor={name}>
+      <label className="form-label" htmlFor={name}>
         {label}
       </label>
       <select
@@ -2067,7 +2031,7 @@ function SelectField({ label, name, value, onChange, options, optionValues }) {
         name={name}
         value={value}
         onChange={onChange}
-        className="rounded-2xl border border-white/10 bg-black/25 px-4 py-3 text-stone-100 outline-none transition focus:border-amber-300/50"
+        className="form-select"
       >
         {entries.map((entry) => (
           <option key={entry.value} value={entry.value}>
@@ -2082,29 +2046,30 @@ function SelectField({ label, name, value, onChange, options, optionValues }) {
 function ProductMeta({ label, value }) {
   return (
     <div className="rounded-2xl border border-white/10 bg-black/20 p-4">
-      <p className="text-xs uppercase tracking-[0.25em] text-stone-500">{label}</p>
-      <p className="mt-2 text-stone-200">{value}</p>
+      <p className="text-xs uppercase tracking-[0.25em] text-stone-400">{label}</p>
+      <p className="mt-2 text-stone-100">{value}</p>
     </div>
   )
 }
 
-function SectionHeading({ eyebrow, title, intro, compact = false, dark = false }) {
+function SectionHeading({ eyebrow, title, intro, compact = false }) {
   return (
     <div className={compact ? 'max-w-2xl space-y-4' : 'mb-10 max-w-3xl space-y-4'}>
-      <p className={dark ? 'text-[11px] uppercase tracking-[0.32em] text-amber-200/80' : 'section-eyebrow'}>
-        {eyebrow}
-      </p>
-      <h2 className={['font-display text-3xl sm:text-4xl', dark ? 'text-stone-100' : 'text-stone-900'].join(' ')}>
-        {title}
-      </h2>
-      <p className={['leading-8', dark ? 'text-stone-300' : 'text-stone-600'].join(' ')}>{intro}</p>
+      <p className="text-[11px] uppercase tracking-[0.32em] text-amber-200/80">{eyebrow}</p>
+      <h2 className="font-display text-3xl text-stone-100 sm:text-4xl">{title}</h2>
+      <p className="leading-8 text-stone-300">{intro}</p>
     </div>
   )
 }
 
 function Card({ children, className = '', luxury = false }) {
   return (
-    <div className={[luxury ? 'luxury-glass-card p-6 sm:p-8' : 'premium-card p-6 sm:p-8', className].join(' ')}>
+    <div
+      className={[
+        luxury ? 'luxury-glass-card p-6 sm:p-8' : 'premium-card p-6 sm:p-8',
+        className,
+      ].join(' ')}
+    >
       {children}
     </div>
   )

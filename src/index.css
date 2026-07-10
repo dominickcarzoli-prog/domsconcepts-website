@@ -3,13 +3,13 @@
 @theme {
   --font-display: "Cormorant Garamond", Georgia, "Times New Roman", serif;
   --font-body: "DM Sans", Inter, ui-sans-serif, system-ui, sans-serif;
-  --color-canvas: #faf7f2;
-  --color-ink: #1c1917;
-  --color-ink-muted: #57534e;
-  --color-accent: #9a6b2f;
-  --color-accent-soft: #f5ead8;
-  --color-card: #ffffff;
-  --color-line: rgba(28, 25, 23, 0.1);
+  --color-canvas: #0d0b09;
+  --color-ink: #f7efe3;
+  --color-ink-muted: #c9bfb2;
+  --color-accent: #e5bf5a;
+  --color-accent-soft: rgba(229, 191, 90, 0.12);
+  --color-card: rgba(24, 18, 14, 0.92);
+  --color-line: rgba(229, 191, 90, 0.22);
 }
 
 @layer components {
@@ -50,9 +50,9 @@
   a.btn-outline,
   button.btn-outline {
     @apply inline-flex items-center justify-center rounded-full border font-medium transition;
-    border-color: rgba(28, 25, 23, 0.18);
-    background-color: rgba(255, 255, 255, 0.72);
-    color: #1c1917;
+    border-color: rgba(255, 255, 255, 0.22);
+    background-color: rgba(255, 255, 255, 0.06);
+    color: #f7efe3;
   }
 
   .btn-outline:hover,
@@ -61,8 +61,9 @@
   a.btn-outline:focus,
   button.btn-outline:hover,
   button.btn-outline:focus {
-    border-color: rgba(154, 107, 47, 0.45);
-    background-color: #ffffff;
+    border-color: rgba(229, 191, 90, 0.45);
+    background-color: rgba(255, 255, 255, 0.1);
+    color: #ffffff;
   }
 
   .chip-gold-active {
@@ -71,13 +72,18 @@
   }
 
   .premium-card {
-    @apply rounded-[1.5rem] border bg-white shadow-[0_18px_50px_-36px_rgba(28,25,23,0.35)];
-    border-color: var(--color-line);
+    @apply rounded-[1.5rem] border shadow-[0_18px_50px_-36px_rgba(0,0,0,0.72)];
+    background: rgba(24, 18, 14, 0.92);
+    border-color: rgba(212, 170, 86, 0.22);
+    color: #f7efe3;
   }
 
   .shop-card {
-    @apply overflow-hidden rounded-xl border bg-[#faf7f2] shadow-[0_14px_40px_-30px_rgba(28,25,23,0.22)] transition;
-    border-color: rgba(28, 25, 23, 0.09);
+    @apply overflow-hidden rounded-xl border transition;
+    background: rgba(24, 18, 14, 0.92);
+    border-color: rgba(212, 170, 86, 0.22);
+    box-shadow: 0 20px 48px -34px rgba(0, 0, 0, 0.72);
+    color: #f7efe3;
   }
 
   .luxury-shop-card {
@@ -85,6 +91,59 @@
     background: linear-gradient(165deg, #1f1814 0%, #171310 52%, #110e0c 100%);
     border-color: rgba(154, 107, 47, 0.3);
     box-shadow: 0 20px 48px -34px rgba(0, 0, 0, 0.72);
+    color: #f7efe3;
+  }
+
+  .form-label {
+    @apply text-sm;
+    color: #c9bfb2;
+  }
+
+  .form-input,
+  .form-select,
+  .form-textarea {
+    @apply w-full rounded-2xl px-4 py-3 outline-none transition;
+    background: rgba(255, 255, 255, 0.08);
+    border: 1px solid rgba(212, 170, 86, 0.25);
+    color: #f7efe3;
+  }
+
+  .form-input::placeholder,
+  .form-textarea::placeholder {
+    color: rgba(247, 239, 227, 0.55);
+  }
+
+  .form-input:focus,
+  .form-select:focus,
+  .form-textarea:focus {
+    border-color: rgba(229, 191, 90, 0.45);
+    background: rgba(255, 255, 255, 0.1);
+  }
+
+  .form-select option {
+    background: #18120e;
+    color: #f7efe3;
+  }
+
+  .form-note {
+    @apply rounded-2xl border border-dashed px-4 py-5 text-sm;
+    border-color: rgba(212, 170, 86, 0.22);
+    background: rgba(0, 0, 0, 0.22);
+    color: #c9bfb2;
+  }
+
+  .form-highlight {
+    @apply rounded-[1.4rem] border p-4;
+    border-color: rgba(229, 191, 90, 0.28);
+    background: rgba(229, 191, 90, 0.08);
+    color: #f7efe3;
+  }
+
+  .form-highlight-muted {
+    @apply rounded-[1.4rem] border p-4;
+    border-color: rgba(52, 211, 153, 0.22);
+    background: rgba(6, 78, 59, 0.22);
+    color: #d1fae5;
   }
 
   .luxury-review-card {
@@ -285,7 +344,7 @@
 
   .section-eyebrow {
     @apply text-[11px] uppercase tracking-[0.32em];
-    color: var(--color-accent);
+    color: rgba(229, 191, 90, 0.82);
   }
 
   .font-display {
@@ -322,10 +381,17 @@
 }
 
 :root {
+  --bg: #0d0b09;
+  --bg-soft: #18120e;
+  --bg-card: rgba(24, 18, 14, 0.92);
+  --text: #f7efe3;
+  --text-muted: #c9bfb2;
+  --accent: #e5bf5a;
+  --border: rgba(229, 191, 90, 0.22);
   color-scheme: dark;
   font-family: var(--font-body);
-  background: #0d0b09;
-  color: #f5f0e8;
+  background: var(--bg);
+  color: var(--text);
   font-synthesis: none;
   text-rendering: optimizeLegibility;
   -webkit-font-smoothing: antialiased;
@@ -339,7 +405,8 @@ html {
 body {
   margin: 0;
   min-width: 320px;
-  background: #0d0b09;
+  background: var(--bg);
+  color: var(--text);
 }
 
 #root {
