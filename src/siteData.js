@@ -1,10 +1,8 @@
 export const navItems = [
   { label: 'Home', path: '/' },
-  { label: 'Available Pieces', path: '/available-pieces' },
+  { label: 'Shop the Collection', path: '/available-pieces' },
   { label: 'Gallery', path: '/gallery' },
   { label: 'Custom Orders', path: '/custom-orders' },
-  { label: 'Care Guide', path: '/care-guide' },
-  { label: 'Partners', path: '/partners' },
   { label: 'About', path: '/about' },
   { label: 'Contact', path: '/contact' },
 ]
@@ -54,6 +52,159 @@ export const featuredCategories = [
     name: 'Corporate Gifts and Restaurant Boards',
     image: '/images/partner-tools.jpg', // Replace with a hospitality or gifting photo.
   },
+]
+
+// Carousel images are portfolio/hero images, not product inventory images.
+export const homepageCarouselSlides = [
+  {
+    id: 'premium-boards',
+    image: '/images/carousel/premium-cutting-boards.jpg',
+    label: 'Handmade hardwood in the kitchen',
+    fallbackImage: '/images/end-grain-board.jpg',
+  },
+  {
+    id: 'chessboards',
+    image: '/images/carousel/chessboards.jpg',
+    label: 'Custom chessboards',
+    fallbackImage: '/images/end-grain-board.jpg',
+  },
+  {
+    id: 'epoxy-statement',
+    image: '/images/carousel/epoxy-one-off.jpg',
+    label: 'Epoxy statement pieces',
+    fallbackImage: '/images/epoxy-piece.jpg',
+  },
+  {
+    id: 'serving-trays',
+    image: '/images/carousel/serving-trays.jpg',
+    label: 'Serving trays',
+    fallbackImage: '/images/serving-board.jpg',
+  },
+  {
+    id: 'furniture-custom',
+    image: '/images/carousel/furniture-style.jpg',
+    label: 'Furniture-style custom work',
+    fallbackImage: '/images/hero-workshop-board.jpg',
+  },
+  {
+    id: 'butcher-blocks',
+    image: '/images/carousel/butcher-blocks.jpg',
+    label: 'Butcher blocks',
+    fallbackImage: '/images/butcher-block.jpg',
+  },
+]
+
+export const workshopAboutImagePath = '/images/workshop-placeholder.png'
+
+export const signaturePieces = [
+  {
+    id: 'knife-table',
+    name: 'Knife Table',
+    description:
+      'Custom hardwood knife display tables and statement pieces built around special blades, collections or presentation.',
+    image: '/images/signature/knife-table.jpg',
+  },
+  {
+    id: 'dining-table',
+    name: 'Dining Table',
+    description:
+      'Handmade dining tables designed around the wood, space and feeling of the room.',
+    image: '/images/signature/dining-table.jpg',
+  },
+  {
+    id: 'side-table',
+    name: 'Side Table',
+    description:
+      'Small furniture pieces with hardwood character, clean lines and a one-of-one handmade feel.',
+    image: '/images/signature/side-table.jpg',
+  },
+  {
+    id: 'tv-table-media-console',
+    name: 'TV Table / Media Console',
+    description:
+      'Custom TV tables and media pieces made to fit the space, equipment and style of the home.',
+    image: '/images/signature/tv-table-media-console.jpg',
+  },
+  {
+    id: 'bed-bedroom-piece',
+    name: 'Bed / Bedroom Piece',
+    description:
+      'Solid wood bedroom pieces and bed projects made with a warm, natural and lasting feel.',
+    image: '/images/signature/bed-bedroom-piece.jpg',
+  },
+  {
+    id: 'custom-boards-serving-pieces',
+    name: 'Custom Boards & Serving Pieces',
+    description:
+      'Cutting boards, serving boards, trays and gift pieces made in small batches or to order.',
+    image: '/images/signature/custom-boards-serving-pieces.jpg',
+  },
+]
+
+export const pastCustomPieces = [
+  {
+    id: 'past-aztec-gold-serving-board',
+    name: 'European Walnut Aztec Gold Serving Board',
+    image: '/images/past-custom/aztec-gold-serving-board.jpg',
+    fallbackImage: '/images/epoxy-piece.jpg',
+  },
+  {
+    id: 'past-lux-blue-epoxy-board',
+    name: 'European Oak Lux Blue Epoxy Board',
+    image: '/images/past-custom/lux-blue-epoxy-board.jpg',
+    fallbackImage: '/images/epoxy-piece.jpg',
+  },
+  {
+    id: 'past-restaurant-board-set',
+    name: 'Restaurant Board Set',
+    image: '/images/past-custom/restaurant-board-set.jpg',
+    fallbackImage: '/images/serving-board.jpg',
+  },
+  {
+    id: 'past-logo-engraved-board',
+    name: 'Logo Engraved Corporate Board',
+    image: '/images/past-custom/logo-engraved-board.jpg',
+    fallbackImage: '/images/workshop-process.jpg',
+  },
+]
+
+export const premiumReviews = [
+  {
+    id: 'review-1',
+    name: 'Etsy Customer',
+    quote: 'Very nice item — would purchase again. Beautiful craftsmanship.',
+    rating: 5,
+  },
+  {
+    id: 'review-2',
+    name: 'Etsy Customer',
+    quote: 'Great wood butter with a lovely smell. Exactly what my boards needed.',
+    rating: 5,
+  },
+  {
+    id: 'review-3',
+    name: 'Etsy Customer',
+    quote: 'Crazy fast shipping and a stunning board. Highly recommended.',
+    rating: 5,
+  },
+]
+
+export const etsyTrustPoints = [
+  'Secure Etsy checkout',
+  'Verified reviews',
+  'Handmade in Prague',
+  'Custom orders available',
+]
+
+export const customProductTypes = [
+  'Cutting board',
+  'Butcher block',
+  'Serving board / tray',
+  'Epoxy piece',
+  'Furniture / table',
+  'Corporate gift',
+  'Restaurant boards',
+  'Other custom piece',
 ]
 
 export const customOrderSteps = [
@@ -152,7 +303,8 @@ export const partnerItems = [
     description:
       'Professional woodworking tools and workshop equipment used throughout the Dom\'s Concepts studio.',
     url: 'https://igmtools.com/',
-    logo: '/images/partners/igm-logo.png',
+    logo: '/images/partners/igm.png',
+    logoClass: 'partner-logo--igm',
     fallbackInitial: 'IGM',
     fallbackName: 'IGM',
   },
@@ -161,7 +313,8 @@ export const partnerItems = [
     description:
       'Abrasives and dust-free sanding systems for smooth, refined hardwood surfaces.',
     url: 'https://www.mirka.com/en/',
-    logo: '/images/partners/mirka-logo.png',
+    logo: '/images/partners/mirka.png',
+    logoClass: 'partner-logo--mirka',
     fallbackInitial: 'M',
     fallbackName: 'Mirka',
   },
@@ -170,7 +323,9 @@ export const partnerItems = [
     description:
       'Hardwax oil and finish systems for durable, natural wood protection.',
     url: 'https://www.rubiomonocoat.com/en',
-    logo: '/images/partners/rubio-monocoat-logo.png',
+    logo: '/images/partners/rubio-monocoat.png',
+    logoClass: 'partner-logo--rubio',
+    logoWrapClass: 'partner-logo-wrap--light',
     fallbackInitial: 'RM',
     fallbackName: 'Rubio Monocoat',
   },
@@ -179,7 +334,9 @@ export const partnerItems = [
     description:
       'Workshop supplies and tooling from a trusted Czech partner.',
     url: 'https://www.sakuro.cz/',
-    logo: '/images/partners/sakuro-logo.png',
+    logo: '/images/partners/sakuro.png',
+    logoClass: 'partner-logo--sakuro',
+    logoWrapClass: 'partner-logo-wrap--light',
     fallbackInitial: 'S',
     fallbackName: 'Sakuro',
   },
@@ -188,7 +345,8 @@ export const partnerItems = [
     description:
       'Specialty wood treatment products for conditioning and surface care.',
     url: 'https://www.arka-biotech.de/en/products/kraftprotz-universal',
-    logo: '/images/partners/kraftprotz-logo.png',
+    logo: '/images/partners/kraftprotz.png',
+    logoClass: 'partner-logo--kraftprotz',
     fallbackInitial: 'K',
     fallbackName: 'Kraftprotz',
   },
@@ -197,7 +355,9 @@ export const partnerItems = [
     description:
       'Workshop collaborator supporting Dom\'s Concepts projects and finishes.',
     url: 'SORTWALL_URL_PLACEHOLDER',
-    logo: '/images/partners/sortwall-logo.png',
+    logo: '/images/partners/sortwall.png',
+    logoClass: 'partner-logo--sortwall',
+    logoWrapClass: 'partner-logo-wrap--light',
     fallbackInitial: 'S',
     fallbackName: 'Sortwall',
   },
@@ -207,6 +367,7 @@ export const partnerItems = [
       'Design collaborator connected to custom work and creative workshop projects.',
     url: 'ILUKA_DESIGNS_URL_PLACEHOLDER',
     logo: '/images/partners/iluka-designs-logo.png',
+    logoClass: 'partner-logo--iluka',
     fallbackInitial: 'ID',
     fallbackName: 'Iluka Designs',
   },
@@ -215,7 +376,8 @@ export const partnerItems = [
     description:
       'European workshop tools and equipment trusted for precision craft work.',
     url: 'https://bleispitz.de/en',
-    logo: '/images/partners/bleispitz-logo.png',
+    logo: '/images/partners/bleispitz.png',
+    logoClass: 'partner-logo--bleispitz',
     fallbackInitial: 'B',
     fallbackName: 'Bleispitz',
   },
@@ -376,9 +538,9 @@ export const pageSeo = {
       'Premium handmade cutting boards, serving pieces, breadboards, coasters, wood care products, and custom woodworking from a Prague workshop.',
   },
   availablePieces: {
-    title: 'Available Pieces | Dom\'s Concepts',
+    title: 'Shop the Collection | Dom\'s Concepts',
     description:
-      'Browse handmade boards, serving pieces, wood care, and workshop pieces available to reserve from Dom\'s Concepts in Prague.',
+      'Browse handmade boards, serving pieces, wood care, and workshop pieces available through Etsy from Dom\'s Concepts in Prague.',
   },
   customOrders: {
     title: 'Custom Orders | Dom\'s Concepts',

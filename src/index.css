@@ -1,5 +1,17 @@
 @import "tailwindcss";
 
+@theme {
+  --font-display: "Cormorant Garamond", Georgia, "Times New Roman", serif;
+  --font-body: "DM Sans", Inter, ui-sans-serif, system-ui, sans-serif;
+  --color-canvas: #faf7f2;
+  --color-ink: #1c1917;
+  --color-ink-muted: #57534e;
+  --color-accent: #9a6b2f;
+  --color-accent-soft: #f5ead8;
+  --color-card: #ffffff;
+  --color-line: rgba(28, 25, 23, 0.1);
+}
+
 @layer components {
   .btn-gold,
   .gold-button,
@@ -8,8 +20,8 @@
   button.btn-gold,
   button.gold-button {
     @apply inline-flex items-center justify-center rounded-full border font-semibold transition;
-    background-color: #f5c84c;
-    border-color: rgba(251, 191, 36, 0.7);
+    background-color: #e8c56a;
+    border-color: rgba(154, 107, 47, 0.35);
   }
 
   .btn-gold:hover,
@@ -30,17 +42,257 @@
   button.gold-button:hover,
   button.gold-button:focus,
   button.gold-button:active {
-    background-color: #f0c040;
-    border-color: rgba(120, 53, 15, 0.2);
+    background-color: #dfba58;
+    border-color: rgba(120, 53, 15, 0.25);
+  }
+
+  .btn-outline,
+  a.btn-outline,
+  button.btn-outline {
+    @apply inline-flex items-center justify-center rounded-full border font-medium transition;
+    border-color: rgba(28, 25, 23, 0.18);
+    background-color: rgba(255, 255, 255, 0.72);
+    color: #1c1917;
+  }
+
+  .btn-outline:hover,
+  .btn-outline:focus,
+  a.btn-outline:hover,
+  a.btn-outline:focus,
+  button.btn-outline:hover,
+  button.btn-outline:focus {
+    border-color: rgba(154, 107, 47, 0.45);
+    background-color: #ffffff;
   }
 
   .chip-gold-active {
-    background-color: #f5c84c !important;
-    border-color: rgba(251, 191, 36, 0.7) !important;
+    background-color: #e8c56a !important;
+    border-color: rgba(154, 107, 47, 0.35) !important;
+  }
+
+  .premium-card {
+    @apply rounded-[1.5rem] border bg-white shadow-[0_18px_50px_-36px_rgba(28,25,23,0.35)];
+    border-color: var(--color-line);
+  }
+
+  .shop-card {
+    @apply overflow-hidden rounded-xl border bg-[#faf7f2] shadow-[0_14px_40px_-30px_rgba(28,25,23,0.22)] transition;
+    border-color: rgba(28, 25, 23, 0.09);
+  }
+
+  .luxury-shop-card {
+    @apply overflow-hidden rounded-xl border transition;
+    background: linear-gradient(165deg, #1f1814 0%, #171310 52%, #110e0c 100%);
+    border-color: rgba(154, 107, 47, 0.3);
+    box-shadow: 0 20px 48px -34px rgba(0, 0, 0, 0.72);
+  }
+
+  .luxury-review-card {
+    @apply h-full rounded-2xl border p-6;
+    border-color: rgba(255, 255, 255, 0.1);
+    background: linear-gradient(160deg, rgba(255, 255, 255, 0.07) 0%, rgba(255, 255, 255, 0.03) 100%);
+    box-shadow: 0 18px 50px -40px rgba(0, 0, 0, 0.65);
+  }
+
+  .luxury-glass-card {
+    @apply overflow-hidden rounded-2xl border;
+    border-color: rgba(255, 255, 255, 0.1);
+    background: linear-gradient(160deg, rgba(255, 255, 255, 0.06) 0%, rgba(255, 255, 255, 0.02) 100%);
+    box-shadow: 0 18px 50px -36px rgba(0, 0, 0, 0.55);
+  }
+
+  .dark-section {
+    width: 100%;
+    background-color: #0c0a09;
+    background-image:
+      radial-gradient(circle at top right, rgba(232, 197, 106, 0.08), transparent 36%),
+      linear-gradient(180deg, #14100e 0%, #0c0a09 100%);
+    color: #f5f5f4;
+  }
+
+  .warm-section {
+    width: 100%;
+    background-color: #1a1410;
+    background-image:
+      radial-gradient(circle at 15% 50%, rgba(232, 197, 106, 0.07), transparent 42%),
+      linear-gradient(180deg, #1e1814 0%, #14100e 100%);
+    color: #f5f0e8;
+  }
+
+  .warm-panel-section {
+    width: 100%;
+    background-color: #221c17;
+    background-image:
+      radial-gradient(circle at 80% 20%, rgba(232, 197, 106, 0.06), transparent 38%),
+      linear-gradient(180deg, #2a231c 0%, #1a1410 100%);
+    color: #f5f0e8;
+  }
+
+  .cream-section {
+    width: 100%;
+    background-color: #f3eee6;
+    background-image: linear-gradient(180deg, #f7f1e8 0%, #f3eee6 100%);
+  }
+
+  .workshop-placeholder {
+    position: relative;
+    overflow: hidden;
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    background:
+      radial-gradient(ellipse at 28% 18%, rgba(232, 197, 106, 0.16), transparent 48%),
+      linear-gradient(160deg, #1a1410 0%, #2a1f18 42%, #120e0c 100%);
+  }
+
+  .workshop-placeholder::before {
+    content: "";
+    position: absolute;
+    left: 8%;
+    right: 8%;
+    bottom: 22%;
+    height: 0.85rem;
+    border-radius: 9999px;
+    background: linear-gradient(180deg, #4a382c 0%, #2f241c 100%);
+    box-shadow: 0 12px 28px rgba(0, 0, 0, 0.45);
+  }
+
+  .workshop-placeholder::after {
+    content: "";
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(to top, rgba(12, 10, 9, 0.72), transparent 55%);
+    pointer-events: none;
+  }
+
+  .signature-image-placeholder {
+    position: relative;
+    overflow: hidden;
+    background:
+      radial-gradient(ellipse at 28% 18%, rgba(232, 197, 106, 0.14), transparent 48%),
+      linear-gradient(155deg, #2a1f18 0%, #1c1511 46%, #120e0c 100%);
+  }
+
+  .signature-image-placeholder::before {
+    content: "";
+    position: absolute;
+    inset: 0;
+    background:
+      linear-gradient(115deg, transparent 42%, rgba(255, 255, 255, 0.03) 50%, transparent 58%),
+      linear-gradient(25deg, transparent 62%, rgba(0, 0, 0, 0.18) 68%, transparent 74%);
+    pointer-events: none;
+  }
+
+  .signature-image-placeholder::after {
+    content: "";
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(to top, rgba(12, 10, 9, 0.55), transparent 62%);
+    pointer-events: none;
+  }
+
+  .signature-carousel-track {
+    scrollbar-width: none;
+    -ms-overflow-style: none;
+  }
+
+  .signature-carousel-track::-webkit-scrollbar {
+    display: none;
+  }
+
+  .partner-logo-wrap {
+    height: 130px;
+    min-height: 130px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 14px 18px;
+    border-radius: 18px;
+    background: rgba(0, 0, 0, 0.42);
+    overflow: hidden;
+  }
+
+  .partner-logo-wrap-compact {
+    height: 118px;
+    min-height: 118px;
+    padding: 12px 16px;
+    border-radius: 16px;
+  }
+
+  .partner-logo-wrap--light {
+    background: rgba(245, 238, 224, 0.92);
+  }
+
+  .partner-logo {
+    width: 100%;
+    height: 100%;
+    max-width: 92%;
+    max-height: 92%;
+    object-fit: contain;
+    display: block;
+    transform-origin: center;
+  }
+
+  .partner-logo--igm {
+    transform: scale(1.81);
+  }
+
+  .partner-logo--mirka {
+    transform: scale(1.7);
+  }
+
+  .partner-logo--rubio {
+    transform: scale(1.65);
+  }
+
+  .partner-logo--sakuro {
+    transform: scale(1.4);
+  }
+
+  .partner-logo--kraftprotz {
+    transform: scale(1.55);
+  }
+
+  .partner-logo--sortwall {
+    transform: scale(2.05);
+  }
+
+  .partner-logo--iluka {
+    transform: scale(1.35);
+  }
+
+  .partner-logo--bleispitz {
+    transform: scale(1.65);
+  }
+
+  .btn-outline-light,
+  a.btn-outline-light,
+  button.btn-outline-light {
+    @apply inline-flex items-center justify-center rounded-full border font-medium transition;
+    border-color: rgba(255, 255, 255, 0.28);
+    background-color: rgba(255, 255, 255, 0.08);
+    color: #faf7f2;
+  }
+
+  .btn-outline-light:hover,
+  .btn-outline-light:focus,
+  a.btn-outline-light:hover,
+  a.btn-outline-light:focus,
+  button.btn-outline-light:hover,
+  button.btn-outline-light:focus {
+    border-color: rgba(232, 197, 106, 0.55);
+    background-color: rgba(255, 255, 255, 0.14);
+    color: #ffffff;
+  }
+
+  .section-eyebrow {
+    @apply text-[11px] uppercase tracking-[0.32em];
+    color: var(--color-accent);
+  }
+
+  .font-display {
+    font-family: var(--font-display);
   }
 }
 
-/* Outside Tailwind layers — utilities cannot override gold button text color */
 .btn-gold,
 .btn-gold *,
 .gold-button,
@@ -71,11 +323,9 @@
 
 :root {
   color-scheme: dark;
-  font-family:
-    Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI",
-    sans-serif;
-  background: #0c0a09;
-  color: #f5f5f4;
+  font-family: var(--font-body);
+  background: #0d0b09;
+  color: #f5f0e8;
   font-synthesis: none;
   text-rendering: optimizeLegibility;
   -webkit-font-smoothing: antialiased;
@@ -89,9 +339,12 @@ html {
 body {
   margin: 0;
   min-width: 320px;
-  background:
-    radial-gradient(circle at top, rgba(180, 83, 9, 0.18), transparent 24%),
-    linear-gradient(180deg, #1c1917 0%, #0c0a09 100%);
+  background: #0d0b09;
+}
+
+#root {
+  min-height: 100vh;
+  background: #0d0b09;
 }
 
 * {
@@ -108,8 +361,4 @@ input,
 select,
 textarea {
   font: inherit;
-}
-
-#root {
-  min-height: 100vh;
 }

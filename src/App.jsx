@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import {
   BrowserRouter,
   Link,
@@ -11,61 +11,80 @@ import {
   Routes,
 } from 'react-router-dom'
 import {
-  boardCareAddonOptions,
   boardCarePricing,
   boardCareProductAddonOptions,
   boardCareProducts,
   budgetRanges,
   careGuidePoints,
   customOrderSteps,
+  customProductTypes,
   engravingOptions,
   faqItems,
-  featuredCategories,
   galleryItems,
   getBoardCareAddonLabel,
+  homepageCarouselSlides,
   isBoardCareEligible,
   legalPages,
   navItems,
   pageSeo,
   partnerItems,
+  premiumReviews,
   resolveBoardCareAddon,
   shippingOptions,
+  signaturePieces,
   woodPreferences,
   workshopVideos,
+  workshopAboutImagePath,
   youtubeChannelUrl,
 } from './siteData'
-import { productCategories, products, productIdRedirects, sortedProducts } from './data/products'
+import {
+  CUSTOM_ORDER_FORM_ANCHOR,
+  ETSY_SHOP_URL,
+  getHomepageFeaturedProducts,
+  getProductButtonAction,
+  productCollections,
+  productIdRedirects,
+  products,
+  sortedProducts,
+} from './data/products'
 
 const contactEmail = 'hello@domsconcepts.com'
 const instagramHandle = '@doms_concepts'
 const instagramUrl = 'https://instagram.com/doms_concepts'
 const etsyShopName = 'DomsConcepts'
-const etsyShopUrl = 'https://www.etsy.com/shop/DomsConcepts'
-const icoNumber = '14010615'
-const logoImagePath = '/images/doms-concepts-logo.png' // Replace with the final navbar logo if this file changes.
-// hero-workshop-board.jpg = main homepage hero product/workshop image
-const heroImagePath = '/images/hero-workshop-board.jpg'
-// workshop-process.jpg = small Prague workshop/process image
-const aboutImagePath = '/images/workshop-process.jpg'
-const workshopStoryImagePath = '/images/workshop-process.jpg'
+const etsyShopUrl = ETSY_SHOP_URL
 const footerLinks = [
-  { label: 'Contact', path: '/contact' },
-  { label: 'Care Guide', path: '/care-guide' },
+  { label: 'Shop', path: '/available-pieces' },
   { label: 'Custom Orders', path: '/custom-orders' },
-  { label: 'FAQ', path: '/faq' },
-  { label: 'Workshop Partners', path: '/partners' },
+  { label: 'About', path: '/about' },
+  { label: 'Reviews', path: '/#reviews' },
+  { label: 'Contact', path: '/contact' },
 ]
-const productStatusClasses = {
-  Available: 'border-emerald-300/35 bg-emerald-950/85 text-emerald-100',
-  Reserved: 'border-amber-300/35 bg-amber-950/85 text-amber-100',
-  Sold: 'border-stone-500/50 bg-stone-900 text-stone-200',
-  'Made to order': 'border-sky-300/35 bg-sky-950/85 text-sky-100',
-  'Low in stock, only 1 left': 'border-rose-300/35 bg-rose-950/85 text-rose-100',
-  'Low in stock, only 2 left': 'border-rose-300/35 bg-rose-950/85 text-rose-100',
-  'Low in stock, only 5 left': 'border-rose-300/35 bg-rose-950/85 text-rose-100',
+const productBadgeClasses = {
+  Available: 'border-emerald-700/15 bg-emerald-50 text-emerald-800',
+  'Made to Order': 'border-sky-700/15 bg-sky-50 text-sky-900',
+  'One-of-One': 'border-amber-700/20 bg-amber-50 text-amber-900',
+  Sold: 'border-stone-400/25 bg-stone-100 text-stone-600',
 }
-const goldButtonClassName = 'btn-gold gold-button px-6 py-3 text-sm'
-const goldButtonClassNameCompact = 'btn-gold gold-button px-4 py-2 text-xs'
+const productBadgeLabels = {
+  Available: 'AVAILABLE',
+  'Made to Order': 'MADE TO ORDER',
+  'One-of-One': 'ONE-OF-ONE',
+  Sold: 'SOLD',
+}
+const productBadgeClassesLuxury = {
+  Available: 'border-emerald-400/25 bg-emerald-950/40 text-emerald-200',
+  'Made to Order': 'border-sky-400/25 bg-sky-950/40 text-sky-200',
+  'One-of-One': 'border-amber-300/30 bg-amber-950/40 text-amber-200',
+  Sold: 'border-stone-400/30 bg-stone-800/60 text-stone-300',
+}
+const icoNumber = '14010615'
+const logoImagePath = '/images/doms-concepts-logo-gold.png'
+const logoFallbackImagePath = '/images/doms-concepts-logo.png'
+const goldButtonClassName = 'btn-gold gold-button px-6 py-3 text-sm text-[#111111]'
+const goldButtonClassNameCompact = 'btn-gold gold-button px-4 py-2 text-xs text-[#111111]'
+const outlineButtonClassName = 'btn-outline px-6 py-3 text-sm'
+const outlineButtonLightClassName = 'btn-outline-light px-6 py-3 text-sm'
 const goldChipActiveClassName =
   'chip-gold-active rounded-full border px-3 py-1.5 text-xs font-medium'
 
@@ -117,16 +136,16 @@ function SiteLayout() {
   }, [location.pathname])
 
   return (
-    <div className="min-h-screen bg-stone-950 text-stone-100">
-      <div className="fixed inset-x-0 top-0 z-50 border-b border-white/10 bg-stone-950/88 backdrop-blur">
+    <div className="min-h-screen bg-[#0d0b09] text-stone-100">
+      <div className="fixed inset-x-0 top-0 z-50 border-b border-white/10 bg-[#0d0b09]/92 backdrop-blur-md">
         <div className="mx-auto flex max-w-7xl items-center justify-between gap-4 px-4 py-4 sm:px-6 lg:px-8">
           <Link to="/" className="flex min-w-0 items-center gap-2.5 sm:gap-3.5 lg:gap-4">
             <BrandMark />
             <div className="min-w-0 pt-0.5">
-              <p className="truncate font-serif text-[0.98rem] leading-none tracking-[0.01em] text-white sm:text-[1.08rem] lg:text-[1.22rem]">
+              <p className="truncate font-display text-[1.05rem] leading-none tracking-[0.01em] text-stone-100 sm:text-[1.15rem] lg:text-[1.28rem]">
                 Dom&apos;s Concepts
               </p>
-              <p className="mt-1 truncate text-[10px] uppercase tracking-[0.24em] text-stone-300 sm:text-[11px]">
+              <p className="mt-1 truncate text-[10px] uppercase tracking-[0.24em] text-stone-400 sm:text-[11px]">
                 Handmade in Prague
               </p>
             </div>
@@ -134,7 +153,7 @@ function SiteLayout() {
 
           <button
             type="button"
-            className="rounded-full border border-amber-200/35 bg-stone-900 px-4 py-2 text-sm font-medium text-amber-50 transition hover:border-amber-200 hover:bg-stone-800 lg:hidden"
+            className="rounded-full border border-white/15 bg-white/5 px-4 py-2 text-sm font-medium text-stone-100 transition hover:border-amber-200/40 lg:hidden"
             onClick={() => setMenuOpen((open) => !open)}
           >
             Menu
@@ -180,39 +199,39 @@ function SiteLayout() {
         </Routes>
       </main>
 
-      <footer className="border-t border-white/10 bg-black/40">
+      <footer className="border-t border-white/10 bg-[#0a0807]">
         <div className="mx-auto max-w-7xl px-4 py-14 sm:px-6 lg:px-8">
           <div className="grid gap-10 lg:grid-cols-[1.15fr_0.85fr_1fr]">
             <div className="space-y-4">
-              <p className="font-serif text-2xl text-white">Dom&apos;s Concepts</p>
-              <p className="text-sm uppercase tracking-[0.3em] text-stone-400">
-                Handmade woodworking in Prague
+              <p className="font-display text-2xl text-stone-100">Dom&apos;s Concepts</p>
+              <p className="text-sm uppercase tracking-[0.28em] text-stone-500">
+                Handmade in Prague
               </p>
               <a
-                className="inline-block text-stone-200 transition hover:text-amber-200"
+                className="inline-block text-stone-300 transition hover:text-amber-200"
                 href={`mailto:${contactEmail}`}
               >
-                Email: {contactEmail}
+                {contactEmail}
               </a>
             </div>
 
-            <div className="space-y-4 text-sm text-stone-300">
-              <p className="text-white">Links</p>
+            <div className="space-y-4 text-sm text-stone-400">
+              <p className="font-medium text-stone-200">Links</p>
               <div className="grid gap-3">
                 {footerLinks.map((item) => (
-                  <Link key={item.path} to={item.path} className="transition hover:text-amber-200">
+                  <Link key={item.path} to={item.path} className="transition hover:text-[var(--color-accent)]">
                     {item.label}
                   </Link>
                 ))}
               </div>
             </div>
 
-            <div className="space-y-4 text-sm text-stone-300">
-              <p className="text-white">Studio Notes</p>
-              <a href={instagramUrl} target="_blank" rel="noreferrer" className="block transition hover:text-amber-200">
+            <div className="space-y-4 text-sm text-stone-400">
+              <p className="font-medium text-stone-200">Connect</p>
+              <a href={instagramUrl} target="_blank" rel="noreferrer" className="block transition hover:text-[var(--color-accent)]">
                 Instagram: {instagramHandle}
               </a>
-              <a href={etsyShopUrl} target="_blank" rel="noreferrer" className="block transition hover:text-amber-200">
+              <a href={etsyShopUrl} target="_blank" rel="noreferrer" className="block transition hover:text-[var(--color-accent)]">
                 Etsy: {etsyShopName}
               </a>
               <p>IČO: {icoNumber}</p>
@@ -220,10 +239,10 @@ function SiteLayout() {
           </div>
 
           <div className="mt-12 border-t border-white/10 pt-8">
-            <p className="text-sm text-white">Legal</p>
-            <div className="mt-4 flex flex-wrap gap-x-5 gap-y-2 text-sm text-stone-400">
+            <p className="text-sm text-stone-200">Legal</p>
+            <div className="mt-4 flex flex-wrap gap-x-5 gap-y-2 text-sm text-stone-500">
               {legalPages.map((page) => (
-                <Link key={page.slug} to={page.path} className="transition hover:text-amber-200">
+                <Link key={page.slug} to={page.path} className="transition hover:text-[var(--color-accent)]">
                   {page.title}
                 </Link>
               ))}
@@ -235,20 +254,22 @@ function SiteLayout() {
   )
 }
 
-function BrandMark() {
-  const [hasError, setHasError] = useState(false)
+const heroCarouselFallbackImagePath = '/images/hero-workshop-board.jpg'
 
-  if (hasError) {
-    return null
-  }
+function BrandMark() {
+  const [logoSrc, setLogoSrc] = useState(logoImagePath)
 
   return (
     <img
-      src={logoImagePath}
+      src={logoSrc}
       alt="Dom's Concepts logo"
       loading="eager"
-      onError={() => setHasError(true)}
-      className="h-auto w-12 shrink-0 object-contain sm:w-[3.4rem] lg:w-[4.1rem]"
+      onError={() => {
+        if (logoSrc !== logoFallbackImagePath) {
+          setLogoSrc(logoFallbackImagePath)
+        }
+      }}
+      className="h-auto w-[3.25rem] shrink-0 object-contain sm:w-14 lg:w-[4.5rem]"
     />
   )
 }
@@ -261,8 +282,8 @@ function NavItem({ item, mobile = false }) {
         [
           mobile ? 'rounded-2xl px-4 py-3' : 'px-0 py-2',
           'text-sm tracking-wide transition',
-          isActive ? 'text-amber-200' : 'text-stone-300 hover:text-white',
-          mobile ? 'border border-amber-200/20 bg-stone-900/90 text-amber-50' : '',
+          isActive ? 'text-amber-200' : 'text-stone-300 hover:text-stone-100',
+          mobile ? 'border border-white/10 bg-white/5 text-stone-100' : '',
         ].join(' ')
       }
     >
@@ -273,327 +294,487 @@ function NavItem({ item, mobile = false }) {
 
 function PageShell({ eyebrow, title, intro, children }) {
   return (
-    <section className="mx-auto max-w-7xl px-4 py-14 sm:px-6 lg:px-8 lg:py-20">
-      <div className="mb-10 max-w-3xl space-y-4 sm:space-y-5">
-        <p className="text-xs uppercase tracking-[0.35em] text-amber-200/80">
-          {eyebrow}
-        </p>
-        <h1 className="font-serif text-[2.2rem] leading-[1.08] text-white sm:text-[2.9rem] lg:text-[3.6rem]">
-          {title}
-        </h1>
-        <p className="max-w-2xl text-base leading-7 text-stone-300 sm:text-lg sm:leading-8">{intro}</p>
+    <section className="warm-section w-full">
+      <div className="mx-auto max-w-7xl px-4 py-14 sm:px-6 lg:px-8 lg:py-20">
+        <div className="mb-10 max-w-3xl space-y-4 sm:space-y-5">
+          <p className="text-[11px] uppercase tracking-[0.32em] text-amber-200/80">{eyebrow}</p>
+          <h1 className="font-display text-[2.2rem] leading-[1.08] text-stone-100 sm:text-[2.9rem] lg:text-[3.5rem]">
+            {title}
+          </h1>
+          <p className="max-w-2xl text-base leading-7 text-stone-300 sm:text-lg sm:leading-8">{intro}</p>
+        </div>
+        {children}
       </div>
-      {children}
     </section>
   )
 }
 
-function HomePage() {
-  const featuredProducts = sortedProducts
-    .filter(
-      (piece) =>
-        piece.status === 'Available' || piece.status.startsWith('Low in stock'),
+function HeroCarousel() {
+  // Carousel images are portfolio/hero images, not product inventory images.
+  const [activeIndex, setActiveIndex] = useState(0)
+  const [isPaused, setIsPaused] = useState(false)
+  const [touchStartX, setTouchStartX] = useState(null)
+
+  useEffect(() => {
+    if (isPaused || homepageCarouselSlides.length <= 1) {
+      return undefined
+    }
+
+    const timer = window.setInterval(() => {
+      setActiveIndex((current) => (current + 1) % homepageCarouselSlides.length)
+    }, 5000)
+
+    return () => window.clearInterval(timer)
+  }, [isPaused])
+
+  const goToSlide = (index) => {
+    setActiveIndex((index + homepageCarouselSlides.length) % homepageCarouselSlides.length)
+  }
+
+  return (
+    <section
+      className="dark-section relative w-full min-h-[36rem] overflow-hidden sm:min-h-[40rem] lg:min-h-[46rem]"
+      aria-roledescription="carousel"
+      aria-label="Dom's Concepts signature woodwork"
+      onMouseEnter={() => setIsPaused(true)}
+      onMouseLeave={() => setIsPaused(false)}
+      onFocusCapture={() => setIsPaused(true)}
+      onBlurCapture={(event) => {
+        if (!event.currentTarget.contains(event.relatedTarget)) {
+          setIsPaused(false)
+        }
+      }}
+      onTouchStart={(event) => setTouchStartX(event.touches[0].clientX)}
+      onTouchEnd={(event) => {
+        if (touchStartX === null) return
+        const delta = touchStartX - event.changedTouches[0].clientX
+        if (Math.abs(delta) > 48) {
+          goToSlide(activeIndex + (delta > 0 ? 1 : -1))
+        }
+        setTouchStartX(null)
+      }}
+    >
+      <div className="absolute inset-0 bg-[#14100e]">
+        {homepageCarouselSlides.map((slide, index) => (
+          <div
+            key={slide.id}
+            className={[
+              'absolute inset-0 transition-opacity duration-1000 ease-in-out',
+              index === activeIndex ? 'opacity-100' : 'pointer-events-none opacity-0',
+            ].join(' ')}
+            aria-hidden={index !== activeIndex}
+          >
+            <HeroCarouselImage
+              src={slide.image}
+              alt={slide.label}
+              fallbackSrc={slide.fallbackImage ?? heroCarouselFallbackImagePath}
+            />
+          </div>
+        ))}
+      </div>
+
+      <div className="pointer-events-none absolute inset-0 bg-gradient-to-r from-[#14100e]/92 via-[#14100e]/62 to-[#14100e]/25" />
+      <div className="pointer-events-none absolute inset-0 bg-gradient-to-t from-[#0c0a09]/88 via-[#14100e]/25 to-transparent" />
+
+      <div className="relative z-10 mx-auto flex min-h-[36rem] max-w-7xl flex-col justify-end px-4 py-14 sm:min-h-[40rem] sm:px-6 sm:py-18 lg:min-h-[46rem] lg:px-8 lg:py-24">
+        <div className="max-w-3xl space-y-7">
+          <p className="text-[11px] uppercase tracking-[0.38em] text-amber-200/80">
+            Dom&apos;s Concepts · Prague workshop
+          </p>
+          <h1 className="font-display text-[2.45rem] leading-[1.03] text-white sm:text-[3.15rem] lg:text-[4rem]">
+            Handmade hardwood pieces, built to be used and seen.
+          </h1>
+          <p className="max-w-2xl text-base leading-7 text-stone-200 sm:text-lg sm:leading-8">
+            From cutting boards and serving pieces to one-of-one custom woodwork, Dom&apos;s
+            Concepts creates small-batch hardwood pieces from a Prague workshop.
+          </p>
+          <div className="flex flex-col gap-3 sm:flex-row">
+            <a href="#signature-work" className={goldButtonClassName}>
+              Explore Signature Work
+            </a>
+            <a href="#available-now" className={outlineButtonLightClassName}>
+              Shop Available Pieces
+            </a>
+          </div>
+          <p className="text-xs leading-6 tracking-[0.04em] text-stone-300/90 sm:text-sm">
+            Handmade in Prague · Custom orders available · Etsy checkout for available pieces
+          </p>
+        </div>
+
+        <div className="mt-12 flex items-center justify-between gap-4 border-t border-white/10 pt-8">
+          <div className="flex items-center gap-2">
+            {homepageCarouselSlides.map((slide, index) => (
+              <button
+                key={slide.id}
+                type="button"
+                aria-label={`Show ${slide.label}`}
+                aria-current={index === activeIndex ? 'true' : undefined}
+                onClick={() => goToSlide(index)}
+                className={[
+                  'h-2 rounded-full transition',
+                  index === activeIndex
+                    ? 'w-7 bg-amber-200/90'
+                    : 'w-2 bg-white/30 hover:bg-white/50',
+                ].join(' ')}
+              />
+            ))}
+          </div>
+          <div className="flex items-center gap-2">
+            <button
+              type="button"
+              aria-label="Previous slide"
+              onClick={() => goToSlide(activeIndex - 1)}
+              className="inline-flex h-10 w-10 items-center justify-center rounded-full border border-white/20 bg-black/35 text-white transition hover:border-amber-200/40 hover:bg-black/55"
+            >
+              ←
+            </button>
+            <button
+              type="button"
+              aria-label="Next slide"
+              onClick={() => goToSlide(activeIndex + 1)}
+              className="inline-flex h-10 w-10 items-center justify-center rounded-full border border-white/20 bg-black/35 text-white transition hover:border-amber-200/40 hover:bg-black/55"
+            >
+              →
+            </button>
+          </div>
+        </div>
+      </div>
+    </section>
+  )
+}
+
+function HeroCarouselImage({ src, alt, fallbackSrc }) {
+  const [imageSrc, setImageSrc] = useState(src)
+  const [hasError, setHasError] = useState(false)
+
+  useEffect(() => {
+    setImageSrc(src)
+    setHasError(false)
+  }, [src])
+
+  if (hasError) {
+    return (
+      <div className="absolute inset-0 bg-gradient-to-br from-[#1c1511] via-stone-950 to-black" />
     )
-    .slice(0, 4)
+  }
+
+  return (
+    <img
+      src={imageSrc}
+      alt={alt}
+      loading="eager"
+      onError={() => {
+        if (fallbackSrc && imageSrc !== fallbackSrc) {
+          setImageSrc(fallbackSrc)
+          return
+        }
+
+        setHasError(true)
+      }}
+      className="absolute inset-0 h-full w-full object-cover object-center opacity-75"
+    />
+  )
+}
+
+function SignatureWorkCarousel() {
+  const trackRef = useRef(null)
+  const [activeIndex, setActiveIndex] = useState(0)
+  const [cardsPerView, setCardsPerView] = useState(1)
+
+  useEffect(() => {
+    const mediaQuery = window.matchMedia('(min-width: 1024px)')
+
+    const updateCardsPerView = () => {
+      setCardsPerView(mediaQuery.matches ? 2 : 1)
+    }
+
+    updateCardsPerView()
+    mediaQuery.addEventListener('change', updateCardsPerView)
+
+    return () => mediaQuery.removeEventListener('change', updateCardsPerView)
+  }, [])
+
+  const maxIndex = Math.max(0, signaturePieces.length - cardsPerView)
+  const slideCount = maxIndex + 1
+
+  const scrollToIndex = useCallback(
+    (index) => {
+      const track = trackRef.current
+      if (!track) return
+
+      const nextIndex = Math.max(0, Math.min(index, maxIndex))
+      const card = track.children[nextIndex]
+
+      if (card) {
+        card.scrollIntoView({ behavior: 'smooth', inline: 'start', block: 'nearest' })
+      }
+
+      setActiveIndex(nextIndex)
+    },
+    [maxIndex],
+  )
+
+  useEffect(() => {
+    setActiveIndex((current) => Math.min(current, maxIndex))
+  }, [maxIndex])
+
+  useEffect(() => {
+    const track = trackRef.current
+    if (!track) return undefined
+
+    const handleScroll = () => {
+      const cards = Array.from(track.children)
+      if (!cards.length) return
+
+      const trackLeft = track.getBoundingClientRect().left
+      let closestIndex = 0
+      let closestDistance = Number.POSITIVE_INFINITY
+
+      cards.forEach((card, index) => {
+        const distance = Math.abs(card.getBoundingClientRect().left - trackLeft)
+        if (distance < closestDistance) {
+          closestDistance = distance
+          closestIndex = index
+        }
+      })
+
+      setActiveIndex(Math.min(closestIndex, maxIndex))
+    }
+
+    track.addEventListener('scroll', handleScroll, { passive: true })
+
+    return () => track.removeEventListener('scroll', handleScroll)
+  }, [maxIndex])
+
+  return (
+    <div
+      className="mt-14"
+      aria-roledescription="carousel"
+      aria-label="Signature custom work"
+    >
+      <div
+        ref={trackRef}
+        className="signature-carousel-track flex snap-x snap-mandatory gap-6 overflow-x-auto scroll-smooth pb-1"
+      >
+        {signaturePieces.map((piece) => (
+          <div
+            key={piece.id}
+            className="w-full shrink-0 snap-start lg:w-[calc((100%-1.5rem)/2)]"
+          >
+            <SignaturePieceCard piece={piece} />
+          </div>
+        ))}
+      </div>
+
+      <div className="mt-8 flex items-center justify-between gap-4 border-t border-white/10 pt-6">
+        <div className="flex flex-wrap items-center gap-2">
+          {Array.from({ length: slideCount }).map((_, index) => (
+            <button
+              key={index}
+              type="button"
+              aria-label={`Show signature work slide ${index + 1}`}
+              aria-current={index === activeIndex ? 'true' : undefined}
+              onClick={() => scrollToIndex(index)}
+              className={[
+                'h-2 rounded-full transition',
+                index === activeIndex
+                  ? 'w-7 bg-amber-200/90'
+                  : 'w-2 bg-white/30 hover:bg-white/50',
+              ].join(' ')}
+            />
+          ))}
+        </div>
+        <div className="flex items-center gap-2">
+          <button
+            type="button"
+            aria-label="Previous signature work"
+            onClick={() => scrollToIndex(activeIndex - 1)}
+            disabled={activeIndex === 0}
+            className="inline-flex h-10 w-10 items-center justify-center rounded-full border border-white/20 bg-black/35 text-white transition hover:border-amber-200/40 hover:bg-black/55 disabled:cursor-not-allowed disabled:opacity-35"
+          >
+            ←
+          </button>
+          <button
+            type="button"
+            aria-label="Next signature work"
+            onClick={() => scrollToIndex(activeIndex + 1)}
+            disabled={activeIndex >= maxIndex}
+            className="inline-flex h-10 w-10 items-center justify-center rounded-full border border-white/20 bg-black/35 text-white transition hover:border-amber-200/40 hover:bg-black/55 disabled:cursor-not-allowed disabled:opacity-35"
+          >
+            →
+          </button>
+        </div>
+      </div>
+    </div>
+  )
+}
+
+function SignaturePieceImage({ src, alt }) {
+  const [hasError, setHasError] = useState(false)
+
+  useEffect(() => {
+    setHasError(false)
+  }, [src])
+
+  if (!src || hasError) {
+    return <div className="signature-image-placeholder h-full w-full" aria-hidden="true" />
+  }
+
+  return (
+    <img
+      src={src}
+      alt={alt}
+      loading="lazy"
+      onError={() => setHasError(true)}
+      className="h-full w-full object-cover object-center transition duration-700 group-hover:scale-[1.02]"
+    />
+  )
+}
+
+function SignaturePieceCard({ piece }) {
+  return (
+    <article className="group flex h-full flex-col overflow-hidden rounded-2xl border border-white/10 bg-white/[0.04]">
+      <div className="aspect-[16/10] overflow-hidden">
+        <SignaturePieceImage src={piece.image} alt={piece.name} />
+      </div>
+      <div className="flex flex-1 flex-col gap-4 p-6 sm:p-7">
+        <h3 className="font-display text-2xl text-white">{piece.name}</h3>
+        <p className="flex-1 text-sm leading-7 text-stone-300 sm:text-base">
+          {piece.description}
+        </p>
+        <Link to={CUSTOM_ORDER_FORM_ANCHOR} className="btn-outline-light self-start px-4 py-2 text-xs">
+          Request something similar
+        </Link>
+      </div>
+    </article>
+  )
+}
+
+function HomePage() {
+  const featuredProducts = getHomepageFeaturedProducts(sortedProducts, 8)
 
   return (
     <>
       <PageMeta title={pageSeo.home.title} description={pageSeo.home.description} />
-      <section className="relative overflow-hidden">
-        <div className="absolute inset-0 bg-[radial-gradient(circle_at_top,_rgba(245,158,11,0.18),_transparent_36%),linear-gradient(180deg,_rgba(28,25,23,0.7),_rgba(12,10,9,0.96))]" />
-        <div className="relative mx-auto grid max-w-7xl gap-12 px-4 py-18 sm:px-6 lg:grid-cols-[1.05fr_0.95fr] lg:px-8 lg:py-28">
-          <div className="space-y-8">
-            <p className="text-xs uppercase tracking-[0.35em] text-amber-200/80">
-              Premium Handmade Woodworking Since 2016
+
+      <HeroCarousel />
+
+      <section id="signature-work" className="scroll-mt-28 w-full border-t border-white/5 bg-[#0c0a09] py-16 sm:py-20 text-stone-100">
+        <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
+          <div className="max-w-3xl space-y-5">
+            <p className="text-[11px] uppercase tracking-[0.38em] text-amber-200/80">
+              SIGNATURE WORK
             </p>
-            <div className="space-y-6">
-              <h1 className="max-w-3xl font-serif text-[2.8rem] leading-[1.04] text-white sm:text-[3.8rem] lg:text-[4.7rem]">
-                Handmade wooden pieces built with care in Prague.
-              </h1>
-              <p className="max-w-2xl text-lg leading-8 text-stone-300">
-                End grain cutting boards, edge grain cutting boards, butcher
-                blocks, serving boards, breadboards, coasters, wood butter, and
-                custom handmade pieces made from premium hardwoods.
-              </p>
-            </div>
-            <div className="flex flex-col gap-4 sm:flex-row">
-              <PrimaryLink to="/custom-orders">Request Custom Order</PrimaryLink>
-              <SecondaryLink to="/available-pieces">View Available Pieces</SecondaryLink>
-            </div>
-          </div>
-
-          <PhotoFrame
-            src={heroImagePath}
-            alt="Handmade end grain cutting board from Dom's Concepts"
-            className="aspect-[5/4] w-full sm:aspect-[4/3]"
-            overlay="none"
-            showLabels={false}
-            priority
-          />
-        </div>
-      </section>
-
-      <section className="mx-auto max-w-7xl px-4 py-16 sm:px-6 lg:px-8">
-        <SectionHeading
-          eyebrow="Featured Categories"
-          title="Built for everyday use and made to age beautifully."
-          intro="A focused collection of kitchen and serving pieces designed with premium hardwoods, clean detailing, and a warm handmade finish."
-        />
-        <div className="grid gap-5 md:grid-cols-2 xl:grid-cols-3">
-          {featuredCategories.map((category) => (
-            <Card key={category.name}>
-              <PhotoFrame
-                src={category.image}
-                alt={category.name}
-                label={category.name}
-                className="mb-5 h-40"
-                overlay="dark"
-              />
-              <h3 className="font-serif text-2xl text-white">{category.name}</h3>
-              <p className="mt-3 text-sm leading-7 text-stone-300">
-                Crafted for daily use, gifting, restaurant service, and custom
-                logo projects with a premium handmade finish.
-              </p>
-            </Card>
-          ))}
-        </div>
-      </section>
-
-      <section className="border-y border-white/10 bg-white/[0.03]">
-        <div className="mx-auto grid max-w-7xl gap-10 px-4 py-16 sm:px-6 lg:grid-cols-[0.9fr_1.1fr] lg:px-8">
-          <div className="space-y-4">
-            <p className="text-xs uppercase tracking-[0.35em] text-amber-200/80">
-              Workshop Story
-            </p>
-            <h2 className="font-serif text-3xl text-white sm:text-4xl">
-              Handmade in a small Prague workshop since 2016.
+            <h2 className="font-display text-4xl text-white sm:text-5xl">
+              More than cutting boards.
             </h2>
-            <PhotoFrame
-              src={workshopStoryImagePath}
-              alt="Dom's Concepts workshop in Prague"
-              className="mt-6 aspect-[5/4] w-full sm:aspect-[16/10]"
-              overlay="none"
-              showLabels={false}
-              placeholderMessage="Workshop photo coming soon"
-            />
-          </div>
-          <div className="space-y-5 text-base leading-8 text-stone-300">
-            <p>
-              Dom&apos;s Concepts began with a simple idea: create woodworking
-              pieces that feel substantial, honest, and personal. Every board,
-              tray, and custom build is shaped with close attention to grain,
-              balance, durability, and finish.
-            </p>
-            <p>
-              The brand works from a compact city workshop in Prague, producing
-              small-batch collections as well as tailored pieces for homes,
-              gifts, and hospitality spaces.
-            </p>
-            <p className="text-amber-100">
-              Custom sizes, wood combinations, logo engraving, and special
-              pieces are available on request.
+            <p className="text-base leading-8 text-stone-300 sm:text-lg">
+              From knife tables and furniture-style pieces to serving boards and custom gifts,
+              Dom&apos;s Concepts creates handmade hardwood work one piece at a time.
             </p>
           </div>
+          <SignatureWorkCarousel />
         </div>
       </section>
 
-      <section className="mx-auto max-w-7xl px-4 py-16 sm:px-6 lg:px-8">
-        <SectionHeading
-          eyebrow="Custom Order Process"
-          title="A clear process from first idea to finished piece."
-          intro="Each project is quoted personally, shaped around the wood, dimensions, and details that fit your use."
-        />
-        <div className="grid gap-5 md:grid-cols-2 xl:grid-cols-5">
-          {customOrderSteps.map((step, index) => (
-            <Card key={step} className="relative pt-12">
-              <span className="absolute left-6 top-6 text-sm uppercase tracking-[0.3em] text-amber-200/80">
-                0{index + 1}
-              </span>
-              <h3 className="font-serif text-2xl text-white">{step}</h3>
-            </Card>
-          ))}
-        </div>
-      </section>
-
-      <section className="mx-auto max-w-7xl px-4 py-4 pb-16 sm:px-6 lg:px-8">
-        <Card className="bg-gradient-to-r from-amber-200/10 via-stone-900/75 to-black/85">
-          <div className="flex flex-col gap-5 lg:flex-row lg:items-center lg:justify-between">
-            <div className="max-w-3xl">
-              <p className="text-xs uppercase tracking-[0.35em] text-amber-200/80">
-                Trusted by Etsy customers
+      <section id="available-now" className="dark-section scroll-mt-28 w-full py-16 sm:py-20">
+        <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
+          <div className="mb-10 flex flex-col gap-6 lg:flex-row lg:items-end lg:justify-between">
+            <div className="max-w-3xl space-y-4">
+              <p className="text-[11px] uppercase tracking-[0.38em] text-amber-200/80">
+                Available now
               </p>
-              <h2 className="mt-3 font-serif text-3xl text-white">
-                Trusted by Etsy customers
+              <h2 className="font-display text-4xl text-stone-100 sm:text-[2.75rem]">
+                Available from the workshop.
               </h2>
-              <p className="mt-4 leading-8 text-stone-300">
-                Dom&apos;s Concepts also sells handmade pieces through Etsy and
-                has received 5-star customer feedback for craftsmanship,
-                service, and wood care products.
+              <p className="text-base leading-8 text-stone-300">
+                Ready pieces and small-batch work currently available from Dom&apos;s Concepts.
               </p>
             </div>
+            <SecondaryLink to="/available-pieces" className="text-stone-200 hover:text-amber-200">
+              View all available pieces
+            </SecondaryLink>
+          </div>
+          <div className="grid grid-cols-1 gap-7 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+            {featuredProducts.map((piece) => (
+              <ProductCard key={piece.id} piece={piece} variant="luxury" />
+            ))}
+          </div>
+        </div>
+      </section>
+
+      <section id="reviews" className="dark-section w-full py-16 sm:py-20">
+        <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
+          <SectionHeading
+            eyebrow="Customer trust"
+            title="Loved by customers"
+            intro="A few words from Etsy buyers who have ordered boards, care products, and workshop pieces."
+            compact
+            dark
+          />
+          <div className="mt-8 grid gap-5 md:grid-cols-3">
+            {premiumReviews.map((review) => (
+              <ReviewCard key={review.id} review={review} luxury />
+            ))}
+          </div>
+          <div className="mt-8">
             <a
               href={etsyShopUrl}
               target="_blank"
               rel="noreferrer"
-              className={goldButtonClassName}
+              className={outlineButtonLightClassName}
             >
-              View Etsy Shop
+              Read more reviews on Etsy
             </a>
           </div>
-        </Card>
-      </section>
-
-      <section className="mx-auto max-w-7xl px-4 pb-16 sm:px-6 lg:px-8">
-        <Card className="bg-white/[0.03]">
-          <div className="space-y-6">
-            <div className="max-w-3xl">
-              <p className="text-xs uppercase tracking-[0.35em] text-amber-200/80">
-                5-star feedback from Etsy customers
-              </p>
-              <h2 className="mt-3 font-serif text-3xl text-white">
-                5-star feedback from Etsy customers
-              </h2>
-              <p className="mt-4 leading-8 text-stone-300">
-                Dom&apos;s Concepts has received 5-star feedback from Etsy customers
-                for handmade boards, wood butter, shipping, and service.
-              </p>
-            </div>
-            <div className="grid gap-4 md:grid-cols-3">
-              {[
-                'VERY NICE ITEM, WOULD PURCHASE AGAIN',
-                'Great love the butter it got a lovely smell',
-                'Crazy fast shipping!',
-              ].map((review) => (
-                <div
-                  key={review}
-                  className="rounded-[1.6rem] border border-white/10 bg-black/20 p-5"
-                >
-                  <p className="text-sm uppercase tracking-[0.18em] text-amber-50">
-                    {review}
-                  </p>
-                </div>
-              ))}
-            </div>
-            <div>
-              <a
-                href={etsyShopUrl}
-                target="_blank"
-                rel="noreferrer"
-                className="inline-flex items-center justify-center rounded-full border border-amber-200/35 bg-stone-900 px-6 py-3 text-sm font-medium text-amber-50 transition hover:border-amber-200 hover:bg-stone-800"
-              >
-                View all Etsy reviews
-              </a>
-            </div>
-          </div>
-        </Card>
-      </section>
-
-      <section className="mx-auto max-w-7xl px-4 py-16 sm:px-6 lg:px-8">
-        <div className="mb-8 flex flex-col gap-5 sm:flex-row sm:items-end sm:justify-between">
-          <SectionHeading
-            eyebrow="Available from the workshop"
-            title="Pieces ready to reserve now."
-            intro="A quick look at what is currently available. Open any piece for photos, dimensions, and full details."
-            compact
-          />
-          <SecondaryLink to="/available-pieces">View all available pieces</SecondaryLink>
-        </div>
-        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
-          {featuredProducts.map((piece) => (
-            <ProductCard key={piece.id} piece={piece} />
-          ))}
         </div>
       </section>
 
-      <section className="border-y border-white/10 bg-white/[0.03]">
-        <div className="mx-auto grid max-w-7xl gap-10 px-4 py-16 sm:px-6 lg:grid-cols-2 lg:px-8">
-          <Card className="bg-transparent p-0 shadow-none">
-            <div className="space-y-5 p-8">
-              <p className="text-xs uppercase tracking-[0.35em] text-amber-200/80">
-                Care Guide
-              </p>
-              <h2 className="font-serif text-3xl text-white">
-                Keep hardwood pieces rich, smooth, and ready for daily use.
-              </h2>
-              <p className="leading-8 text-stone-300">
-                The full care guide covers washing, drying, storage, and how to
-                refresh each piece with Dom&apos;s Concepts wood butter.
-              </p>
-              <SecondaryLink to="/care-guide">Read the full care guide</SecondaryLink>
-            </div>
-          </Card>
-
-          <Card className="bg-transparent p-0 shadow-none">
-            <div className="space-y-5 p-8">
-              <p className="text-xs uppercase tracking-[0.35em] text-amber-200/80">
-                Workshop Partners
-              </p>
-              <h2 className="font-serif text-3xl text-white">
-                Trusted workshop brands and collaborators.
-              </h2>
-              <div className="grid grid-cols-2 gap-3 text-sm sm:grid-cols-4">
-                {partnerItems.map((partner) => (
-                  <PartnerCard key={partner.name} partner={partner} compact />
-                ))}
-              </div>
-              <SecondaryLink to="/partners">View all partners</SecondaryLink>
-            </div>
-          </Card>
-        </div>
-      </section>
-
-      <section className="mx-auto max-w-7xl px-4 py-16 sm:px-6 lg:px-8">
-        <SectionHeading
-          eyebrow="Board care"
-          title="Need board care?"
-          intro="Add Dom's Concepts wood butter or wood wax to any board order and save 30% on care products."
-          compact
-        />
-        <BoardCareProductsGrid />
-        <div className="mt-8">
-          <SecondaryLink to="/care-guide">Read the full care guide</SecondaryLink>
-        </div>
-      </section>
-
-      <section className="mx-auto max-w-7xl px-4 py-16 sm:px-6 lg:px-8">
-        <SectionHeading
-          eyebrow="FAQ"
-          title="Common questions, answered simply."
-          intro="A quick overview of custom work, shipping, and care. Full answers are on the FAQ page."
-          compact
-        />
-        <div className="grid gap-4 md:grid-cols-2">
-          {faqItems.slice(0, 4).map((item) => (
-            <FaqCard key={item.question} item={item} />
-          ))}
-        </div>
-        <div className="mt-8">
-          <SecondaryLink to="/faq">View all questions</SecondaryLink>
-        </div>
-      </section>
-
-      <section className="border-t border-white/10 bg-white/[0.03]">
-        <div className="mx-auto max-w-7xl px-4 py-16 sm:px-6 lg:px-8">
-          <div className="mb-10 flex flex-col gap-5 lg:flex-row lg:items-end lg:justify-between">
-            <SectionHeading
-              eyebrow="From the workshop"
-              title="Short films and behind-the-scenes moments."
-              intro="Workshop builds, board care, and custom piece previews — shared on YouTube without loading heavy embeds here."
-              compact
+      <section className="warm-section w-full py-16 sm:py-20">
+        <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
+          <div className="grid gap-10 lg:grid-cols-[1.05fr_0.95fr] lg:items-center">
+            <WorkshopAboutImage
+              className="aspect-[5/4] min-h-[18rem] w-full sm:aspect-[16/10] sm:min-h-[22rem]"
+              priority
             />
-            <a
-              href={youtubeChannelUrl}
-              target="_blank"
-              rel="noreferrer"
-              className={goldButtonClassName}
-            >
-              Visit YouTube Channel
-            </a>
+            <div className="space-y-5">
+              <p className="text-[11px] uppercase tracking-[0.38em] text-amber-200/80">
+                About the workshop
+              </p>
+              <h2 className="font-display text-3xl text-white sm:text-4xl">
+                Handmade in Prague. Built one piece at a time.
+              </h2>
+              <p className="text-base leading-8 text-stone-300">
+                Dom&apos;s Concepts is a small Prague-based woodworking workshop creating
+                cutting boards, butcher blocks, serving pieces, chessboards and one-of-one
+                custom hardwood projects. Each piece is made in small batches with attention
+                to grain, finish and long-term use.
+              </p>
+              <PrimaryLink to={CUSTOM_ORDER_FORM_ANCHOR}>Request a custom piece</PrimaryLink>
+            </div>
           </div>
-          <div className="grid gap-5 md:grid-cols-3">
-            {workshopVideos.map((video) => (
-              <WorkshopVideoCard key={video.id} video={video} />
+        </div>
+      </section>
+
+      <section className="dark-section w-full py-12 sm:py-14">
+        <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
+          <div className="mb-6 max-w-2xl space-y-3">
+            <p className="text-[11px] uppercase tracking-[0.32em] text-amber-200/70">
+              Workshop partners
+            </p>
+            <h2 className="font-display text-2xl text-stone-100 sm:text-3xl">
+              Trusted collaborators
+            </h2>
+          </div>
+          <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
+            {partnerItems.map((partner) => (
+              <PartnerCard key={partner.name} partner={partner} compact />
             ))}
+          </div>
+          <div className="mt-6">
+            <SecondaryLink to="/partners" className="text-stone-300 hover:text-amber-200">
+              View all partners
+            </SecondaryLink>
           </div>
         </div>
       </section>
@@ -601,11 +782,46 @@ function HomePage() {
   )
 }
 
+function WorkshopAboutImage({ className = '', priority = false }) {
+  const [hasError, setHasError] = useState(false)
+
+  if (hasError) {
+    return (
+      <div
+        className={[
+          'relative overflow-hidden rounded-2xl border border-white/10',
+          className,
+        ].join(' ')}
+      >
+        <div className="signature-image-placeholder h-full min-h-[18rem] w-full" aria-hidden="true" />
+      </div>
+    )
+  }
+
+  return (
+    <div
+      className={[
+        'relative overflow-hidden rounded-2xl border border-white/10',
+        className,
+      ].join(' ')}
+    >
+      <img
+        src={workshopAboutImagePath}
+        alt="Dom's Concepts woodworking workshop in Prague"
+        loading={priority ? 'eager' : 'lazy'}
+        onError={() => setHasError(true)}
+        className="h-full w-full object-cover object-center"
+      />
+      <div className="pointer-events-none absolute inset-0 bg-gradient-to-t from-[#0c0a09]/50 via-[#14100e]/10 to-transparent" />
+    </div>
+  )
+}
+
 function AvailablePiecesPage() {
-  const [activeCategory, setActiveCategory] = useState('All')
-  const filteredProducts = activeCategory === 'All'
+  const [activeCollection, setActiveCollection] = useState('All')
+  const filteredProducts = activeCollection === 'All'
     ? sortedProducts
-    : sortedProducts.filter((product) => product.category === activeCategory)
+    : sortedProducts.filter((product) => product.collection === activeCollection)
 
   return (
     <>
@@ -614,36 +830,36 @@ function AvailablePiecesPage() {
         description={pageSeo.availablePieces.description}
       />
       <PageShell
-      eyebrow="Available Pieces"
-      title="Browse handmade pieces from the workshop."
-      intro="A compact overview of current work. Select a piece to see the full gallery, specifications, and reservation details."
-    >
-      <div className="mb-6 flex flex-wrap gap-2">
-        {['All', ...productCategories].map((category) => {
-          const isActive = activeCategory === category
+        eyebrow="Shop the Collection"
+        title="Available Pieces"
+        intro="Browse current workshop pieces. Available items link to Etsy for secure checkout. Custom and sold pieces can be requested directly."
+      >
+        <div className="mb-8 flex flex-wrap gap-2">
+          {['All', ...productCollections].map((collection) => {
+            const isActive = activeCollection === collection
 
-          return (
-            <button
-              key={category}
-              type="button"
-              onClick={() => setActiveCategory(category)}
-              className={[
-                isActive
-                  ? goldChipActiveClassName
-                  : 'rounded-full border border-white/10 bg-stone-900/70 px-3 py-1.5 text-xs font-medium text-stone-300 transition hover:border-amber-200/35 hover:text-amber-50',
-              ].join(' ')}
-            >
-              {category}
-            </button>
-          )
-        })}
-      </div>
-      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3 2xl:grid-cols-4">
-        {filteredProducts.map((piece) => (
-          <ProductCard key={piece.id} piece={piece} />
-        ))}
-      </div>
-    </PageShell>
+            return (
+              <button
+                key={collection}
+                type="button"
+                onClick={() => setActiveCollection(collection)}
+                className={[
+                  isActive
+                    ? goldChipActiveClassName
+                    : 'rounded-full border border-white/12 bg-white/5 px-3 py-1.5 text-xs font-medium text-stone-300 transition hover:border-amber-200/35 hover:text-stone-100',
+                ].join(' ')}
+              >
+                {collection}
+              </button>
+            )
+          })}
+        </div>
+        <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3 2xl:grid-cols-4">
+          {filteredProducts.map((piece) => (
+            <ProductCard key={piece.id} piece={piece} />
+          ))}
+        </div>
+      </PageShell>
     </>
   )
 }
@@ -674,15 +890,14 @@ function ProductDetailPage() {
     )
   }
 
-  const statusClasses = productStatusClasses
+  const productAction = getProductButtonAction(product)
   const showBoardCareUpsell = isBoardCareEligible(product.category)
-  const reserveHref = `/custom-orders?product=${encodeURIComponent(product.id)}`
 
   return (
     <PageShell
-      eyebrow={product.category}
+      eyebrow={product.collection}
       title={product.name}
-      intro={product.description}
+      intro={product.longDescription}
     >
       <div className="grid gap-10 lg:grid-cols-[1.05fr_0.95fr]">
         <div className="space-y-4">
@@ -724,36 +939,36 @@ function ProductDetailPage() {
         <div className="space-y-6">
           <Card>
             <div className="flex flex-wrap items-center gap-3">
-              <span className="rounded-full border border-amber-200/35 bg-stone-900 px-3 py-1.5 text-sm text-amber-50">
-                {product.category}
+              <span className="rounded-full border border-stone-900/10 bg-stone-50 px-3 py-1.5 text-sm text-stone-700">
+                {product.collection}
               </span>
               <span
                 className={[
                   'rounded-full border px-3 py-1.5 text-sm',
-                  statusClasses[product.status],
+                  productBadgeClasses[product.badge],
                 ].join(' ')}
               >
-                {product.status}
+                {product.badge}
               </span>
               {product.freeShipping ? (
-                <span className="rounded-full border border-emerald-300/25 bg-emerald-950/40 px-3 py-1.5 text-sm text-emerald-100">
+                <span className="rounded-full border border-emerald-700/15 bg-emerald-50 px-3 py-1.5 text-sm text-emerald-800">
                   Free shipping
                 </span>
               ) : null}
             </div>
             <div className="mt-6 grid gap-4 sm:grid-cols-2">
-              <ProductMeta label="Price" value={product.price} />
+              <ProductMeta label="Price" value={product.priceFrom} />
               <ProductMeta label="Dimensions" value={product.dimensions} />
               <ProductMeta label="Wood Type" value={product.woodType} />
               <ProductMeta label="Materials" value={product.materials || 'Selected materials'} />
               <ProductMeta label="Photos" value={`${product.galleryImages.length} image${product.galleryImages.length === 1 ? '' : 's'}`} />
             </div>
-            <p className="mt-6 leading-8 text-stone-300">{product.description}</p>
+            <p className="mt-6 leading-8 text-stone-600">{product.longDescription}</p>
             {showBoardCareUpsell ? (
               <BoardCareUpsell productId={product.id} />
             ) : (
               <div className="mt-8 flex flex-col gap-3 sm:flex-row">
-                <PrimaryLink to={reserveHref}>{product.requestCtaText}</PrimaryLink>
+                <ProductActionButton action={productAction} className={goldButtonClassName} />
                 <SecondaryLink to="/available-pieces">Back to collection</SecondaryLink>
               </div>
             )}
@@ -872,59 +1087,60 @@ function CustomOrdersPage() {
         description={pageSeo.customOrders.description}
       />
       <PageShell
-      eyebrow="Custom Orders"
-      title="Commission a piece built around your space, use, and material preferences."
-      intro="Custom work can start from a board, tray, butcher block, engraved gift, or a fully bespoke hardwood concept."
-    >
-      <div className="grid gap-8 lg:grid-cols-[0.9fr_1.1fr]">
-        <Card>
-          <p className="text-xs uppercase tracking-[0.35em] text-amber-200/80">
-            Built Around Your Request
-          </p>
-          <h2 className="mt-4 font-serif text-3xl text-white">How custom orders work</h2>
-          <p className="mt-4 leading-8 text-stone-300">
-            Share the product type, wood direction, size, and whether you want
-            engraving or logo work. Every order is reviewed personally before a
-            quote is confirmed.
-          </p>
-          <div className="mt-6 rounded-[1.6rem] border border-white/10 bg-black/20 p-5 text-sm leading-7 text-stone-300">
-            Custom sizes, wood combinations, logo engraving, and special pieces
-            are available on request.
-          </div>
-          <div className="mt-6 space-y-4">
-            {customOrderSteps.map((step, index) => (
-              <div
-                key={step}
-                className="flex items-start gap-4 rounded-2xl border border-white/10 bg-black/20 p-4"
+        eyebrow="Custom commissions"
+        title="Want a piece made just for you?"
+        intro="Send an idea, size, wood type or reference photo and I'll help turn it into a custom handmade piece."
+      >
+        <div className="grid gap-8 lg:grid-cols-[0.9fr_1.1fr]">
+          <Card>
+            <p className="section-eyebrow">How it works</p>
+            <h2 className="mt-4 font-display text-3xl text-stone-900">Custom orders, quoted personally</h2>
+            <p className="mt-4 leading-8 text-stone-600">
+              Share the product type, wood direction, size, and whether you want engraving
+              or logo work. Every order is reviewed personally before a quote is confirmed.
+            </p>
+            <div className="mt-6 space-y-4">
+              {customOrderSteps.map((step, index) => (
+                <div
+                  key={step}
+                  className="flex items-start gap-4 rounded-2xl border border-stone-900/8 bg-stone-50 p-4"
+                >
+                  <span className="mt-1 text-xs uppercase tracking-[0.3em] text-[var(--color-accent)]">
+                    0{index + 1}
+                  </span>
+                  <p className="text-stone-700">{step}</p>
+                </div>
+              ))}
+            </div>
+            <div className="mt-8 flex flex-col gap-3 sm:flex-row">
+              <a
+                href={instagramUrl}
+                target="_blank"
+                rel="noreferrer"
+                className={outlineButtonClassName}
               >
-                <span className="mt-1 text-xs uppercase tracking-[0.3em] text-amber-200/80">
-                  0{index + 1}
-                </span>
-                <p className="text-stone-200">{step}</p>
-              </div>
-            ))}
+                Message on Instagram
+              </a>
+            </div>
+          </Card>
+          <div id="custom-quote-form">
+            <OrderForm
+              title="Request Custom Quote"
+              presetProduct={selectedPiece}
+              presetCareAddon={presetCareAddon}
+              defaultMessage={
+                selectedPiece && presetCareAddon !== 'none'
+                  ? `I would like to reserve "${selectedPiece}" with ${getBoardCareAddonLabel(presetCareAddon)}.`
+                  : selectedPiece
+                    ? `I would like to reserve or ask about "${selectedPiece}".`
+                    : presetCareAddon !== 'none'
+                      ? `I would like to add ${getBoardCareAddonLabel(presetCareAddon)} to a board order.`
+                      : ''
+              }
+            />
           </div>
-          <div className="mt-8 rounded-[1.6rem] border border-amber-300/20 bg-amber-200/8 p-5 text-sm leading-7 text-amber-50">
-            No checkout or cart yet. The current flow is enquiry-based so each
-            custom order can be quoted and confirmed directly.
-          </div>
-        </Card>
-        <OrderForm
-          title="Request a custom quote"
-          presetProduct={selectedPiece}
-          presetCareAddon={presetCareAddon}
-          defaultMessage={
-            selectedPiece && presetCareAddon !== 'none'
-              ? `I would like to reserve "${selectedPiece}" with ${getBoardCareAddonLabel(presetCareAddon)}.`
-              : selectedPiece
-                ? `I would like to reserve or ask about "${selectedPiece}".`
-                : presetCareAddon !== 'none'
-                  ? `I would like to add ${getBoardCareAddonLabel(presetCareAddon)} to a board order.`
-                  : ''
-          }
-        />
-      </div>
-    </PageShell>
+        </div>
+      </PageShell>
     </>
   )
 }
@@ -1092,22 +1308,15 @@ function AboutPage() {
             </p>
           </div>
         </Card>
-        <Card>
-          <PhotoFrame
-            src={aboutImagePath}
-            alt="Dom's Concepts workshop in Prague"
-            className="aspect-[5/4] w-full"
-            overlay="none"
-            showLabels={false}
-            placeholderMessage="Workshop photo coming soon"
-          />
-          <div className="mt-6 grid gap-4 sm:grid-cols-2">
+        <div className="space-y-6">
+          <WorkshopAboutImage className="aspect-[5/4] w-full" priority />
+          <div className="grid gap-4 sm:grid-cols-2">
             <Stat value="2016" label="Handmade brand active since" />
             <Stat value="Prague, Czechia" label="Workshop location" />
             <Stat value="5-star Etsy shop" label="Trusted by Etsy customers" />
             <Stat value="Since 2019" label="On Etsy" />
           </div>
-        </Card>
+        </div>
       </div>
       <div className="mt-8">
         <Card className="bg-white/[0.03]">
@@ -1132,6 +1341,29 @@ function AboutPage() {
             </a>
           </div>
         </Card>
+      </div>
+      <div className="mt-12">
+        <div className="mb-8 flex flex-col gap-5 lg:flex-row lg:items-end lg:justify-between">
+          <SectionHeading
+            eyebrow="From the workshop"
+            title="Short films and behind-the-scenes moments."
+            intro="Workshop builds, board care, and custom piece previews on YouTube."
+            compact
+          />
+          <a
+            href={youtubeChannelUrl}
+            target="_blank"
+            rel="noreferrer"
+            className={goldButtonClassName}
+          >
+            Visit YouTube Channel
+          </a>
+        </div>
+        <div className="grid gap-5 md:grid-cols-3">
+          {workshopVideos.map((video) => (
+            <WorkshopVideoCard key={video.id} video={video} />
+          ))}
+        </div>
       </div>
     </PageShell>
     </>
@@ -1201,13 +1433,19 @@ function PartnerLogo({ partner, compact = false }) {
     setHasError(false)
   }, [partner.logo])
 
-  const shellClassName = compact
-    ? 'mb-3 flex min-h-[4.5rem] items-center justify-center rounded-2xl border border-white/10 bg-gradient-to-br from-[#1c1511] via-stone-950 to-stone-900 p-3'
-    : 'mb-6 flex min-h-[7rem] items-center justify-center rounded-[1.4rem] border border-white/10 bg-gradient-to-br from-[#1c1511] via-stone-950 to-stone-900 p-4 sm:min-h-[8rem] sm:p-6'
+  const wrapClassName = [
+    'partner-logo-wrap w-full',
+    partner.logoWrapClass,
+    compact ? 'partner-logo-wrap-compact mb-3' : 'mb-6',
+  ]
+    .filter(Boolean)
+    .join(' ')
+
+  const logoClassName = ['partner-logo', partner.logoClass].filter(Boolean).join(' ')
 
   if (hasError) {
     return (
-      <div className={shellClassName}>
+      <div className={wrapClassName}>
         <span
           className={[
             'text-center font-serif text-amber-100/90',
@@ -1221,16 +1459,13 @@ function PartnerLogo({ partner, compact = false }) {
   }
 
   return (
-    <div className={shellClassName}>
+    <div className={wrapClassName}>
       <img
         src={partner.logo}
         alt={`${partner.name} logo`}
         loading="lazy"
         onError={() => setHasError(true)}
-        className={[
-          'w-full object-contain object-center',
-          compact ? 'max-h-12 max-w-[85%]' : 'max-h-16 max-w-[88%] sm:max-h-20',
-        ].join(' ')}
+        className={logoClassName}
       />
     </div>
   )
@@ -1243,7 +1478,7 @@ function PartnerCard({ partner, compact = false }) {
         href={partner.url}
         target="_blank"
         rel="noopener noreferrer"
-        className="group flex min-h-[8.5rem] flex-col rounded-2xl border border-amber-200/20 bg-stone-900/90 px-4 py-4 text-center transition hover:border-amber-200/45 hover:bg-stone-800"
+        className="group flex min-h-[11.5rem] flex-col rounded-2xl border border-amber-200/20 bg-stone-900/90 px-4 py-4 text-center transition hover:border-amber-200/45 hover:bg-stone-800"
       >
         <PartnerLogo partner={partner} compact />
         <span className="font-medium text-amber-50 transition group-hover:text-amber-100">
@@ -1374,28 +1609,30 @@ function ContactPage() {
   )
 }
 
-function BoardCareProductsGrid() {
+function BoardCareProductsGrid({ compact = false, luxury = false }) {
   return (
     <div className="grid gap-5 md:grid-cols-2">
       {boardCareProducts.map((item) => (
-        <BoardCareProductCard key={item.id} product={item} />
+        <BoardCareProductCard key={item.id} product={item} compact={compact} luxury={luxury} />
       ))}
     </div>
   )
 }
 
-function BoardCareProductCard({ product }) {
+function BoardCareProductCard({ product, compact = false, luxury = false }) {
   return (
-    <Card className="flex h-full flex-col overflow-hidden p-0">
+    <Card className="flex h-full flex-col overflow-hidden p-0" luxury={luxury}>
       <PhotoFrame
         src={product.image}
         alt={product.title}
-        className="aspect-[4/3] w-full rounded-b-none border-0"
+        className={compact ? 'aspect-[5/3] w-full rounded-b-none border-0' : 'aspect-[4/3] w-full rounded-b-none border-0'}
         overlay="none"
         showLabels={false}
       />
-      <div className="flex flex-1 flex-col gap-4 p-6">
-        <h3 className="font-serif text-2xl text-white">{product.title}</h3>
+      <div className={compact ? 'flex flex-1 flex-col gap-3 p-5' : 'flex flex-1 flex-col gap-4 p-6'}>
+        <h3 className={compact ? 'font-serif text-xl text-white' : 'font-serif text-2xl text-white'}>
+          {product.title}
+        </h3>
         <div className="text-sm text-stone-300">
           <p>
             Normal price:{' '}
@@ -1406,10 +1643,12 @@ function BoardCareProductCard({ product }) {
             <span className="font-medium text-amber-100">{boardCarePricing.addonPrice}</span>
           </p>
         </div>
-        <p className="text-sm leading-7 text-stone-300">{product.description}</p>
+        {compact ? null : (
+          <p className="text-sm leading-7 text-stone-300">{product.description}</p>
+        )}
         <div className="mt-auto pt-2">
           <PrimaryLink to={`/custom-orders?addon=${product.addonParam}`}>
-            {product.ctaLabel}
+            {compact ? 'Add to board order' : product.ctaLabel}
           </PrimaryLink>
         </div>
       </div>
@@ -1450,7 +1689,7 @@ function BoardCareUpsell({ productId }) {
           Reserve with Wood Butter
         </PrimaryLink>
         <PrimaryLink to={`${baseHref}&addon=wood-wax`}>Reserve with Wood Wax</PrimaryLink>
-        <SecondaryLink to={baseHref}>Reserve without add-on</SecondaryLink>
+        <SecondaryLink to={baseHref} variant="button">Reserve without add-on</SecondaryLink>
       </div>
       <p className="mt-4 text-xs leading-6 text-stone-500">
         Selected add-on will be included in your reservation enquiry. No checkout on the
@@ -1460,7 +1699,7 @@ function BoardCareUpsell({ productId }) {
   )
 }
 
-function ProductCardImage({ src, alt }) {
+function ProductCardImage({ src, alt, luxury = false }) {
   const [hasError, setHasError] = useState(false)
 
   useEffect(() => {
@@ -1468,9 +1707,13 @@ function ProductCardImage({ src, alt }) {
   }, [src])
 
   if (hasError) {
+    if (luxury) {
+      return <div className="signature-image-placeholder h-full w-full" aria-hidden="true" />
+    }
+
     return (
-      <div className="flex h-full w-full items-end bg-gradient-to-br from-[#1c1511] via-stone-950 to-black p-4">
-        <p className="text-xs uppercase tracking-[0.25em] text-stone-400">
+      <div className="flex h-full w-full items-end bg-gradient-to-br from-[#ebe4d8] via-[#f5f0e8] to-[#e8dfd2] p-4">
+        <p className="text-xs uppercase tracking-[0.25em] text-stone-500">
           Photo coming soon
         </p>
       </div>
@@ -1483,67 +1726,149 @@ function ProductCardImage({ src, alt }) {
       alt={alt}
       loading="lazy"
       onError={() => setHasError(true)}
-      className="h-full w-full object-cover object-center transition duration-300 group-hover:scale-[1.02]"
+      className="h-full w-full object-cover object-center transition duration-500 group-hover:scale-[1.03]"
     />
   )
 }
 
-function ProductCard({ piece }) {
+function ProductActionButton({ action, className = goldButtonClassNameCompact }) {
+  if (action.external) {
+    return (
+      <a
+        href={action.href}
+        target="_blank"
+        rel="noreferrer"
+        className={className}
+      >
+        {action.label}
+      </a>
+    )
+  }
+
+  if (action.href.startsWith('/')) {
+    return (
+      <Link to={action.href} className={className}>
+        {action.label}
+      </Link>
+    )
+  }
+
   return (
-    <article className="group flex h-full flex-col overflow-hidden rounded-[1.25rem] border border-white/10 bg-stone-900/55 shadow-[0_18px_40px_-32px_rgba(0,0,0,0.9)] transition hover:border-amber-200/30 hover:bg-stone-900">
+    <a href={action.href} className={className}>
+      {action.label}
+    </a>
+  )
+}
+
+function ProductCard({ piece, variant = 'default' }) {
+  const action = getProductButtonAction(piece)
+  const isLuxury = variant === 'luxury'
+  const badgeLabel = productBadgeLabels[piece.badge] ?? piece.badge
+
+  return (
+    <article
+      className={[
+        isLuxury ? 'luxury-shop-card' : 'shop-card',
+        'group flex h-full flex-col hover:-translate-y-0.5',
+        piece.isSold ? 'opacity-90' : '',
+      ].join(' ')}
+    >
       <Link
         to={`/available-pieces/${piece.id}`}
         className="block overflow-hidden"
         aria-label={`View ${piece.name}`}
-        title={piece.name}
       >
-        <div className="relative aspect-[4/3] overflow-hidden bg-gradient-to-br from-[#1c1511] via-stone-950 to-black">
-          <ProductCardImage src={piece.mainImage} alt={piece.name} />
+        <div
+          className={[
+            'relative aspect-[4/5] overflow-hidden',
+            isLuxury ? 'bg-[#1c1511]' : 'bg-[#ece6dc]',
+            piece.isSold ? 'grayscale-[0.2]' : '',
+          ].join(' ')}
+        >
+          <ProductCardImage src={piece.image} alt={piece.name} luxury={isLuxury} />
+          {piece.isSold ? (
+            <div className="pointer-events-none absolute inset-0 bg-stone-900/20" />
+          ) : null}
         </div>
       </Link>
 
-      <div className="flex flex-1 flex-col gap-3 p-4">
-        <div className="space-y-1.5">
+      <div className="flex flex-1 flex-col gap-4 p-5 sm:p-6">
+        <div className="space-y-2.5">
+          <span
+            className={[
+              'inline-flex rounded-md border px-2.5 py-1 text-[10px] uppercase tracking-[0.16em]',
+              isLuxury ? productBadgeClassesLuxury[piece.badge] : productBadgeClasses[piece.badge],
+            ].join(' ')}
+          >
+            {badgeLabel}
+          </span>
           <Link
             to={`/available-pieces/${piece.id}`}
-            className="line-clamp-2 font-serif text-lg leading-snug text-white transition hover:text-amber-200"
-            title={piece.name}
+            className={[
+              'line-clamp-2 font-display text-xl leading-snug transition',
+              isLuxury
+                ? 'text-stone-100 hover:text-amber-200'
+                : 'text-stone-900 hover:text-[var(--color-accent)]',
+            ].join(' ')}
           >
             {piece.name}
           </Link>
-          <p className="text-[11px] uppercase tracking-[0.2em] text-stone-400">
-            {piece.category}
+          <p
+            className={[
+              'line-clamp-2 text-sm leading-6',
+              isLuxury ? 'text-stone-400' : 'text-stone-600',
+            ].join(' ')}
+          >
+            {piece.shortDescription}
           </p>
         </div>
 
-        <p className="text-base font-semibold text-amber-100">{piece.price}</p>
-
-        <div className="flex flex-wrap gap-1.5">
-          <span
-            className={[
-              'inline-flex rounded-full border px-2.5 py-1 text-[10px] uppercase tracking-[0.14em]',
-              productStatusClasses[piece.status],
-            ].join(' ')}
-          >
-            {piece.status}
-          </span>
+        <div className="mt-auto space-y-3">
+          <p className={['text-base font-medium', isLuxury ? 'text-stone-200' : 'text-stone-900'].join(' ')}>
+            {piece.priceFrom}
+          </p>
           {piece.freeShipping ? (
-            <span className="inline-flex rounded-full border border-emerald-300/25 bg-emerald-950/40 px-2.5 py-1 text-[10px] uppercase tracking-[0.14em] text-emerald-100">
+            <p
+              className={[
+                'text-[11px] uppercase tracking-[0.18em]',
+                isLuxury ? 'text-emerald-400/85' : 'text-emerald-700',
+              ].join(' ')}
+            >
               Free shipping
-            </span>
+            </p>
           ) : null}
-        </div>
-
-        <div className="mt-auto pt-1">
-          <Link
-            to={`/available-pieces/${piece.id}`}
-            className={goldButtonClassNameCompact}
-          >
-            View piece
-          </Link>
+          <ProductActionButton action={action} />
         </div>
       </div>
     </article>
+  )
+}
+
+function ReviewCard({ review, luxury = false }) {
+  if (luxury) {
+    return (
+      <div className="luxury-review-card">
+        <div className="flex gap-1 text-amber-200/90" aria-label={`${review.rating} out of 5 stars`}>
+          {Array.from({ length: review.rating }).map((_, index) => (
+            <span key={index}>★</span>
+          ))}
+        </div>
+        <p className="mt-4 text-sm leading-7 text-stone-300">&ldquo;{review.quote}&rdquo;</p>
+        <p className="mt-5 text-sm font-medium text-stone-100">{review.name}</p>
+      </div>
+    )
+  }
+
+  return (
+    <div className="premium-card h-full p-6">
+      <div className="flex gap-1 text-[var(--color-accent)]" aria-label={`${review.rating} out of 5 stars`}>
+        {Array.from({ length: review.rating }).map((_, index) => (
+          <span key={index}>★</span>
+        ))}
+      </div>
+      <p className="mt-4 text-sm leading-7 text-stone-700">&ldquo;{review.quote}&rdquo;</p>
+      <p className="mt-5 text-sm font-medium text-stone-900">{review.name}</p>
+    </div>
   )
 }
 
@@ -1553,6 +1878,7 @@ function OrderForm({ title, presetProduct = '', presetCareAddon = 'none', defaul
     email: '',
     phone: '',
     product: presetProduct,
+    productType: customProductTypes[0],
     woodPreference: woodPreferences[0],
     size: '',
     engraving: engravingOptions[1],
@@ -1560,6 +1886,7 @@ function OrderForm({ title, presetProduct = '', presetCareAddon = 'none', defaul
     budget: budgetRanges[1],
     boardCareAddon: presetCareAddon,
     message: defaultMessage,
+    referenceImage: '',
   })
 
   useEffect(() => {
@@ -1585,13 +1912,15 @@ function OrderForm({ title, presetProduct = '', presetCareAddon = 'none', defaul
       `Name: ${formState.name}`,
       `Email: ${formState.email}`,
       `Phone: ${formState.phone || 'Not provided'}`,
-      `Product / request type: ${formState.product || 'Not specified'}`,
+      `Product type: ${formState.productType}`,
+      `Product / piece name: ${formState.product || 'Not specified'}`,
       `Board care add-on: ${careLabel}${carePriceNote}`,
       `Wood preference: ${formState.woodPreference}`,
       `Size: ${formState.size || 'Not specified'}`,
       `Logo / engraving: ${formState.engraving}`,
       `Pickup or shipping: ${formState.shipping}`,
       `Budget range: ${formState.budget}`,
+      `Reference image: ${formState.referenceImage || 'Not attached yet'}`,
       '',
       'Message:',
       formState.message || 'No additional message.',
@@ -1607,28 +1936,26 @@ function OrderForm({ title, presetProduct = '', presetCareAddon = 'none', defaul
 
   return (
     <Card>
-      <h2 className="font-serif text-3xl text-white">{title}</h2>
-      <p className="mt-4 leading-8 text-stone-300">
-        This form currently opens your email client to send the request to{' '}
-        {contactEmail}. It can later be connected to Formspree, Basin,
-        Cloudflare Forms, or an email API.
+      <h2 className="font-display text-3xl text-stone-900">{title}</h2>
+      <p className="mt-4 leading-8 text-stone-600">
+        This form opens your email client to send the request to {contactEmail}.
       </p>
 
       {presetProduct ? (
-        <div className="mt-6 rounded-[1.4rem] border border-amber-200/25 bg-amber-200/8 p-4">
-          <p className="text-xs uppercase tracking-[0.28em] text-amber-100">
+        <div className="mt-6 rounded-[1.4rem] border border-[var(--color-accent)]/20 bg-[var(--color-accent-soft)]/50 p-4">
+          <p className="text-xs uppercase tracking-[0.28em] text-[var(--color-accent)]">
             Selected Product
           </p>
-          <p className="mt-2 text-lg text-white">{presetProduct}</p>
+          <p className="mt-2 text-lg text-stone-900">{presetProduct}</p>
         </div>
       ) : null}
 
       {presetCareAddon !== 'none' ? (
-        <div className="mt-4 rounded-[1.4rem] border border-emerald-300/20 bg-emerald-950/20 p-4">
-          <p className="text-xs uppercase tracking-[0.28em] text-emerald-100">
+        <div className="mt-4 rounded-[1.4rem] border border-emerald-700/15 bg-emerald-50 p-4">
+          <p className="text-xs uppercase tracking-[0.28em] text-emerald-800">
             Board Care Add-on
           </p>
-          <p className="mt-2 text-sm text-stone-200">
+          <p className="mt-2 text-sm text-stone-700">
             {getBoardCareAddonLabel(presetCareAddon)}
             {presetCareAddon === 'wood-butter' || presetCareAddon === 'wood-wax'
               ? ` · ${boardCarePricing.addonPrice} (normally ${boardCarePricing.normalPrice})`
@@ -1649,64 +1976,28 @@ function OrderForm({ title, presetProduct = '', presetCareAddon = 'none', defaul
             required
           />
         </div>
-        <FormField
-          label="Phone optional"
-          name="phone"
-          value={formState.phone}
-          onChange={updateField}
-        />
-        <div className="grid gap-5 sm:grid-cols-2">
-          <FormField
-            label="Product type"
-            name="product"
-            value={formState.product}
-            onChange={updateField}
-            required
-          />
-          <SelectField
-            label="Wood preference"
-            name="woodPreference"
-            value={formState.woodPreference}
-            onChange={updateField}
-            options={woodPreferences}
-          />
-        </div>
         <SelectField
-          label="Board care add-on"
-          name="boardCareAddon"
-          value={formState.boardCareAddon}
+          label="Product type"
+          name="productType"
+          value={formState.productType}
           onChange={updateField}
-          options={boardCareAddonOptions.map((option) => option.label)}
-          optionValues={boardCareAddonOptions.map((option) => option.value)}
+          options={customProductTypes}
         />
-        <div className="grid gap-5 sm:grid-cols-2">
-          <FormField label="Size" name="size" value={formState.size} onChange={updateField} />
-          <SelectField
-            label="Logo/engraving yes/no"
-            name="engraving"
-            value={formState.engraving}
-            onChange={updateField}
-            options={engravingOptions}
-          />
-        </div>
-        <div className="grid gap-5 sm:grid-cols-2">
-          <SelectField
-            label="Pickup or shipping"
-            name="shipping"
-            value={formState.shipping}
-            onChange={updateField}
-            options={shippingOptions}
-          />
-          <SelectField
-            label="Budget range"
-            name="budget"
-            value={formState.budget}
-            onChange={updateField}
-            options={budgetRanges}
-          />
-        </div>
+        <FormField
+          label="Product / piece name optional"
+          name="product"
+          value={formState.product}
+          onChange={updateField}
+        />
+        <SelectField
+          label="Budget range"
+          name="budget"
+          value={formState.budget}
+          onChange={updateField}
+          options={budgetRanges}
+        />
         <div className="grid gap-2">
-          <label className="text-sm text-stone-200" htmlFor="message">
+          <label className="text-sm text-stone-700" htmlFor="message">
             Message
           </label>
           <textarea
@@ -1715,16 +2006,24 @@ function OrderForm({ title, presetProduct = '', presetCareAddon = 'none', defaul
             rows="5"
             value={formState.message}
             onChange={updateField}
-            className="rounded-2xl border border-white/10 bg-black/25 px-4 py-3 text-stone-100 outline-none transition focus:border-amber-300/50"
+            className="rounded-2xl border border-stone-900/10 bg-white px-4 py-3 text-stone-900 outline-none transition focus:border-[var(--color-accent)]/40"
           />
         </div>
-        <div className="pt-2">
-          <button
-            type="submit"
-            className={goldButtonClassName}
-          >
-            Submit
+        <div className="rounded-2xl border border-dashed border-stone-900/15 bg-stone-50 px-4 py-5 text-sm text-stone-600">
+          Reference image upload placeholder — attach your reference photo in the email after submitting.
+        </div>
+        <div className="flex flex-col gap-3 pt-2 sm:flex-row">
+          <button type="submit" className={goldButtonClassName}>
+            Request Custom Quote
           </button>
+          <a
+            href={instagramUrl}
+            target="_blank"
+            rel="noreferrer"
+            className={outlineButtonClassName}
+          >
+            Message on Instagram
+          </a>
         </div>
       </form>
     </Card>
@@ -1789,24 +2088,23 @@ function ProductMeta({ label, value }) {
   )
 }
 
-function SectionHeading({ eyebrow, title, intro, compact = false }) {
+function SectionHeading({ eyebrow, title, intro, compact = false, dark = false }) {
   return (
     <div className={compact ? 'max-w-2xl space-y-4' : 'mb-10 max-w-3xl space-y-4'}>
-      <p className="text-xs uppercase tracking-[0.35em] text-amber-200/80">{eyebrow}</p>
-      <h2 className="font-serif text-3xl text-white sm:text-4xl">{title}</h2>
-      <p className="leading-8 text-stone-300">{intro}</p>
+      <p className={dark ? 'text-[11px] uppercase tracking-[0.32em] text-amber-200/80' : 'section-eyebrow'}>
+        {eyebrow}
+      </p>
+      <h2 className={['font-display text-3xl sm:text-4xl', dark ? 'text-stone-100' : 'text-stone-900'].join(' ')}>
+        {title}
+      </h2>
+      <p className={['leading-8', dark ? 'text-stone-300' : 'text-stone-600'].join(' ')}>{intro}</p>
     </div>
   )
 }
 
-function Card({ children, className = '' }) {
+function Card({ children, className = '', luxury = false }) {
   return (
-    <div
-      className={[
-        'rounded-[2rem] border border-white/10 bg-white/[0.04] p-6 shadow-xl shadow-black/20 transition duration-300 hover:-translate-y-1 hover:border-amber-300/30 hover:bg-white/[0.05]',
-        className,
-      ].join(' ')}
-    >
+    <div className={[luxury ? 'luxury-glass-card p-6 sm:p-8' : 'premium-card p-6 sm:p-8', className].join(' ')}>
       {children}
     </div>
   )
@@ -1913,16 +2211,16 @@ function PrimaryLink({ to, children, className = '' }) {
   )
 }
 
-function SecondaryLink({ to, children, className = '' }) {
+function SecondaryLink({ to, children, className = '', variant = 'text' }) {
+  const baseClassName =
+    variant === 'button'
+      ? outlineButtonClassName
+      : 'inline-flex items-center text-sm font-medium text-amber-200/90 transition hover:text-amber-100'
+
   return (
-    <Link
-      to={to}
-      className={[
-        'inline-flex items-center justify-center rounded-full border border-amber-200/35 bg-stone-900 px-6 py-3 text-sm font-medium text-amber-50 transition hover:border-amber-200 hover:bg-stone-800',
-        className,
-      ].join(' ')}
-    >
+    <Link to={to} className={[baseClassName, className].join(' ')}>
       {children}
+      {variant === 'text' ? ' →' : ''}
     </Link>
   )
 }

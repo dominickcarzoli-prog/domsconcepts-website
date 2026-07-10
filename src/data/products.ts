@@ -7,6 +7,16 @@ export type ProductStatus =
   | 'Low in stock, only 2 left'
   | 'Low in stock, only 5 left'
 
+export type ProductBadge = 'Available' | 'Made to Order' | 'One-of-One' | 'Sold'
+
+export type ProductCollection =
+  | 'Available Pieces'
+  | 'Custom Cutting Boards'
+  | 'Butcher Blocks'
+  | 'Serving & Gift Pieces'
+  | 'One-of-One Creations'
+  | 'Board Care'
+
 export type ProductCategory =
   | 'Cutting Boards'
   | 'Serving Boards'
@@ -17,29 +27,59 @@ export type ProductCategory =
   | 'Epoxy Pieces'
   | 'Custom Orders'
 
+export type ProductButtonAction = {
+  label: string
+  href: string
+  external: boolean
+}
+
 export type Product = {
   id: string
   slug: string
   name: string
   category: ProductCategory
+  collection: ProductCollection
   description: string
+  shortDescription: string
+  longDescription: string
   dimensions: string
   woodType: string
   materials?: string
   price: string
+  priceFrom: string
   status: ProductStatus
+  badge: ProductBadge
+  availability: string
   shippingNote?: string
   mainImage: string
+  image: string
   galleryImages: string[]
   etsyUrl?: string
   requestCtaText: string
   freeShipping?: boolean
+  isAvailable: boolean
+  isCustomOrder: boolean
+  isSold: boolean
+  buttonLabel: string
+  featured: boolean
   features?: string[]
   perfectFor?: string[]
   whyThisPiece?: string
   whyEndGrain?: string
   careInstructions?: string
 }
+
+export const ETSY_SHOP_URL = 'https://www.etsy.com/shop/DomsConcepts'
+export const CUSTOM_ORDER_FORM_ANCHOR = '/custom-orders#custom-quote-form'
+
+export const productCollections: ProductCollection[] = [
+  'Available Pieces',
+  'Custom Cutting Boards',
+  'Butcher Blocks',
+  'Serving & Gift Pieces',
+  'One-of-One Creations',
+  'Board Care',
+]
 
 export const productCategories: ProductCategory[] = [
   'Cutting Boards',
@@ -92,8 +132,160 @@ const STATUS_SORT_ORDER: Record<ProductStatus, number> = {
   Sold: 4,
 }
 
-type ProductInput = Omit<Product, 'slug' | 'mainImage' | 'galleryImages' | 'requestCtaText'> & {
+function isPurchasableStatus(status: ProductStatus) {
+  return (
+    status === 'Available' ||
+    status.startsWith('Low in stock')
+  )
+}
+
+function deriveCollection(
+  category: ProductCategory,
+  status: ProductStatus,
+  name: string,
+): ProductCollection {
+  if (category === 'Wood Care') return 'Board Care'
+  if (status === 'Made to order' || category === 'Custom Orders') {
+    return 'Custom Cutting Boards'
+  }
+  if (category === 'Epoxy Pieces') return 'One-of-One Creations'
+  if (
+    category === 'Serving Boards' ||
+    category === 'Breadboards' ||
+    category === 'Coasters' ||
+    category === 'Wall Pieces'
+  ) {
+    return 'Serving & Gift Pieces'
+  }
+  const lowerName = name.toLowerCase()
+  if (lowerName.includes('end grain') || lowerName.includes('butcher')) {
+    return 'Butcher Blocks'
+  }
+  if (category === 'Cutting Boards') return 'Available Pieces'
+  return 'Available Pieces'
+}
+
+function deriveBadge(
+  status: ProductStatus,
+  category: ProductCategory,
+  badge?: ProductBadge,
+): ProductBadge {
+  if (badge) return badge
+  if (status === 'Sold') return 'Sold'
+  if (status === 'Made to order') return 'Made to Order'
+  if (category === 'Epoxy Pieces') return 'One-of-One'
+  return 'Available'
+}
+
+function formatPriceFrom(price: string) {
+  if (price.startsWith('From ') || price === 'Price on request') {
+    return price
+  }
+  return `From ${price}`
+}
+
+function toShortDescription(description: string) {
+  const trimmed = description.trim()
+  const sentenceEnd = trimmed.search(/[.!?](\s|$)/)
+  if (sentenceEnd > 0 && sentenceEnd < 120) {
+    return trimmed.slice(0, sentenceEnd + 1)
+  }
+  if (trimmed.length <= 110) return trimmed
+  return `${trimmed.slice(0, 107).trimEnd()}…`
+}
+
+function deriveButtonLabel(product: {
+  buttonLabel?: string
+  isSold: boolean
+  isCustomOrder: boolean
+  etsyUrl?: string
+  isAvailable: boolean
+}): string {
+  if (product.buttonLabel) return product.buttonLabel
+  if (product.isSold) return 'Request Similar Piece'
+  if (product.isCustomOrder) return 'Request Custom Quote'
+  if (product.etsyUrl && product.isAvailable) return 'Buy on Etsy'
+  if (product.isAvailable) return 'Buy on Etsy'
+  return 'Request Similar Piece'
+}
+
+export function getProductButtonAction(product: Product): ProductButtonAction {
+  const label = product.buttonLabel
+
+  if (product.isSold) {
+    return {
+      label,
+      href: CUSTOM_ORDER_FORM_ANCHOR,
+      external: false,
+    }
+  }
+
+  if (product.isCustomOrder) {
+    return {
+      label,
+      href: `/custom-orders?product=${encodeURIComponent(product.name)}#custom-quote-form`,
+      external: false,
+    }
+  }
+
+  if (product.etsyUrl && product.isAvailable) {
+    return {
+      label,
+      href: product.etsyUrl,
+      external: true,
+    }
+  }
+
+  if (product.isAvailable) {
+    return {
+      label,
+      href: ETSY_SHOP_URL,
+      external: true,
+    }
+  }
+
+  if (product.badge === 'One-of-One') {
+    return {
+      label: 'Request Similar Piece',
+      href: CUSTOM_ORDER_FORM_ANCHOR,
+      external: false,
+    }
+  }
+
+  return {
+    label,
+    href: CUSTOM_ORDER_FORM_ANCHOR,
+    external: false,
+  }
+}
+
+type ProductInput = {
+  id: string
+  name: string
+  category: ProductCategory
+  price: string
+  status: ProductStatus
+  woodType: string
+  description?: string
+  dimensions?: string
+  materials?: string
+  shippingNote?: string
+  freeShipping?: boolean
   galleryCount?: number
+  collection?: ProductCollection
+  badge?: ProductBadge
+  featured?: boolean
+  etsyUrl?: string
+  buttonLabel?: string
+  shortDescription?: string
+  longDescription?: string
+  priceFrom?: string
+  mainImage?: string
+  features?: string[]
+  perfectFor?: string[]
+  whyThisPiece?: string
+  whyEndGrain?: string
+  careInstructions?: string
 }
 
 function createProduct(input: ProductInput): Product {
@@ -102,19 +294,70 @@ function createProduct(input: ProductInput): Product {
     status,
     shippingNote,
     freeShipping,
+    description = PLACEHOLDER_DESCRIPTION,
+    dimensions = 'Details coming soon',
+    collection,
+    badge,
+    featured = false,
+    etsyUrl,
+    buttonLabel,
+    shortDescription,
+    longDescription,
+    priceFrom,
+    mainImage: inputMainImage,
     ...rest
   } = input
+
+  const isSold = status === 'Sold'
+  const isCustomOrder = status === 'Made to order'
+  const isAvailable = isPurchasableStatus(status)
+  const resolvedCollection =
+    collection ?? deriveCollection(input.category, status, input.name)
+  const resolvedBadge = deriveBadge(status, input.category, badge)
+  const resolvedMainImage = inputMainImage ?? imagePath(input.id, '01.jpg')
+  const resolvedEtsyUrl =
+    etsyUrl ?? (isAvailable && !isCustomOrder && !isSold ? ETSY_SHOP_URL : undefined)
+
+  const productFlags = {
+    isSold,
+    isCustomOrder,
+    isAvailable,
+    etsyUrl: resolvedEtsyUrl,
+    buttonLabel: undefined as string | undefined,
+  }
+
+  const resolvedButtonLabel = deriveButtonLabel({
+    ...productFlags,
+    buttonLabel,
+  })
 
   return {
     ...rest,
     slug: input.id,
+    description,
+    dimensions,
     status,
+    collection: resolvedCollection,
+    shortDescription: shortDescription ?? toShortDescription(description),
+    longDescription: longDescription ?? description,
+    priceFrom: priceFrom ?? formatPriceFrom(input.price),
+    badge: resolvedBadge,
+    availability: status,
     shippingNote: shippingNote ?? DEFAULT_SHIPPING_NOTE,
     freeShipping: freeShipping ?? true,
-    mainImage: imagePath(input.id, '01.jpg'),
-    galleryImages: galleryFor(input.id, galleryCount),
+    mainImage: resolvedMainImage,
+    image: resolvedMainImage,
+    galleryImages: inputMainImage
+      ? [inputMainImage]
+      : galleryFor(input.id, galleryCount),
+    etsyUrl: resolvedEtsyUrl,
     requestCtaText:
-      status === 'Made to order' ? 'Request This Piece' : 'Reserve This Piece',
+      status === 'Made to order' ? 'Request Custom Quote' : 'Buy on Etsy',
+    isSold,
+    isCustomOrder,
+    isAvailable,
+    featured,
+    buttonLabel: resolvedButtonLabel,
   }
 }
 
@@ -220,6 +463,7 @@ export const products: Product[] = [
     shippingNote: 'Returns accepted. Ships from Czech Republic.',
     freeShipping: false,
     galleryCount: 7,
+    badge: 'Available',
   }),
   createProduct({
     id: 'european-walnut-aztec-gold-epoxy-serving-board',
@@ -246,6 +490,7 @@ export const products: Product[] = [
       'Handmade in the center of Prague with love and passion for wood. Slow wood — enjoy nature.',
     shippingNote: 'Returns accepted. Ships from Czech Republic.',
     freeShipping: false,
+    badge: 'Available',
   }),
   listing(
     'handmade-oak-epoxy-lego-brick-serving-board',
@@ -587,6 +832,24 @@ export const products: Product[] = [
       perfectFor: ['Hospitality service', 'Restaurant plating', 'Custom branded service boards'],
     },
   ),
+  createProduct({
+    id: 'sold-logo-engraved-corporate-board',
+    name: 'Logo Engraved Corporate Board',
+    category: 'Serving Boards',
+    price: 'Price on request',
+    status: 'Sold',
+    woodType: 'Selected hardwoods',
+    materials: 'Wood',
+    mainImage: '/images/workshop-process.jpg',
+    description:
+      'A custom engraved corporate serving board made for branded gifting. Similar commissions available.',
+    shortDescription:
+      'Custom logo engraved board for corporate gifting. Sold — similar work on request.',
+    dimensions: 'Custom size',
+    badge: 'Sold',
+    freeShipping: false,
+    collection: 'Serving & Gift Pieces',
+  }),
 ]
 
 export function sortProducts(items: Product[]) {
@@ -603,3 +866,10 @@ export function sortProducts(items: Product[]) {
 }
 
 export const sortedProducts = sortProducts(products)
+
+export function getHomepageFeaturedProducts(items: Product[], limit = 8) {
+  const available = items.filter((piece) => piece.isAvailable)
+  const sold = items.filter((piece) => piece.isSold)
+
+  return [...available, ...sold].slice(0, limit)
+}
