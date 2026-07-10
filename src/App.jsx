@@ -1451,21 +1451,10 @@ function LegalDocumentPage({ slug }) {
   )
 }
 
-function resolvePartnerLogoFallback(logoPath) {
-  if (!logoPath?.endsWith('.png')) {
-    return null
-  }
-
-  const alternatePath = logoPath.replace(/\.png$/, '-logo.png')
-  return alternatePath !== logoPath ? alternatePath : null
-}
-
 function PartnerLogo({ partner, compact = false }) {
-  const [logoSrc, setLogoSrc] = useState(partner.logo)
   const [hasError, setHasError] = useState(false)
 
   useEffect(() => {
-    setLogoSrc(partner.logo)
     setHasError(false)
   }, [partner.logo])
 
@@ -1497,18 +1486,10 @@ function PartnerLogo({ partner, compact = false }) {
   return (
     <div className={wrapClassName}>
       <img
-        src={logoSrc}
+        src={partner.logo}
         alt={`${partner.name} logo`}
         loading="lazy"
-        onError={() => {
-          const fallbackLogo = resolvePartnerLogoFallback(partner.logo)
-          if (fallbackLogo && logoSrc !== fallbackLogo) {
-            setLogoSrc(fallbackLogo)
-            return
-          }
-
-          setHasError(true)
-        }}
+        onError={() => setHasError(true)}
         className={logoClassName}
       />
     </div>
@@ -1847,10 +1828,7 @@ function ProductCard({ piece, variant = 'luxury' }) {
             piece.isSold ? 'grayscale-[0.2]' : '',
           ].join(' ')}
         >
-          <ProductCardImage
-            src={getProductRealImages(piece)[0] || piece.image}
-            alt={piece.name}
-          />
+          <ProductCardImage src={piece.image} alt={piece.name} />
           {piece.isSold ? (
             <div className="pointer-events-none absolute inset-0 bg-stone-900/20" />
           ) : null}

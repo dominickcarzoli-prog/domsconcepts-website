@@ -3,8 +3,6 @@
  * Scans public/images/products/{id}/ for numbered gallery files (01.jpg …).
  * Writes src/data/product-image-inventory.json with real image paths per product id.
  *
- * Scope: public/images/products/ only — never partner logos, hero, or section images.
- *
  * Real image heuristic:
  * - File exists and matches /^\d{2}\.jpg$/
  * - Not the brown placeholder frame (~54838 bytes, 1600×1000)
