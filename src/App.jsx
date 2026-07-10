@@ -22,8 +22,8 @@ import {
   faqItems,
   galleryItems,
   getBoardCareAddonLabel,
+  getBoardCareButtonAction,
   homepageCarouselSlides,
-  isBoardCareEligible,
   legalPages,
   navItems,
   pageSeo,
@@ -33,24 +33,26 @@ import {
   shippingOptions,
   signaturePieces,
   woodPreferences,
-  workshopVideos,
   workshopAboutImagePath,
-  youtubeChannelUrl,
 } from './siteData'
+import { instagramVideos } from './data/instagramVideos'
 import {
   CUSTOM_ORDER_FORM_ANCHOR,
   ETSY_SHOP_URL,
   getHomepageFeaturedProducts,
-  getProductButtonAction,
-  productCollections,
+  getProductEtsyHref,
+  getProductPrimaryAction,
+  getProductSecondaryAction,
+  getShopCollections,
   productIdRedirects,
   products,
-  sortedProducts,
+  shopProducts,
 } from './data/products'
 
 const contactEmail = 'hello@domsconcepts.com'
 const instagramHandle = '@doms_concepts'
 const instagramUrl = 'https://instagram.com/doms_concepts'
+const placeholderInstagramReelUrl = 'PASTE_INSTAGRAM_REEL_URL_HERE'
 const etsyShopName = 'DomsConcepts'
 const etsyShopUrl = ETSY_SHOP_URL
 const footerLinks = [
@@ -645,7 +647,7 @@ function SignaturePieceCard({ piece }) {
 }
 
 function HomePage() {
-  const featuredProducts = getHomepageFeaturedProducts(sortedProducts, 8)
+  const featuredProducts = getHomepageFeaturedProducts(shopProducts, 8)
 
   return (
     <>
@@ -812,9 +814,10 @@ function WorkshopAboutImage({ className = '', priority = false }) {
 
 function AvailablePiecesPage() {
   const [activeCollection, setActiveCollection] = useState('All')
+  const visibleCollections = ['All', ...getShopCollections()]
   const filteredProducts = activeCollection === 'All'
-    ? sortedProducts
-    : sortedProducts.filter((product) => product.collection === activeCollection)
+    ? shopProducts
+    : shopProducts.filter((product) => product.collection === activeCollection)
 
   return (
     <>
@@ -828,7 +831,7 @@ function AvailablePiecesPage() {
         intro="Browse current workshop pieces. Available items link to Etsy for checkout. Custom and sold pieces can be requested directly."
       >
         <div className="mb-8 flex flex-wrap gap-2">
-          {['All', ...productCollections].map((collection) => {
+          {visibleCollections.map((collection) => {
             const isActive = activeCollection === collection
 
             return (
@@ -883,8 +886,9 @@ function ProductDetailPage() {
     )
   }
 
-  const productAction = getProductButtonAction(product)
-  const showBoardCareUpsell = isBoardCareEligible(product.category)
+  const primaryAction = getProductPrimaryAction(product)
+  const secondaryAction = getProductSecondaryAction(product)
+  const showBoardCareUpsell = product.careAddOnAvailable
 
   return (
     <PageShell
@@ -957,19 +961,17 @@ function ProductDetailPage() {
               <ProductMeta label="Photos" value={`${product.galleryImages.length} image${product.galleryImages.length === 1 ? '' : 's'}`} />
             </div>
             <p className="mt-6 leading-8 text-stone-300">{product.longDescription}</p>
-            {showBoardCareUpsell ? (
-              <BoardCareUpsell productId={product.id} />
-            ) : (
-              <div className="mt-8 flex flex-col gap-3 sm:flex-row">
-                <ProductActionButton action={productAction} className={goldButtonClassName} />
-                <SecondaryLink to="/available-pieces">Back to collection</SecondaryLink>
-              </div>
-            )}
-            {showBoardCareUpsell ? (
-              <div className="mt-4">
-                <SecondaryLink to="/available-pieces">Back to collection</SecondaryLink>
-              </div>
-            ) : null}
+            <div className="mt-8 flex flex-col gap-3">
+              <ProductActionButton action={primaryAction} className={goldButtonClassName} />
+              <ProductActionButton
+                action={secondaryAction}
+                className={outlineButtonLightClassName}
+              />
+              <SecondaryLink to="/available-pieces" className="mt-1 self-start text-stone-400">
+                Back to collection
+              </SecondaryLink>
+            </div>
+            {showBoardCareUpsell ? <BoardCareUpsell product={product} /> : null}
           </Card>
           {product.features?.length ? (
             <Card>
@@ -1335,26 +1337,26 @@ function AboutPage() {
         </Card>
       </div>
       <div className="mt-12">
-        <div className="mb-8 flex flex-col gap-5 lg:flex-row lg:items-end lg:justify-between">
-          <SectionHeading
-            eyebrow="From the workshop"
-            title="Short films and behind-the-scenes moments."
-            intro="Workshop builds, board care, and custom piece previews on YouTube."
-            compact
-          />
+        <SectionHeading
+          eyebrow="Instagram"
+          title="From the workshop"
+          intro="Short process clips, finished pieces and workshop moments from Dom's Concepts."
+          compact
+        />
+        <div className="grid gap-5 md:grid-cols-3">
+          {instagramVideos.map((video) => (
+            <InstagramVideoCard key={video.id} video={video} />
+          ))}
+        </div>
+        <div className="mt-8 flex justify-center">
           <a
-            href={youtubeChannelUrl}
+            href={instagramUrl}
             target="_blank"
-            rel="noreferrer"
+            rel="noopener noreferrer"
             className={goldButtonClassName}
           >
-            Visit YouTube Channel
+            Follow @doms_concepts on Instagram
           </a>
-        </div>
-        <div className="grid gap-5 md:grid-cols-3">
-          {workshopVideos.map((video) => (
-            <WorkshopVideoCard key={video.id} video={video} />
-          ))}
         </div>
       </div>
     </PageShell>
@@ -1513,53 +1515,64 @@ function FaqCard({ item }) {
   )
 }
 
-function WorkshopVideoCard({ video }) {
+function InstagramVideoCard({ video }) {
   const [hasError, setHasError] = useState(false)
+  const reelUrl =
+    video.instagramUrl && video.instagramUrl !== placeholderInstagramReelUrl
+      ? video.instagramUrl
+      : instagramUrl
 
   useEffect(() => {
     setHasError(false)
   }, [video.thumbnail])
 
+  const showThumbnail = Boolean(video.thumbnail) && !hasError
+
   return (
-    <Card className="overflow-hidden p-0">
-      <div className="relative aspect-[16/10] overflow-hidden bg-gradient-to-br from-[#1c1511] via-stone-950 to-black">
-        {!hasError ? (
+    <article className="group flex h-full flex-col overflow-hidden rounded-2xl border border-amber-200/15 bg-stone-900/90 shadow-xl shadow-black/25 transition duration-300 hover:-translate-y-0.5 hover:border-amber-200/35 hover:bg-stone-800/95">
+      <a
+        href={reelUrl}
+        target="_blank"
+        rel="noopener noreferrer"
+        aria-label={`Watch ${video.title} on Instagram`}
+        className="relative block aspect-[16/10] overflow-hidden bg-gradient-to-br from-[#1c1511] via-stone-950 to-black"
+      >
+        {showThumbnail ? (
           <img
             src={video.thumbnail}
             alt={video.title}
             loading="lazy"
             onError={() => setHasError(true)}
-            className="h-full w-full object-cover object-center"
+            className="h-full w-full object-cover object-center transition duration-500 group-hover:scale-[1.02]"
           />
         ) : (
-          <div className="flex h-full items-end p-5">
-            <p className="text-xs uppercase tracking-[0.25em] text-stone-400">
-              Thumbnail coming soon
-            </p>
-          </div>
+          <div className="signature-image-placeholder h-full w-full" aria-hidden="true" />
         )}
-        <div className="pointer-events-none absolute inset-0 bg-gradient-to-t from-black/55 via-transparent to-black/10" />
+        <div className="pointer-events-none absolute inset-0 bg-gradient-to-t from-black/70 via-black/10 to-black/20" />
+        <p className="pointer-events-none absolute left-4 top-4 text-[10px] uppercase tracking-[0.22em] text-amber-200/90">
+          Instagram Reel
+        </p>
         <div className="pointer-events-none absolute inset-0 flex items-center justify-center">
-          <span className="flex h-12 w-12 items-center justify-center rounded-full border border-white/25 bg-black/45 text-white backdrop-blur-sm">
-            ▶
+          <span className="flex h-11 w-11 items-center justify-center rounded-full border border-amber-200/35 bg-black/50 text-amber-50 opacity-80 backdrop-blur-sm transition group-hover:opacity-100">
+            ↗
           </span>
         </div>
-      </div>
-      <div className="space-y-4 p-5">
-        <div>
-          <h3 className="font-serif text-2xl text-white">{video.title}</h3>
+      </a>
+      <div className="flex flex-1 flex-col gap-4 p-5">
+        <div className="flex-1">
+          <h3 className="font-serif text-xl text-white">{video.title}</h3>
           <p className="mt-2 text-sm leading-7 text-stone-300">{video.description}</p>
         </div>
         <a
-          href={video.url}
+          href={reelUrl}
           target="_blank"
           rel="noopener noreferrer"
           className={goldButtonClassNameCompact}
         >
-          Watch on YouTube
+          Watch on Instagram
         </a>
       </div>
-    </Card>
+    </article>
   )
 }
 
@@ -1612,6 +1625,8 @@ function BoardCareProductsGrid({ compact = false, luxury = false }) {
 }
 
 function BoardCareProductCard({ product, compact = false, luxury = false }) {
+  const action = getBoardCareButtonAction(product)
+
   return (
     <Card className="flex h-full flex-col overflow-hidden p-0" luxury={luxury}>
       <PhotoFrame
@@ -1639,17 +1654,27 @@ function BoardCareProductCard({ product, compact = false, luxury = false }) {
           <p className="text-sm leading-7 text-stone-300">{product.description}</p>
         )}
         <div className="mt-auto pt-2">
-          <PrimaryLink to={`/custom-orders?addon=${product.addonParam}`}>
-            {compact ? 'Add to board order' : product.ctaLabel}
-          </PrimaryLink>
+          <a
+            href={action.href}
+            target="_blank"
+            rel="noreferrer"
+            className={goldButtonClassName}
+          >
+            {action.label}
+          </a>
         </div>
       </div>
     </Card>
   )
 }
 
-function BoardCareUpsell({ productId }) {
-  const baseHref = `/custom-orders?product=${encodeURIComponent(productId)}`
+function BoardCareUpsell({ product }) {
+  const etsyHref = getProductEtsyHref(product)
+  const purchaseOptions = [
+    { label: 'Choose Wood Butter on Etsy', href: etsyHref },
+    { label: 'Choose Wood Wax on Etsy', href: etsyHref },
+    { label: 'Buy without add-on on Etsy', href: etsyHref },
+  ]
 
   return (
     <div className="mt-8 rounded-[1.4rem] border border-amber-200/20 bg-gradient-to-br from-[#1c1511] via-stone-950 to-black p-5 sm:p-6">
@@ -1676,17 +1701,22 @@ function BoardCareUpsell({ productId }) {
           No care add-on
         </li>
       </ul>
-      <div className="mt-6 flex flex-col gap-3">
-        <PrimaryLink to={`${baseHref}&addon=wood-butter`}>
-          Reserve with Wood Butter
-        </PrimaryLink>
-        <PrimaryLink to={`${baseHref}&addon=wood-wax`}>Reserve with Wood Wax</PrimaryLink>
-        <SecondaryLink to={baseHref} variant="button">Reserve without add-on</SecondaryLink>
-      </div>
-      <p className="mt-4 text-xs leading-6 text-stone-500">
-        Selected add-on will be included in your reservation enquiry. No checkout on the
-        website yet.
+      <p className="mt-5 text-sm leading-7 text-stone-300">
+        You&apos;ll choose the board care option on the Etsy listing before checkout.
       </p>
+      <div className="mt-6 flex flex-col gap-3">
+        {purchaseOptions.map((option) => (
+          <a
+            key={option.label}
+            href={option.href}
+            target="_blank"
+            rel="noreferrer"
+            className={goldButtonClassName}
+          >
+            {option.label}
+          </a>
+        ))}
+      </div>
     </div>
   )
 }
@@ -1743,9 +1773,10 @@ function ProductActionButton({ action, className = goldButtonClassNameCompact })
 }
 
 function ProductCard({ piece, variant = 'luxury' }) {
-  const action = getProductButtonAction(piece)
+  const action = getProductPrimaryAction(piece)
   const isLuxury = variant === 'luxury'
   const badgeLabel = productBadgeLabels[piece.badge] ?? piece.badge
+  const detailHref = `/available-pieces/${piece.id}`
 
   return (
     <article
@@ -1756,7 +1787,7 @@ function ProductCard({ piece, variant = 'luxury' }) {
       ].join(' ')}
     >
       <Link
-        to={`/available-pieces/${piece.id}`}
+        to={detailHref}
         className="block overflow-hidden"
         aria-label={`View ${piece.name}`}
       >
@@ -1784,7 +1815,7 @@ function ProductCard({ piece, variant = 'luxury' }) {
             {badgeLabel}
           </span>
           <Link
-            to={`/available-pieces/${piece.id}`}
+            to={detailHref}
             className="line-clamp-2 font-display text-xl leading-snug text-stone-100 transition hover:text-amber-200"
           >
             {piece.name}

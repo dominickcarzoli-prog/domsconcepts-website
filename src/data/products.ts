@@ -61,7 +61,10 @@ export type Product = {
   isCustomOrder: boolean
   isSold: boolean
   buttonLabel: string
+  careAddOnAvailable: boolean
   featured: boolean
+  hidden: boolean
+  isDraft: boolean
   features?: string[]
   perfectFor?: string[]
   whyThisPiece?: string
@@ -71,6 +74,14 @@ export type Product = {
 
 export const ETSY_SHOP_URL = 'https://www.etsy.com/shop/DomsConcepts'
 export const CUSTOM_ORDER_FORM_ANCHOR = '/custom-orders#custom-quote-form'
+
+const BOARD_CARE_ELIGIBLE_CATEGORIES: ProductCategory[] = [
+  'Cutting Boards',
+  'Serving Boards',
+  'Breadboards',
+  'Epoxy Pieces',
+  'Coasters',
+]
 
 export const productCollections: ProductCollection[] = [
   'Available Pieces',
@@ -209,54 +220,76 @@ function deriveButtonLabel(product: {
   return 'Request Similar Piece'
 }
 
-export function getProductButtonAction(product: Product): ProductButtonAction {
-  const label = product.buttonLabel
+export function getProductEnquiryHref(product: Pick<Product, 'name'>): string {
+  return `/custom-orders?product=${encodeURIComponent(product.name)}#custom-quote-form`
+}
+
+export function getProductDetailHref(product: Pick<Product, 'id'>): string {
+  return `/available-pieces/${product.id}`
+}
+
+export function getProductEtsyHref(product: Pick<Product, 'etsyUrl'>): string {
+  return product.etsyUrl ?? ETSY_SHOP_URL
+}
+
+export function getProductPrimaryAction(product: Product): ProductButtonAction {
+  if (product.isAvailable) {
+    return {
+      label: 'Buy on Etsy',
+      href: getProductEtsyHref(product),
+      external: true,
+    }
+  }
 
   if (product.isSold) {
     return {
-      label,
-      href: CUSTOM_ORDER_FORM_ANCHOR,
+      label: 'Request Similar Piece',
+      href: getProductEnquiryHref(product),
       external: false,
     }
   }
 
   if (product.isCustomOrder) {
     return {
-      label,
-      href: `/custom-orders?product=${encodeURIComponent(product.name)}#custom-quote-form`,
-      external: false,
-    }
-  }
-
-  if (product.etsyUrl && product.isAvailable) {
-    return {
-      label,
-      href: product.etsyUrl,
-      external: true,
-    }
-  }
-
-  if (product.isAvailable) {
-    return {
-      label,
-      href: ETSY_SHOP_URL,
-      external: true,
-    }
-  }
-
-  if (product.badge === 'One-of-One') {
-    return {
-      label: 'Request Similar Piece',
-      href: CUSTOM_ORDER_FORM_ANCHOR,
+      label: 'Request Custom Quote',
+      href: getProductEnquiryHref(product),
       external: false,
     }
   }
 
   return {
-    label,
-    href: CUSTOM_ORDER_FORM_ANCHOR,
+    label: product.buttonLabel || 'Request Similar Piece',
+    href: getProductEnquiryHref(product),
     external: false,
   }
+}
+
+export function getProductSecondaryAction(product: Product): ProductButtonAction {
+  if (product.isAvailable) {
+    return {
+      label: 'Ask a question / custom enquiry',
+      href: getProductEnquiryHref(product),
+      external: false,
+    }
+  }
+
+  if (product.isSold) {
+    return {
+      label: 'Ask about this piece',
+      href: getProductEnquiryHref(product),
+      external: false,
+    }
+  }
+
+  return {
+    label: 'Ask a question',
+    href: getProductEnquiryHref(product),
+    external: false,
+  }
+}
+
+export function getProductButtonAction(product: Product): ProductButtonAction {
+  return getProductPrimaryAction(product)
 }
 
 type ProductInput = {
@@ -286,6 +319,8 @@ type ProductInput = {
   whyThisPiece?: string
   whyEndGrain?: string
   careInstructions?: string
+  hidden?: boolean
+  isDraft?: boolean
 }
 
 function createProduct(input: ProductInput): Product {
@@ -301,6 +336,8 @@ function createProduct(input: ProductInput): Product {
     featured = false,
     etsyUrl,
     buttonLabel,
+    hidden = false,
+    isDraft = false,
     shortDescription,
     longDescription,
     priceFrom,
@@ -315,8 +352,7 @@ function createProduct(input: ProductInput): Product {
     collection ?? deriveCollection(input.category, status, input.name)
   const resolvedBadge = deriveBadge(status, input.category, badge)
   const resolvedMainImage = inputMainImage ?? imagePath(input.id, '01.jpg')
-  const resolvedEtsyUrl =
-    etsyUrl ?? (isAvailable && !isCustomOrder && !isSold ? ETSY_SHOP_URL : undefined)
+  const resolvedEtsyUrl = etsyUrl
 
   const productFlags = {
     isSold,
@@ -330,6 +366,11 @@ function createProduct(input: ProductInput): Product {
     ...productFlags,
     buttonLabel,
   })
+  const careAddOnAvailable =
+    BOARD_CARE_ELIGIBLE_CATEGORIES.includes(input.category) &&
+    isAvailable &&
+    !isSold &&
+    !isCustomOrder
 
   return {
     ...rest,
@@ -356,7 +397,10 @@ function createProduct(input: ProductInput): Product {
     isSold,
     isCustomOrder,
     isAvailable,
+    careAddOnAvailable,
     featured,
+    hidden,
+    isDraft,
     buttonLabel: resolvedButtonLabel,
   }
 }
@@ -523,22 +567,79 @@ export const products: Product[] = [
     ],
     shippingNote: DEFAULT_SHIPPING_NOTE,
   }),
-  listing(
-    'handmade-end-grain-walnut-breadboard',
-    'Handmade End Grain Walnut Breadboard',
-    'Breadboards',
-    'CZK 2,029.11',
-    'Available',
-    'Walnut',
-  ),
-  listing(
-    'walnut-live-edge-charcuterie-board',
-    'Walnut Live Edge Charcuterie Board',
-    'Serving Boards',
-    'CZK 2,029.11',
-    'Available',
-    'Walnut',
-  ),
+  createProduct({
+    id: 'handmade-end-grain-walnut-breadboard',
+    name: 'Handmade End Grain Walnut Breadboard',
+    category: 'Breadboards',
+    collection: 'Available Pieces',
+    price: 'CZK 2,029.11',
+    status: 'Available',
+    woodType: 'American black walnut',
+    materials: 'Wood',
+    badge: 'Available',
+    buttonLabel: 'Buy on Etsy',
+    galleryCount: 11,
+    description:
+      'Handmade from American black walnut with a striking end grain pattern, this breadboard combines durability, functionality, and warm natural character. The repeating light and dark walnut blocks create a rich geometric surface that works beautifully for slicing, serving, or display.',
+    dimensions: 'Details coming soon',
+    features: [
+      'Handmade from premium American black walnut',
+      'Durable end grain construction',
+      'Distinct repeating walnut block pattern',
+      'Gentle on knife edges',
+      'Thick butcher-block style for stability',
+      'Sanded smooth and finished by hand',
+      'Treated with food-safe mineral oil and beeswax',
+    ],
+    perfectFor: [
+      'Everyday bread prep and serving',
+      'Kitchen countertop display',
+      'Housewarming or wedding gifts',
+      'Home chefs who appreciate end grain craftsmanship',
+    ],
+    whyEndGrain:
+      'End grain boards absorb knife impact through the wood fibers, helping reduce wear on blades and minimizing visible cut marks over time.',
+    careInstructions:
+      'Hand wash only. Do not soak or place in dishwasher. Reapply board oil periodically to maintain the finish and longevity.',
+    whyThisPiece:
+      'Each board is handmade with natural variations in grain and tone that make every piece unique — a practical kitchen tool and a beautiful centerpiece in one.',
+    shippingNote: DEFAULT_SHIPPING_NOTE,
+  }),
+  createProduct({
+    id: 'walnut-live-edge-charcuterie-board',
+    name: 'Walnut Live Edge Charcuterie Board',
+    category: 'Epoxy Pieces',
+    collection: 'One-of-One Creations',
+    price: 'CZK 2,029.11',
+    status: 'Available',
+    woodType: 'American black walnut with black epoxy resin',
+    materials: 'Wood and epoxy resin',
+    badge: 'Available',
+    buttonLabel: 'Buy on Etsy',
+    galleryCount: 7,
+    description:
+      'A one-of-a-kind live edge charcuterie board crafted from American black walnut, featuring a dramatic black epoxy river that follows the natural contour of the wood. Finished for food-safe serving, it is ideal for cheese, cured meats, fruit, and entertaining.',
+    dimensions: 'Details coming soon',
+    features: [
+      'Handmade from premium American black walnut',
+      'Natural live edge profile preserved',
+      'Black epoxy resin river detail',
+      'Food-safe hand-rubbed oil and wax finish',
+      'Unique one-of-one character',
+      'Suitable for serving and display',
+    ],
+    perfectFor: [
+      'Charcuterie and cheese boards',
+      'Entertaining and gifting',
+      'Customers looking for a unique live edge piece',
+      'Home décor with natural wood character',
+    ],
+    whyThisPiece:
+      'Live edge walnut paired with a flowing epoxy river creates a striking serving piece that highlights the natural beauty of the timber — no two boards are ever the same.',
+    careInstructions:
+      'Hand wash only. Do not soak or place in dishwasher. Dry immediately and refresh with board oil or wax as needed.',
+    shippingNote: DEFAULT_SHIPPING_NOTE,
+  }),
   createProduct({
     id: 'handmade-walnut-steak-board-two-cups',
     name: 'Handmade Walnut Steak Board with Two Cups',
@@ -737,6 +838,7 @@ export const products: Product[] = [
     'CZK 2,029.11',
     'Available',
     'European oak',
+    { hidden: true },
   ),
   createProduct({
     id: 'handcrafted-oak-clock-stormy-grey-epoxy',
@@ -766,6 +868,7 @@ export const products: Product[] = [
     'Made to order',
     'European oak',
     {
+      hidden: true,
       description:
         'Handmade oak end grain cutting boards can be made to order in the Dom\'s Concepts workshop. More pieces are coming soon — enquire for lead time and sizing.',
       dimensions: 'Custom sizes available on request',
@@ -781,6 +884,7 @@ export const products: Product[] = [
     'Made to order',
     'Walnut or oak',
     {
+      hidden: true,
       description:
         'An edge grain cutting board designed for everyday prep with a refined hardwood look. Made to order.',
       freeShipping: false,
@@ -795,6 +899,7 @@ export const products: Product[] = [
     'Made to order',
     'Selected hardwoods',
     {
+      hidden: true,
       description:
         'A custom board designed for logo engraving, gifting, or branded presentation.',
       freeShipping: false,
@@ -810,6 +915,7 @@ export const products: Product[] = [
     'Made to order',
     'Selected hardwoods',
     {
+      hidden: true,
       description:
         'A tailored set of branded or personalised boards for premium corporate gifting.',
       freeShipping: false,
@@ -825,6 +931,7 @@ export const products: Product[] = [
     'Made to order',
     'Selected hardwoods',
     {
+      hidden: true,
       description:
         'Serving and presentation boards developed for hospitality and restaurant use.',
       freeShipping: false,
@@ -841,6 +948,7 @@ export const products: Product[] = [
     woodType: 'Selected hardwoods',
     materials: 'Wood',
     mainImage: '/images/workshop-process.jpg',
+    hidden: true,
     description:
       'A custom engraved corporate serving board made for branded gifting. Similar commissions available.',
     shortDescription:
@@ -851,6 +959,27 @@ export const products: Product[] = [
     collection: 'Serving & Gift Pieces',
   }),
 ]
+
+export function isShopGridVisible(product: Product): boolean {
+  if (product.hidden || product.isDraft) {
+    return false
+  }
+
+  if (product.isCustomOrder) {
+    return false
+  }
+
+  if (!product.name?.trim()) {
+    return false
+  }
+
+  const priceLabel = product.priceFrom || product.price
+  if (!priceLabel?.trim()) {
+    return false
+  }
+
+  return true
+}
 
 export function sortProducts(items: Product[]) {
   return [...items].sort((left, right) => {
@@ -867,9 +996,17 @@ export function sortProducts(items: Product[]) {
 
 export const sortedProducts = sortProducts(products)
 
+export const shopProducts = sortProducts(products.filter(isShopGridVisible))
+
+export function getShopCollections(items: Product[] = shopProducts): ProductCollection[] {
+  const collections = new Set(items.map((product) => product.collection))
+  return productCollections.filter((collection) => collections.has(collection))
+}
+
 export function getHomepageFeaturedProducts(items: Product[], limit = 8) {
-  const available = items.filter((piece) => piece.isAvailable)
-  const sold = items.filter((piece) => piece.isSold)
+  const visible = items.filter(isShopGridVisible)
+  const available = visible.filter((piece) => piece.isAvailable)
+  const sold = visible.filter((piece) => piece.isSold)
 
   return [...available, ...sold].slice(0, limit)
 }

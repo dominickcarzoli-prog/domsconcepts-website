@@ -1,3 +1,5 @@
+import { ETSY_SHOP_URL, products } from './data/products.ts'
+
 export const navItems = [
   { label: 'Home', path: '/' },
   { label: 'Shop the Collection', path: '/available-pieces' },
@@ -422,35 +424,6 @@ export const budgetRanges = [
   '10 000 CZK+',
 ]
 
-export const youtubeChannelUrl = 'YOUTUBE_CHANNEL_URL'
-
-export const workshopVideos = [
-  {
-    id: 'latest-build',
-    title: 'Latest build',
-    description:
-      'A behind-the-scenes look at shaping, sanding, and finishing a handmade piece in the Prague workshop.',
-    thumbnail: '/images/youtube/latest-build.jpg',
-    url: 'YOUTUBE_SHORT_1_URL',
-  },
-  {
-    id: 'board-care',
-    title: 'Board care',
-    description:
-      'Quick guidance on washing, drying, and refreshing boards with wood butter for a smooth, lasting finish.',
-    thumbnail: '/images/youtube/board-care.jpg',
-    url: 'YOUTUBE_SHORT_2_URL',
-  },
-  {
-    id: 'custom-pieces',
-    title: 'Custom pieces',
-    description:
-      'How custom sizes, wood choices, and engraving requests move from first idea to finished work.',
-    thumbnail: '/images/youtube/custom-pieces.jpg',
-    url: 'YOUTUBE_SHORT_3_URL',
-  },
-]
-
 export const faqItems = [
   {
     question: 'Do you make custom sizes?',
@@ -585,7 +558,10 @@ export const boardCareProducts = [
     image: '/images/products/natural-wood-butter-beeswax/01.jpg',
     description:
       'A soft board conditioner for routine care. Helps refresh the surface, deepen the wood tone, and keep boards protected between uses.',
-    ctaLabel: 'Add Wood Butter to board order',
+    ctaLabel: 'Add on Etsy',
+    buttonLabel: 'Add on Etsy',
+    productId: 'natural-wood-butter-beeswax',
+    isAddOn: true,
     addonParam: 'wood-butter',
   },
   {
@@ -594,7 +570,10 @@ export const boardCareProducts = [
     image: '/images/products/beeswax-wood-wax-natural-wood-conditioner/01.jpg',
     description:
       'A protective wax blend with mineral oil, beeswax, and carnauba wax. Good for wood pieces that need a stronger protective finish.',
-    ctaLabel: 'Add Wood Wax to board order',
+    ctaLabel: 'Add on Etsy',
+    buttonLabel: 'Add on Etsy',
+    productId: 'beeswax-wood-wax-natural-wood-conditioner',
+    isAddOn: true,
     addonParam: 'wood-wax',
   },
 ]
@@ -623,4 +602,20 @@ export function isBoardCareEligible(category) {
 
 export function getBoardCareAddonLabel(value) {
   return boardCareAddonOptions.find((option) => option.value === value)?.label || value
+}
+
+export function getBoardCareButtonAction(item) {
+  const catalogProduct = item.productId
+    ? products.find((product) => product.id === item.productId)
+    : undefined
+
+  const href =
+    item.addOnEtsyUrl ?? item.etsyUrl ?? catalogProduct?.etsyUrl ?? ETSY_SHOP_URL
+
+  const label =
+    item.buttonLabel ??
+    item.ctaLabel ??
+    (item.isAddOn === false ? 'Buy on Etsy' : 'Add on Etsy')
+
+  return { label, href, external: true }
 }
