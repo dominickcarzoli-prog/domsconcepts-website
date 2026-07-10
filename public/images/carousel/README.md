@@ -4,11 +4,11 @@ Portfolio hero images for the homepage carousel — **not** product inventory ph
 
 | Filename | Subject |
 |----------|---------|
-| `chessboards.jpg` | Custom chessboards |
-| `epoxy-one-off.jpg` | Epoxy statement pieces |
-| `butcher-blocks.jpg` | Large butcher blocks |
-| `serving-trays.jpg` | Serving trays |
-| `furniture-style.jpg` | Furniture-style custom work |
-| `premium-cutting-boards.jpg` | Premium cutting boards |
+| `premium-cutting-boards.jpg` | Kitchen board / serving board on kitchen counter (slide 1) |
+| `knife-table.jpg` | Knife table |
+| `dining-table.jpg` | Dining table |
+| `tv-table-media-console.jpg` | TV table / media console |
+| `side-table.jpg` | Side table |
+| `bed-bedroom-piece.jpg` | Bed / bedroom piece |
 
 Until files are uploaded, the site uses fallback images defined in `src/siteData.js`.

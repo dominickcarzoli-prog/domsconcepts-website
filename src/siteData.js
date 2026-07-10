@@ -57,40 +57,40 @@ export const featuredCategories = [
 // Carousel images are portfolio/hero images, not product inventory images.
 export const homepageCarouselSlides = [
   {
-    id: 'premium-boards',
+    id: 'kitchen-board',
     image: '/images/carousel/premium-cutting-boards.jpg',
-    label: 'Handmade hardwood in the kitchen',
-    fallbackImage: '/images/end-grain-board.jpg',
-  },
-  {
-    id: 'chessboards',
-    image: '/images/carousel/chessboards.jpg',
-    label: 'Custom chessboards',
-    fallbackImage: '/images/end-grain-board.jpg',
-  },
-  {
-    id: 'epoxy-statement',
-    image: '/images/carousel/epoxy-one-off.jpg',
-    label: 'Epoxy statement pieces',
-    fallbackImage: '/images/epoxy-piece.jpg',
-  },
-  {
-    id: 'serving-trays',
-    image: '/images/carousel/serving-trays.jpg',
-    label: 'Serving trays',
+    label: 'Kitchen board on counter',
     fallbackImage: '/images/serving-board.jpg',
   },
   {
-    id: 'furniture-custom',
-    image: '/images/carousel/furniture-style.jpg',
-    label: 'Furniture-style custom work',
+    id: 'knife-table',
+    image: '/images/carousel/knife-table.jpg',
+    label: 'Knife table',
     fallbackImage: '/images/hero-workshop-board.jpg',
   },
   {
-    id: 'butcher-blocks',
-    image: '/images/carousel/butcher-blocks.jpg',
-    label: 'Butcher blocks',
-    fallbackImage: '/images/butcher-block.jpg',
+    id: 'dining-table',
+    image: '/images/carousel/dining-table.jpg',
+    label: 'Dining table',
+    fallbackImage: '/images/hero-workshop-board.jpg',
+  },
+  {
+    id: 'tv-table-media-console',
+    image: '/images/carousel/tv-table-media-console.jpg',
+    label: 'TV table / media console',
+    fallbackImage: '/images/hero-workshop-board.jpg',
+  },
+  {
+    id: 'side-table',
+    image: '/images/carousel/side-table.jpg',
+    label: 'Side table',
+    fallbackImage: '/images/hero-workshop-board.jpg',
+  },
+  {
+    id: 'bed-bedroom-piece',
+    image: '/images/carousel/bed-bedroom-piece.jpg',
+    label: 'Bed / bedroom piece',
+    fallbackImage: '/images/hero-workshop-board.jpg',
   },
 ]
 
