@@ -108,13 +108,19 @@ export const productCategories: ProductCategory[] = [
 const PLACEHOLDER_DESCRIPTION =
   'Handmade piece from the Dom\'s Concepts workshop. Full details and photos can be updated soon.'
 
+const PRODUCT_IMAGE_PATH_PREFIX = '/images/products/'
 const PLACEHOLDER_IMAGE_PATH_RE = /placeholder|coming-soon|photo-coming/i
 
 type ProductImageInventory = Record<string, string[]>
 
 const imageInventory = productImageInventory as ProductImageInventory
 
+/** Placeholder detection is scoped to product gallery paths only. */
 function isLikelyPlaceholderPath(imagePath: string) {
+  if (!imagePath.startsWith(PRODUCT_IMAGE_PATH_PREFIX)) {
+    return false
+  }
+
   return PLACEHOLDER_IMAGE_PATH_RE.test(imagePath)
 }
 
