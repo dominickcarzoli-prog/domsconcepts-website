@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
+import { useCallback, useEffect, useMemo, useState } from 'react'
 import {
   BrowserRouter,
   Link,
@@ -30,7 +30,7 @@ import {
   premiumReviews,
   resolveBoardCareAddon,
   shippingOptions,
-  signaturePieces,
+  featuredSignaturePieces,
   woodPreferences,
   workshopAboutImagePath,
 } from './siteData'
@@ -39,22 +39,29 @@ import { instagramVideos } from './data/instagramVideos'
 import {
   bespokeCategories,
   getBespokeCreationBySlug,
-  getHomepagePastProjects,
   getVisibleGalleryProjects,
 } from './data/bespokeCreations'
 import {
   CUSTOM_ORDER_FORM_ANCHOR,
   ETSY_SHOP_URL,
   getHomepageFeaturedProducts,
+  getProductById,
   getProductEtsyHref,
   getProductPrimaryAction,
   getProductRealImages,
   getProductSecondaryAction,
   getShopCollections,
+  hasDisplayableDimensions,
+  isPublished,
   productIdRedirects,
   products,
   shopProducts,
 } from './data/products'
+import {
+  getNextSundayDeadlinePrague,
+  getWorkshopDropEtsyHref,
+  workshopDrop,
+} from './data/workshopDrop'
 
 const contactEmail = 'hello@domsconcepts.com'
 const instagramHandle = '@doms_concepts'
@@ -567,192 +574,27 @@ function HeroCarouselImage({ src, alt, fallbackSrc, positionClassName = 'object-
   )
 }
 
-const SIGNATURE_AUTOPLAY_MS = 4500
-const SIGNATURE_TRANSITION_MS = 700
+const SIGNATURE_FEATURED = featuredSignaturePieces
 
-function SignatureWorkCarousel() {
-  const touchStartX = useRef(null)
-  const [activeIndex, setActiveIndex] = useState(0)
-  const [cardsPerView, setCardsPerView] = useState(1)
-  const [isHovered, setIsHovered] = useState(false)
-  const [isFocusPaused, setIsFocusPaused] = useState(false)
-  const [isDocumentHidden, setIsDocumentHidden] = useState(false)
-  const [prefersReducedMotion, setPrefersReducedMotion] = useState(false)
-
-  useEffect(() => {
-    const desktopQuery = window.matchMedia('(min-width: 1024px)')
-    const motionQuery = window.matchMedia('(prefers-reduced-motion: reduce)')
-
-    const updateCardsPerView = () => {
-      setCardsPerView(desktopQuery.matches ? 2 : 1)
-    }
-
-    const updateMotionPreference = () => {
-      setPrefersReducedMotion(motionQuery.matches)
-    }
-
-    updateCardsPerView()
-    updateMotionPreference()
-    desktopQuery.addEventListener('change', updateCardsPerView)
-    motionQuery.addEventListener('change', updateMotionPreference)
-
-    return () => {
-      desktopQuery.removeEventListener('change', updateCardsPerView)
-      motionQuery.removeEventListener('change', updateMotionPreference)
-    }
-  }, [])
-
-  useEffect(() => {
-    const handleVisibility = () => setIsDocumentHidden(document.hidden)
-    handleVisibility()
-    document.addEventListener('visibilitychange', handleVisibility)
-    return () => document.removeEventListener('visibilitychange', handleVisibility)
-  }, [])
-
-  const slideCount = Math.ceil(signaturePieces.length / cardsPerView)
-  const maxIndex = Math.max(0, slideCount - 1)
-
-  useEffect(() => {
-    setActiveIndex((current) => Math.min(current, maxIndex))
-  }, [maxIndex])
-
-  const goToSlide = useCallback(
-    (index) => {
-      const nextIndex = ((index % slideCount) + slideCount) % slideCount
-      setActiveIndex(nextIndex)
-    },
-    [slideCount],
-  )
-
-  const isAutoplayPaused =
-    prefersReducedMotion || isHovered || isFocusPaused || isDocumentHidden || slideCount <= 1
-
-  useEffect(() => {
-    if (isAutoplayPaused) return undefined
-
-    const timer = window.setInterval(() => {
-      setActiveIndex((current) => (current + 1) % slideCount)
-    }, SIGNATURE_AUTOPLAY_MS)
-
-    return () => window.clearInterval(timer)
-  }, [isAutoplayPaused, slideCount, activeIndex])
-
-  useEffect(() => {
-    const nextSlideIndex = (activeIndex + 1) % slideCount
-    const start = nextSlideIndex * cardsPerView
-    const imagesToPreload = signaturePieces.slice(start, start + cardsPerView)
-
-    imagesToPreload.forEach((piece) => {
-      if (!piece.image) return
-      const img = new Image()
-      img.src = piece.image
-    })
-  }, [activeIndex, cardsPerView, slideCount])
-
-  const handleTouchStart = (event) => {
-    touchStartX.current = event.touches[0].clientX
-  }
-
-  const handleTouchEnd = (event) => {
-    if (touchStartX.current === null) return
-    const delta = touchStartX.current - event.changedTouches[0].clientX
-    if (Math.abs(delta) > 48) {
-      goToSlide(activeIndex + (delta > 0 ? 1 : -1))
-    }
-    touchStartX.current = null
-  }
-
-  const transitionStyle = prefersReducedMotion
-    ? { transition: 'none' }
-    : { transition: `transform ${SIGNATURE_TRANSITION_MS}ms cubic-bezier(0.22, 1, 0.36, 1)` }
+function SignatureWorkGrid() {
+  const pieces = SIGNATURE_FEATURED
 
   return (
-    <div
-      className="mt-14"
-      aria-roledescription="carousel"
-      aria-label="Signature custom work"
-      onMouseEnter={() => setIsHovered(true)}
-      onMouseLeave={() => setIsHovered(false)}
-      onFocusCapture={() => setIsFocusPaused(true)}
-      onBlurCapture={(event) => {
-        if (!event.currentTarget.contains(event.relatedTarget)) {
-          setIsFocusPaused(false)
-        }
-      }}
-      onTouchStart={handleTouchStart}
-      onTouchEnd={handleTouchEnd}
-    >
-      <div className="overflow-hidden">
-        <div
-          className="flex"
-          style={{
-            ...transitionStyle,
-            transform: `translateX(-${activeIndex * 100}%)`,
-          }}
-        >
-          {Array.from({ length: slideCount }).map((_, slideIndex) => {
-            const start = slideIndex * cardsPerView
-            const pieces = signaturePieces.slice(start, start + cardsPerView)
-
-            return (
-              <div
-                key={`signature-slide-${slideIndex}`}
-                className="grid w-full shrink-0 grid-cols-1 gap-6 lg:grid-cols-2"
-                aria-hidden={slideIndex !== activeIndex ? true : undefined}
-              >
-                {pieces.map((piece) => (
-                  <SignaturePieceCard key={piece.id} piece={piece} />
-                ))}
-              </div>
-            )
-          })}
-        </div>
-      </div>
-
-      <div className="mt-8 flex items-center justify-between gap-4 border-t border-white/10 pt-6">
-        <div className="flex flex-wrap items-center gap-2.5" role="tablist" aria-label="Signature work slides">
-          {Array.from({ length: slideCount }).map((_, index) => (
-            <button
-              key={index}
-              type="button"
-              role="tab"
-              aria-label={`Show signature work slide ${index + 1}`}
-              aria-selected={index === activeIndex}
-              aria-current={index === activeIndex ? 'true' : undefined}
-              onClick={() => goToSlide(index)}
-              className={[
-                'h-2.5 rounded-full transition-all duration-300',
-                index === activeIndex
-                  ? 'w-8 bg-amber-200/90 shadow-[0_0_12px_rgba(251,191,36,0.25)]'
-                  : 'w-2.5 bg-white/25 hover:bg-white/45',
-              ].join(' ')}
-            />
-          ))}
-        </div>
-        <div className="flex items-center gap-3">
-          <button
-            type="button"
-            aria-label="Previous signature work"
-            onClick={() => goToSlide(activeIndex - 1)}
-            className="inline-flex h-12 w-12 items-center justify-center rounded-full border border-white/20 bg-black/40 text-lg text-white transition hover:border-amber-200/45 hover:bg-black/60 hover:text-amber-100"
-          >
-            ←
-          </button>
-          <button
-            type="button"
-            aria-label="Next signature work"
-            onClick={() => goToSlide(activeIndex + 1)}
-            className="inline-flex h-12 w-12 items-center justify-center rounded-full border border-white/20 bg-black/40 text-lg text-white transition hover:border-amber-200/45 hover:bg-black/60 hover:text-amber-100"
-          >
-            →
-          </button>
-        </div>
+    <div className="signature-work-grid mx-auto mt-10 max-w-6xl">
+      <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:gap-7">
+        {pieces.map((piece, index) => (
+          <SignaturePieceCard
+            key={piece.id}
+            piece={piece}
+            priority={index < 2}
+          />
+        ))}
       </div>
     </div>
   )
 }
 
-function SignaturePieceImage({ src, alt, objectPosition = 'center center', priority = false }) {
+function SignaturePieceImage({ src, objectPosition = 'center center', priority = false }) {
   const [hasError, setHasError] = useState(false)
 
   useEffect(() => {
@@ -766,48 +608,51 @@ function SignaturePieceImage({ src, alt, objectPosition = 'center center', prior
   return (
     <img
       src={src}
-      alt={alt}
+      alt=""
       loading={priority ? 'eager' : 'lazy'}
       decoding="async"
       onError={() => setHasError(true)}
-      className="h-full w-full object-cover transition duration-700 group-hover:scale-[1.02]"
+      className="h-full w-full object-cover transition duration-700 motion-safe:group-hover:scale-[1.02]"
       style={{ objectPosition }}
     />
   )
 }
 
-function SignaturePieceCard({ piece }) {
+function SignaturePieceCard({ piece, priority = false }) {
+  const galleryTo = piece.galleryHash ? `/gallery#${piece.galleryHash}` : '/gallery'
+
   return (
-    <article className="group flex h-full flex-col overflow-hidden rounded-2xl border border-white/10 bg-white/[0.04]">
-      <Link
-        to="/gallery"
-        className="aspect-[16/10] block overflow-hidden focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-amber-200/70"
-        aria-label={`View past projects related to ${piece.name}`}
-      >
+    <Link
+      to={galleryTo}
+      aria-label={`View ${piece.name} in Past Projects`}
+      className="signature-piece-card group flex h-full min-h-0 flex-col overflow-hidden rounded-2xl border border-[rgba(212,170,86,0.22)] bg-white/[0.04] shadow-[0_20px_48px_-34px_rgba(0,0,0,0.72)] outline-none transition duration-300 motion-safe:hover:-translate-y-1 hover:border-amber-200/45 hover:shadow-[0_24px_52px_-30px_rgba(0,0,0,0.78)] focus-visible:border-amber-200/60 focus-visible:ring-2 focus-visible:ring-amber-200/50 focus-visible:ring-offset-2 focus-visible:ring-offset-[#0c0a09]"
+    >
+      <div className="aspect-[16/10] w-full shrink-0 overflow-hidden bg-[#1c1511]">
         <SignaturePieceImage
           src={piece.image}
-          alt={piece.name}
           objectPosition={piece.objectPosition}
-          priority={piece.id === signaturePieces[0]?.id || piece.id === signaturePieces[1]?.id}
+          priority={priority}
         />
-      </Link>
-      <div className="flex flex-1 flex-col gap-3 p-6 sm:gap-4 sm:p-7">
-        <div className="space-y-1">
-          <h3 className="font-display text-2xl text-white">{piece.name}</h3>
+      </div>
+      <div className="flex min-h-[11.5rem] flex-1 flex-col gap-3 p-6 sm:min-h-[12.5rem] sm:gap-4 sm:p-7">
+        <div className="space-y-1.5">
+          <h3 className="font-display text-2xl leading-snug text-white">{piece.name}</h3>
           {piece.subtitle ? (
             <p className="text-[11px] uppercase tracking-[0.22em] text-amber-200/70">
               {piece.subtitle}
             </p>
-          ) : null}
+          ) : (
+            <p className="text-[11px] uppercase tracking-[0.22em] text-transparent" aria-hidden="true">
+              &nbsp;
+            </p>
+          )}
         </div>
-        <p className="flex-1 text-sm leading-7 text-stone-300 sm:text-base">
-          {piece.description}
-        </p>
-        <Link to={CUSTOM_ORDER_FORM_ANCHOR} className="btn-outline-light self-start px-4 py-2 text-xs">
-          Request something similar
-        </Link>
+        <p className="flex-1 text-sm leading-7 text-stone-300 sm:text-base">{piece.description}</p>
+        <span className="mt-auto text-xs uppercase tracking-[0.2em] text-amber-200/75 transition group-hover:text-amber-100">
+          View in Past Projects →
+        </span>
       </div>
-    </article>
+    </Link>
   )
 }
 
@@ -1117,7 +962,13 @@ function PastProjectsGrid({
         {filteredProjects.map((project) => (
           <div
             key={project.id}
-            className={featuredLayout && project.featured ? 'sm:col-span-2 lg:col-span-2' : ''}
+            id={project.slug}
+            className={[
+              'scroll-mt-28',
+              featuredLayout && project.featured ? 'sm:col-span-2 lg:col-span-2' : '',
+            ]
+              .filter(Boolean)
+              .join(' ')}
           >
             <BespokeCreationCard
               project={project}
@@ -1141,33 +992,141 @@ function PastProjectsGrid({
   )
 }
 
-function PastProjectsTeaser() {
-  const teaserProjects = getHomepagePastProjects(6)
+function formatCountdownParts(totalMs) {
+  const clamped = Math.max(0, totalMs)
+  const totalSeconds = Math.floor(clamped / 1000)
+  const days = Math.floor(totalSeconds / 86400)
+  const hours = Math.floor((totalSeconds % 86400) / 3600)
+  const minutes = Math.floor((totalSeconds % 3600) / 60)
+  const seconds = totalSeconds % 60
 
-  if (teaserProjects.length === 0) {
+  return {
+    days: String(days).padStart(2, '0'),
+    hours: String(hours).padStart(2, '0'),
+    minutes: String(minutes).padStart(2, '0'),
+    seconds: String(seconds).padStart(2, '0'),
+    expired: clamped <= 0,
+  }
+}
+
+function WorkshopDropCountdown() {
+  const [parts, setParts] = useState(() =>
+    formatCountdownParts(getNextSundayDeadlinePrague().getTime() - Date.now()),
+  )
+
+  useEffect(() => {
+    const tick = () => {
+      setParts(formatCountdownParts(getNextSundayDeadlinePrague().getTime() - Date.now()))
+    }
+
+    tick()
+    const timer = window.setInterval(tick, 1000)
+    return () => window.clearInterval(timer)
+  }, [])
+
+  const units = [
+    { key: 'days', label: 'Days', value: parts.days },
+    { key: 'hours', label: 'Hours', value: parts.hours },
+    { key: 'minutes', label: 'Minutes', value: parts.minutes },
+    { key: 'seconds', label: 'Seconds', value: parts.seconds },
+  ]
+
+  return (
+    <div
+      className="workshop-drop-countdown grid grid-cols-4 gap-2 sm:gap-3"
+      aria-live="polite"
+      aria-atomic="true"
+    >
+      {units.map((unit) => (
+        <div
+          key={unit.key}
+          className="rounded-xl border border-[rgba(212,170,86,0.22)] bg-black/35 px-2 py-3 text-center sm:px-3 sm:py-4"
+        >
+          <p className="font-display text-2xl tabular-nums tracking-wide text-amber-100 sm:text-3xl">
+            <span className="workshop-drop-digit inline-block min-w-[1.6ch]">{unit.value}</span>
+          </p>
+          <p className="mt-1 text-[10px] uppercase tracking-[0.2em] text-stone-400">{unit.label}</p>
+        </div>
+      ))}
+    </div>
+  )
+}
+
+function WorkshopDropSection() {
+  const product = getProductById(workshopDrop.productId)
+  const publishedProduct = product && isPublished(product) ? product : null
+  const imageSrc = publishedProduct
+    ? getProductRealImages(publishedProduct)[0] || publishedProduct.mainImage
+    : null
+  const catalogEtsyUrl = publishedProduct
+    ? getProductEtsyHref(publishedProduct)
+    : ETSY_SHOP_URL
+  const etsyHref = getWorkshopDropEtsyHref(catalogEtsyUrl)
+  const [isDocumentHidden, setIsDocumentHidden] = useState(false)
+
+  useEffect(() => {
+    const handleVisibility = () => setIsDocumentHidden(document.hidden)
+    handleVisibility()
+    document.addEventListener('visibilitychange', handleVisibility)
+    return () => document.removeEventListener('visibilitychange', handleVisibility)
+  }, [])
+
+  if (!publishedProduct || !imageSrc) {
     return null
   }
 
   return (
-    <section id="past-projects" className="dark-section scroll-mt-28 w-full py-14 sm:py-20">
+    <section
+      id="workshop-drop"
+      className="workshop-drop-section dark-section scroll-mt-28 w-full py-14 sm:py-20"
+    >
       <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
-        <div className="mb-10 flex flex-col gap-6 lg:flex-row lg:items-end lg:justify-between">
-          <div className="max-w-3xl space-y-4">
-            <p className="text-[11px] uppercase tracking-[0.38em] text-amber-200/80">
-              PAST PROJECTS
-            </p>
-            <h2 className="font-display text-4xl text-stone-100 sm:text-[2.75rem]">
-              A look back at pieces built over the years.
-            </h2>
-            <p className="text-base leading-8 text-stone-300">
-              Furniture, serving pieces and one-of-one creations handmade by Dom&apos;s Concepts
-              since 2016.
-            </p>
-          </div>
-          <PrimaryLink to="/gallery">Explore Past Projects</PrimaryLink>
-        </div>
+        <div className="workshop-drop-panel overflow-hidden rounded-2xl border border-[rgba(212,170,86,0.28)] bg-gradient-to-br from-[#1a1511] via-[#14100e] to-[#0c0a09]">
+          <div className="grid gap-0 lg:grid-cols-[1.05fr_0.95fr] lg:items-stretch">
+            <div className="workshop-drop-media relative aspect-[4/5] overflow-hidden bg-[#1c1511] sm:aspect-[5/4] lg:aspect-auto lg:min-h-[28rem]">
+              <img
+                src={imageSrc}
+                alt={publishedProduct.name}
+                loading="lazy"
+                decoding="async"
+                className={[
+                  'workshop-drop-image absolute inset-0 h-full w-full object-cover',
+                  isDocumentHidden ? 'is-paused' : '',
+                ].join(' ')}
+              />
+              <div className="pointer-events-none absolute inset-0 bg-gradient-to-t from-[#0c0a09]/55 via-transparent to-transparent lg:bg-gradient-to-r lg:from-transparent lg:via-transparent lg:to-[#0c0a09]/35" />
+            </div>
 
-        <PastProjectsGrid projects={teaserProjects} hidePlaceholder enableLightbox />
+            <div className="flex flex-col justify-center gap-6 p-6 sm:p-8 lg:p-10">
+              <div className="space-y-4">
+                <p className="text-[11px] uppercase tracking-[0.38em] text-amber-200/80">
+                  {workshopDrop.eyebrow}
+                </p>
+                <h2 className="font-display text-3xl text-white sm:text-4xl">
+                  {workshopDrop.supportingCopy}
+                </h2>
+                <div className="flex flex-wrap items-center gap-3">
+                  <span className="inline-flex rounded-md border border-amber-200/35 bg-amber-950/45 px-3 py-1.5 text-[11px] uppercase tracking-[0.18em] text-amber-100">
+                    {workshopDrop.discountLabel}
+                  </span>
+                  <span className="text-sm text-stone-300">{workshopDrop.giftMessage}</span>
+                </div>
+                <p className="text-base leading-7 text-stone-300">{publishedProduct.name}</p>
+              </div>
+
+              <WorkshopDropCountdown />
+
+              <a
+                href={etsyHref}
+                target="_blank"
+                rel="noreferrer"
+                className={[goldButtonClassName, 'workshop-drop-cta w-full sm:w-auto'].join(' ')}
+              >
+                {workshopDrop.ctaLabel}
+              </a>
+            </div>
+          </div>
+        </div>
       </div>
     </section>
   )
@@ -1226,7 +1185,7 @@ function BespokeCreationDetailPage() {
 }
 
 function HomePage() {
-  const featuredProducts = getHomepageFeaturedProducts(shopProducts, 8)
+  const featuredProducts = getHomepageFeaturedProducts(shopProducts, 10)
 
   return (
     <>
@@ -1239,20 +1198,21 @@ function HomePage() {
           <div className="mb-10 flex flex-col gap-6 lg:flex-row lg:items-end lg:justify-between">
             <div className="max-w-3xl space-y-4">
               <p className="text-[11px] uppercase tracking-[0.38em] text-amber-200/80">
-                Available now
+                AVAILABLE THIS WEEK
               </p>
               <h2 className="font-display text-4xl text-stone-100 sm:text-[2.75rem]">
-                Available from the workshop.
+                Available This Week
               </h2>
               <p className="text-base leading-8 text-stone-300">
-                Ready pieces and small-batch work currently available from Dom&apos;s Concepts.
+                Ready-to-ship pieces, workshop accessories and small-batch work currently available
+                from Dom&apos;s Concepts.
               </p>
             </div>
             <SecondaryLink to="/available-pieces" className="text-stone-200 hover:text-amber-200">
               View all available pieces
             </SecondaryLink>
           </div>
-          <div className="grid grid-cols-1 gap-7 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+          <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 md:grid-cols-3 xl:grid-cols-4">
             {featuredProducts.map((piece) => (
               <ProductCard key={piece.id} piece={piece} variant="luxury" />
             ))}
@@ -1260,7 +1220,7 @@ function HomePage() {
         </div>
       </section>
 
-      <PastProjectsTeaser />
+      <WorkshopDropSection />
 
       <section id="signature-work" className="scroll-mt-28 w-full border-t border-white/5 bg-[#0c0a09] py-14 sm:py-20 text-stone-100">
         <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
@@ -1277,7 +1237,15 @@ function HomePage() {
               belongs in.
             </p>
           </div>
-          <SignatureWorkCarousel />
+          <SignatureWorkGrid />
+          <div className="mt-10">
+            <Link
+              to="/gallery"
+              className="text-sm tracking-wide text-stone-300 transition hover:text-amber-200"
+            >
+              Explore every completed project →
+            </Link>
+          </div>
         </div>
       </section>
 
@@ -1501,21 +1469,36 @@ function AvailablePiecesPage() {
 function ProductDetailPage() {
   const { productId } = useParams()
   const redirectTarget = productId ? productIdRedirects[productId] : undefined
-  const product = products.find((item) => item.id === productId)
+  const product = productId ? getProductById(productId) : undefined
+  const isDevUnpublishedPreview =
+    Boolean(import.meta.env.DEV) && Boolean(product) && !isPublished(product)
   const rawGalleryImages = product ? getProductRealImages(product) : []
   const galleryImages = Array.isArray(rawGalleryImages) ? rawGalleryImages.filter(Boolean) : []
   const primaryGalleryImage = galleryImages[0] || ''
-  const [activeImage, setActiveImage] = useState(primaryGalleryImage)
+  const [activeIndex, setActiveIndex] = useState(0)
 
   useEffect(() => {
-    setActiveImage(primaryGalleryImage)
+    setActiveIndex(0)
   }, [product?.id, primaryGalleryImage])
+
+  const activeImage = galleryImages[activeIndex] || primaryGalleryImage
+  const canNavigateGallery = galleryImages.length > 1
+
+  const showPreviousImage = () => {
+    if (!canNavigateGallery) return
+    setActiveIndex((current) => (current - 1 + galleryImages.length) % galleryImages.length)
+  }
+
+  const showNextImage = () => {
+    if (!canNavigateGallery) return
+    setActiveIndex((current) => (current + 1) % galleryImages.length)
+  }
 
   if (redirectTarget) {
     return <Navigate to={`/available-pieces/${redirectTarget}`} replace />
   }
 
-  if (!product) {
+  if (!product || (!isPublished(product) && !isDevUnpublishedPreview)) {
     return (
       <PageShell
         eyebrow="Available Pieces"
@@ -1531,37 +1514,73 @@ function ProductDetailPage() {
   const secondaryAction = getProductSecondaryAction(product)
   const showBoardCareUpsell = product.careAddOnAvailable
   const socialProof = getProductSocialProof(product)
+  const productOgImage = primaryGalleryImage || product.image || product.mainImage
 
   return (
+    <>
+      <PageMeta
+        title={`${product.name} | Dom's Concepts`}
+        description={product.shortDescription || product.longDescription || product.description}
+        ogImage={productOgImage}
+        canonicalPath={`/available-pieces/${product.id}`}
+      />
     <PageShell
       eyebrow={product.collection}
       title={product.name}
       intro={product.longDescription}
     >
+      {isDevUnpublishedPreview ? (
+        <div className="mb-6 rounded-2xl border border-amber-300/40 bg-amber-950/50 px-4 py-3 text-sm text-amber-100">
+          Unpublished preview ({product.publicationStatus}). Visible only in development —
+          production returns 404.
+        </div>
+      ) : null}
       <div className="grid gap-8 overflow-x-hidden lg:grid-cols-[1.05fr_0.95fr] lg:gap-10">
         <div className="min-w-0 space-y-4">
           {galleryImages.length > 0 ? (
-            <PhotoFrame
-              src={activeImage}
-              alt={product.name}
-              className="product-gallery-main aspect-[4/5] w-full md:h-[28rem] md:aspect-auto lg:h-[26rem]"
-              overlay="none"
-              priority
-              showLabels={false}
-              imageFit="contain"
-            />
+            <div className="product-gallery-hero relative">
+              <PhotoFrame
+                src={activeImage}
+                alt={product.name}
+                className="product-gallery-main"
+                overlay="none"
+                priority
+                showLabels={false}
+                imageFit="contain"
+              />
+              {canNavigateGallery ? (
+                <>
+                  <button
+                    type="button"
+                    onClick={showPreviousImage}
+                    className="product-gallery-nav product-gallery-nav--prev"
+                    aria-label="Previous product photo"
+                  >
+                    ‹
+                  </button>
+                  <button
+                    type="button"
+                    onClick={showNextImage}
+                    className="product-gallery-nav product-gallery-nav--next"
+                    aria-label="Next product photo"
+                  >
+                    ›
+                  </button>
+                </>
+              ) : null}
+            </div>
           ) : (
             <ProductDetailImageFallback productName={product.name} />
           )}
           {galleryImages.length > 1 ? (
-            <div className="product-thumbnails">
+            <div className="product-thumbnails" role="list" aria-label="Product photos">
               {galleryImages.map((image, index) => (
                 <GalleryThumbnail
                   key={`${product.id}-${image}`}
                   image={image}
                   alt={`${product.name} photo ${index + 1}`}
-                  isActive={activeImage === image}
-                  onSelect={() => setActiveImage(image)}
+                  isActive={activeIndex === index}
+                  onSelect={() => setActiveIndex(index)}
                 />
               ))}
             </div>
@@ -1590,7 +1609,9 @@ function ProductDetailPage() {
             </div>
             <div className="mt-6 grid gap-4 sm:grid-cols-2">
               <ProductMeta label="Price" value={product.priceFrom} />
-              <ProductMeta label="Dimensions" value={product.dimensions} />
+              {hasDisplayableDimensions(product.dimensions) ? (
+                <ProductMeta label="Dimensions" value={product.dimensions} />
+              ) : null}
               <ProductMeta label="Wood Type" value={product.woodType} />
               <ProductMeta label="Materials" value={product.materials || 'Selected materials'} />
               {galleryImages.length > 0 ? (
@@ -1678,11 +1699,38 @@ function ProductDetailPage() {
         </div>
       </div>
     </PageShell>
+    </>
   )
 }
 
 function GalleryPage() {
+  const location = useLocation()
   const visibleProjects = getVisibleGalleryProjects()
+
+  useEffect(() => {
+    const hash = location.hash.replace(/^#/, '')
+    if (!hash) return undefined
+
+    let frameId = 0
+    let timeoutId = 0
+
+    const scrollToHash = () => {
+      const target = document.getElementById(hash)
+      if (!target) return false
+      target.scrollIntoView({ behavior: 'smooth', block: 'start' })
+      return true
+    }
+
+    frameId = window.requestAnimationFrame(() => {
+      if (scrollToHash()) return
+      timeoutId = window.setTimeout(scrollToHash, 120)
+    })
+
+    return () => {
+      window.cancelAnimationFrame(frameId)
+      window.clearTimeout(timeoutId)
+    }
+  }, [location.hash, visibleProjects])
 
   return (
     <>
@@ -2407,7 +2455,7 @@ function ProductCardImage({ src, alt }) {
       alt={alt}
       loading="lazy"
       onError={() => setHasError(true)}
-      className="h-full w-full object-cover object-center transition duration-500 group-hover:scale-[1.03]"
+      className="h-full w-full object-cover object-center transition duration-500 motion-safe:group-hover:scale-[1.03]"
     />
   )
 }
@@ -2446,12 +2494,14 @@ function ProductCard({ piece, variant = 'luxury' }) {
   const isLuxury = variant === 'luxury'
   const badgeLabel = productBadgeLabels[piece.badge] ?? piece.badge
   const detailHref = `/available-pieces/${piece.id}`
+  // Always prefer inventory-ordered 01.jpg (canonical card/hero), not stale overrides.
+  const cardImage = getProductRealImages(piece)[0] || piece.image || piece.mainImage
 
   return (
     <article
       className={[
         isLuxury ? 'luxury-shop-card' : 'shop-card',
-        'group flex h-full flex-col hover:-translate-y-0.5',
+        'group flex h-full flex-col',
         piece.isSold ? 'opacity-90' : '',
       ].join(' ')}
     >
@@ -2466,7 +2516,7 @@ function ProductCard({ piece, variant = 'luxury' }) {
             piece.isSold ? 'grayscale-[0.2]' : '',
           ].join(' ')}
         >
-          <ProductCardImage src={piece.image} alt={piece.name} />
+          <ProductCardImage src={cardImage} alt={piece.name} />
           {piece.isSold ? (
             <div className="pointer-events-none absolute inset-0 bg-stone-900/20" />
           ) : null}
@@ -2501,6 +2551,12 @@ function ProductCard({ piece, variant = 'luxury' }) {
               Free shipping
             </p>
           ) : null}
+          <Link
+            to={detailHref}
+            className="product-card-view-link text-xs uppercase tracking-[0.18em] text-amber-200/80 transition duration-300"
+          >
+            View piece →
+          </Link>
           <ProductActionButton action={action} />
         </div>
       </div>
@@ -2796,11 +2852,9 @@ function Card({ children, className = '', luxury = false }) {
 function ProductDetailImageFallback({ productName }) {
   return (
     <div
-      className="relative flex h-[26rem] items-center justify-center overflow-hidden rounded-[1.6rem] border border-white/10 bg-gradient-to-br from-[#1c1511] via-stone-950 to-black shadow-[inset_0_1px_0_rgba(251,191,36,0.07),0_18px_40px_-28px_rgba(0,0,0,0.85)]"
+      className="product-gallery-main relative flex items-center justify-center overflow-hidden rounded-[1.6rem] border border-white/10 shadow-[inset_0_1px_0_rgba(251,191,36,0.07),0_18px_40px_-28px_rgba(0,0,0,0.85)]"
       aria-label={`${productName} photo coming soon`}
     >
-      <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(ellipse_at_center,_rgba(120,53,15,0.14)_0%,_transparent_72%)]" />
-      <div className="pointer-events-none absolute inset-0 bg-gradient-to-t from-black/35 via-transparent to-black/20" />
       <p className="relative z-[1] px-6 text-center text-sm uppercase tracking-[0.3em] text-stone-300">
         Workshop photos coming soon
       </p>
@@ -2822,20 +2876,22 @@ function GalleryThumbnail({ image, alt, isActive, onSelect }) {
   return (
     <button
       type="button"
+      role="listitem"
       onClick={onSelect}
       className={[
         'product-thumbnail overflow-hidden rounded-[1.2rem] border transition',
         isActive
-          ? 'border-amber-100/70'
-          : 'border-white/10 hover:border-amber-200/45',
+          ? 'border-[rgba(212,170,86,0.85)] ring-1 ring-[rgba(212,170,86,0.45)]'
+          : 'border-white/10 hover:border-[rgba(212,170,86,0.45)]',
       ].join(' ')}
+      aria-pressed={isActive}
     >
       <img
         src={image}
         alt={alt}
         loading="lazy"
         onError={() => setHasError(true)}
-        className="h-full w-full object-cover object-center bg-gradient-to-br from-[#1c1511] via-stone-950 to-black md:object-contain md:p-2"
+        className="h-full w-full object-cover object-center"
       />
     </button>
   )
@@ -2865,17 +2921,11 @@ function PhotoFrame({
       className={[
         'relative overflow-hidden rounded-[1.6rem] border border-white/10',
         isContained
-          ? 'bg-gradient-to-br from-[#1c1511] via-stone-950 to-black shadow-[inset_0_1px_0_rgba(251,191,36,0.07),0_18px_40px_-28px_rgba(0,0,0,0.85)]'
+          ? 'bg-[#0d0b09] shadow-[inset_0_1px_0_rgba(251,191,36,0.07),0_18px_40px_-28px_rgba(0,0,0,0.85)]'
           : 'bg-stone-900',
         className,
       ].join(' ')}
     >
-      {isContained && !hasError ? (
-        <>
-          <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(ellipse_at_center,_rgba(120,53,15,0.14)_0%,_transparent_72%)]" />
-          <div className="pointer-events-none absolute inset-0 bg-gradient-to-t from-black/35 via-transparent to-black/20" />
-        </>
-      ) : null}
       {!hasError && hasUsableSrc ? (
         <img
           src={src}
@@ -2884,7 +2934,7 @@ function PhotoFrame({
           onError={() => setHasError(true)}
           className={[
             isContained
-              ? 'relative z-[1] h-full w-full object-contain object-center p-3'
+              ? 'relative z-[1] h-full w-full object-contain object-center p-2 sm:p-3'
               : 'absolute inset-0 z-[1] h-full w-full object-cover object-center',
           ].join(' ')}
         />

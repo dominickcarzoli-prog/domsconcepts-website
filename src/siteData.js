@@ -108,6 +108,8 @@ export const signaturePieces = [
       'A custom media console featuring a solid American walnut top and steamed European walnut drawer fronts. The drawers use soft-close, push-to-open hardware for a clean exterior without visible handles.',
     image: '/images/signature/signature-tv-console.jpg',
     objectPosition: 'center 45%',
+    galleryHash: 'american-walnut-media-console',
+    featured: true,
   },
   {
     id: 'solid-oak-bed',
@@ -116,6 +118,8 @@ export const signaturePieces = [
       'A 2 × 2 metre bed built around a custom-designed steel frame, fabricated and powder-coated before being clad in solid oak slabs. Selected live edges were preserved to add natural character and contrast to the clean steel structure.',
     image: '/images/signature/signature-oak-bed.jpg',
     objectPosition: 'center 40%',
+    galleryHash: 'solid-oak-bed',
+    featured: true,
   },
   {
     id: 'solid-black-walnut-dining-table',
@@ -124,14 +128,18 @@ export const signaturePieces = [
       'A solid black walnut dining table paired with custom powder-coated steel legs, designed to showcase the natural grain and warmth of the timber.',
     image: '/images/signature/signature-walnut-dining-table.jpg',
     objectPosition: 'center 42%',
+    galleryHash: 'solid-black-walnut-dining-table',
+    featured: false,
   },
   {
-    id: 'whiskey-epoxy-cutting-board',
-    name: 'Whiskey Epoxy Cutting Board',
+    id: 'walnut-maple-chessboard',
+    name: 'Walnut & Maple Chessboard',
     description:
-      'A custom walnut and epoxy statement board featuring miniature whiskey bottles embedded inside a flowing resin river. Created as a one-of-one display and serving piece for a whiskey enthusiast.',
-    image: '/images/signature/signature-whiskey-epoxy-board.jpg',
-    objectPosition: 'center center',
+      'A handcrafted walnut and maple board-game piece with contrasting hardwoods, precise grid work, and a refined edge profile — built as a display piece and heirloom gift.',
+    image: '/images/signature/signature-walnut-maple-chessboard.jpg',
+    objectPosition: 'center 48%',
+    galleryHash: 'walnut-maple-chessboard',
+    featured: true,
   },
   {
     id: 'sakuro-knife-table',
@@ -140,6 +148,8 @@ export const signaturePieces = [
       'A one-of-one knife display table created for Sakuro.cz. A knife and sharpening tool were suspended inside an epoxy river running through a dark brown stained oak tabletop.',
     image: '/images/signature/signature-knife-table.jpg',
     objectPosition: 'center 35%',
+    galleryHash: 'custom-knife-table-sakuro',
+    featured: true,
   },
   {
     id: 'whiskey-wednesday-serving-tray',
@@ -148,21 +158,27 @@ export const signaturePieces = [
     description:
       "A custom serving tray made for Max's Steakhouse and its Whiskey Wednesday club. The finished piece remains in use and can be seen in person at the restaurant.",
     image: '/images/signature/signature-maxs-whiskey-tray.jpg',
-    objectPosition: 'center 40%',
+    objectPosition: 'center 42%',
+    galleryHash: 'whiskey-wednesday-serving-tray',
+    featured: false,
   },
 ]
+
+/** Homepage Signature Work — four permanent featured projects (no carousel). */
+export const featuredSignaturePieces = [
+  'american-walnut-media-console',
+  'solid-oak-bed',
+  'walnut-maple-chessboard',
+  'sakuro-knife-table',
+]
+  .map((id) => signaturePieces.find((piece) => piece.id === id))
+  .filter(Boolean)
 
 export const pastCustomPieces = [
   {
     id: 'past-aztec-gold-serving-board',
     name: 'European Walnut Aztec Gold Serving Board',
     image: '/images/past-custom/aztec-gold-serving-board.jpg',
-    fallbackImage: '/images/epoxy-piece.jpg',
-  },
-  {
-    id: 'past-lux-blue-epoxy-board',
-    name: 'European Oak Lux Blue Epoxy Board',
-    image: '/images/past-custom/lux-blue-epoxy-board.jpg',
     fallbackImage: '/images/epoxy-piece.jpg',
   },
   {

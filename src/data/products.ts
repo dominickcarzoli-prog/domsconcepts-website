@@ -9,6 +9,9 @@ export type ProductStatus =
   | 'Low in stock, only 2 left'
   | 'Low in stock, only 5 left'
 
+/** Shop/homepage visibility. Inventory availability stays on `status`. */
+export type PublicationStatus = 'published' | 'draft' | 'archived'
+
 export type ProductBadge = 'Available' | 'Made to Order' | 'One-of-One' | 'Sold'
 
 export type ProductCollection =
@@ -65,8 +68,7 @@ export type Product = {
   buttonLabel: string
   careAddOnAvailable: boolean
   featured: boolean
-  hidden: boolean
-  isDraft: boolean
+  publicationStatus: PublicationStatus
   features?: string[]
   perfectFor?: string[]
   whyThisPiece?: string
@@ -109,6 +111,7 @@ const PLACEHOLDER_DESCRIPTION =
   'Handmade piece from the Dom\'s Concepts workshop. Full details and photos can be updated soon.'
 
 const PLACEHOLDER_IMAGE_PATH_RE = /placeholder|coming-soon|photo-coming/i
+const PLACEHOLDER_DIMENSIONS_RE = /details\s+coming\s+soon/i
 
 type ProductImageInventory = Record<string, string[]>
 
@@ -118,16 +121,37 @@ function isLikelyPlaceholderPath(imagePath: string) {
   return PLACEHOLDER_IMAGE_PATH_RE.test(imagePath)
 }
 
+/** Extract leading/sole digit run from a filename basename (e.g. 01.jpg → 1). */
+function numericFilenameValue(imagePath: string): number {
+  const base = imagePath.split('/').pop()?.split('?')[0] ?? ''
+  const match = base.match(/(\d+)/)
+  return match ? Number(match[1]) : Number.POSITIVE_INFINITY
+}
+
+/** Sort product gallery paths by numeric filename value (01, 02, … 10), not locale/alpha. */
+export function sortProductImagesByNumericFilename(images: string[]): string[] {
+  return [...images].sort((a, b) => numericFilenameValue(a) - numericFilenameValue(b))
+}
+
+export function hasDisplayableDimensions(dimensions?: string): boolean {
+  const trimmed = dimensions?.trim() ?? ''
+  if (!trimmed) return false
+  if (PLACEHOLDER_DIMENSIONS_RE.test(trimmed)) return false
+  return true
+}
+
 export function getProductRealImages(product: Pick<Product, 'id' | 'galleryImages' | 'mainImage'>) {
   const fromInventory = imageInventory[product.id]
   if (fromInventory?.length) {
-    return fromInventory
+    return sortProductImagesByNumericFilename(fromInventory)
   }
 
   const candidates =
     product.galleryImages.length > 0 ? product.galleryImages : [product.mainImage]
 
-  return candidates.filter(Boolean).filter((image) => !isLikelyPlaceholderPath(image))
+  return sortProductImagesByNumericFilename(
+    candidates.filter(Boolean).filter((image) => !isLikelyPlaceholderPath(image)),
+  )
 }
 
 export function hasProductMainImage(product: Pick<Product, 'id' | 'galleryImages' | 'mainImage'>) {
@@ -171,6 +195,11 @@ export const productIdRedirects: Record<string, string> = {
   'epoxy-clock': 'handcrafted-oak-clock-stormy-grey-epoxy',
   'black-walnut-end-grain-board': 'handmade-black-walnut-maple-end-grain-cutting-board',
   'bottle-opener': 'walnut-wall-mount-bottle-opener',
+  // Older Lux Blue / epoxy serving-board slugs → corrected product
+  'european-oak-lux-blue-epoxy-board': 'european-oak-lux-blue-epoxy-serving-board',
+  'epoxy-serving-board': 'european-oak-lux-blue-epoxy-serving-board',
+  'lux-blue-epoxy-serving-board': 'european-oak-lux-blue-epoxy-serving-board',
+  'lux-blue-epoxy-board': 'european-oak-lux-blue-epoxy-serving-board',
 }
 
 const DEFAULT_SHIPPING_NOTE =
@@ -362,8 +391,7 @@ type ProductInput = {
   whyThisPiece?: string
   whyEndGrain?: string
   careInstructions?: string
-  hidden?: boolean
-  isDraft?: boolean
+  publicationStatus?: PublicationStatus
 }
 
 function createProduct(input: ProductInput): Product {
@@ -379,8 +407,7 @@ function createProduct(input: ProductInput): Product {
     featured = false,
     etsyUrl,
     buttonLabel,
-    hidden = false,
-    isDraft = false,
+    publicationStatus = 'draft',
     shortDescription,
     longDescription,
     priceFrom,
@@ -442,8 +469,7 @@ function createProduct(input: ProductInput): Product {
     isAvailable,
     careAddOnAvailable,
     featured,
-    hidden,
-    isDraft,
+    publicationStatus,
     buttonLabel: resolvedButtonLabel,
   }
 }
@@ -481,7 +507,7 @@ const rawProducts: Product[] = [
     'CZK 2,029.11',
     'Available',
     'Black walnut, oak, maple, and padouk',
-    { hidden: true },
+    { publicationStatus: 'draft' },
   ),
   listing(
     'oak-maple-mahogany-strip-cutting-board',
@@ -490,7 +516,7 @@ const rawProducts: Product[] = [
     'CZK 2,029.11',
     'Available',
     'Oak, maple, and mahogany',
-    { hidden: true },
+    { publicationStatus: 'draft' },
   ),
   createProduct({
     id: 'american-walnut-maple-padouk-cutting-board',
@@ -498,6 +524,7 @@ const rawProducts: Product[] = [
     category: 'Cutting Boards',
     price: 'CZK 2,029.11',
     status: 'Low in stock, only 1 left',
+    publicationStatus: 'draft',
     woodType: 'American walnut, maple, and Padouk/Mahogany',
     materials: 'Wood',
     description:
@@ -532,8 +559,11 @@ const rawProducts: Product[] = [
     category: 'Epoxy Pieces',
     price: 'CZK 3,043.67',
     status: 'Low in stock, only 1 left',
+    publicationStatus: 'published',
     woodType: 'European oak with lux blue epoxy resin',
     materials: 'Wood and epoxy resin',
+    // Canonical card/hero: styled kitchen 01.jpg (public folder). Inventory supplies full gallery.
+    mainImage: '/images/products/european-oak-lux-blue-epoxy-serving-board/01.jpg',
     description:
       'This is a European oak and lux blue epoxy resin serving tray. Perfect as a gift for family or friends. It has a durable, food-safe finish and is finished with a three-step finishing procedure for a long-lasting surface.',
     dimensions: '39.5 × 30 × 2.1 cm',
@@ -551,7 +581,7 @@ const rawProducts: Product[] = [
       'Handmade in the center of Prague with love and passion for wood. Slow wood — enjoy nature.',
     shippingNote: 'Returns accepted. Ships from Czech Republic.',
     freeShipping: false,
-    galleryCount: 7,
+    galleryCount: 6,
     badge: 'Available',
   }),
   createProduct({
@@ -560,6 +590,7 @@ const rawProducts: Product[] = [
     category: 'Serving Boards',
     price: 'CZK 3,043.67',
     status: 'Low in stock, only 1 left',
+    publicationStatus: 'published',
     woodType: 'European walnut with Aztec gold epoxy resin',
     materials: 'Wood and epoxy resin',
     description:
@@ -588,7 +619,7 @@ const rawProducts: Product[] = [
     'CZK 2,029.11',
     'Available',
     'Oak and epoxy',
-    { materials: 'Wood and epoxy', hidden: true },
+    { materials: 'Wood and epoxy', publicationStatus: 'draft' },
   ),
   createProduct({
     id: 'natural-wood-butter-beeswax',
@@ -596,6 +627,7 @@ const rawProducts: Product[] = [
     category: 'Wood Care',
     price: 'CZK 253.39',
     status: 'Low in stock, only 5 left',
+    publicationStatus: 'published',
     woodType: 'Board care blend',
     materials: 'Mineral oil, beeswax',
     description:
@@ -619,6 +651,7 @@ const rawProducts: Product[] = [
     collection: 'Available Pieces',
     price: 'CZK 2,029.11',
     status: 'Available',
+    publicationStatus: 'published',
     woodType: 'American black walnut',
     materials: 'Wood',
     badge: 'Available',
@@ -657,6 +690,7 @@ const rawProducts: Product[] = [
     collection: 'One-of-One Creations',
     price: 'CZK 2,029.11',
     status: 'Available',
+    publicationStatus: 'published',
     woodType: 'American black walnut with black epoxy resin',
     materials: 'Wood and epoxy resin',
     badge: 'Available',
@@ -691,6 +725,7 @@ const rawProducts: Product[] = [
     category: 'Serving Boards',
     price: 'CZK 2,029.11',
     status: 'Available',
+    publicationStatus: 'published',
     woodType: 'American black walnut',
     materials: 'Wood',
     description:
@@ -717,23 +752,35 @@ const rawProducts: Product[] = [
     'CZK 2,029.11',
     'Available',
     'European oak',
-    { hidden: true },
+    { publicationStatus: 'draft' },
   ),
-  listing(
-    'walnut-wall-mount-bottle-opener',
-    'Walnut Wall Mount Bottle Opener',
-    'Wall Pieces',
-    'CZK 760.92',
-    'Available',
-    'Walnut',
-    { materials: 'Wood and hardware', hidden: true },
-  ),
+  createProduct({
+    id: 'walnut-wall-mount-bottle-opener',
+    name: 'Walnut Wall Mount Bottle Opener',
+    category: 'Wall Pieces',
+    price: 'CZK 760.92',
+    status: 'Available',
+    publicationStatus: 'published',
+    woodType: 'Walnut',
+    materials: 'Wood and hardware',
+    description:
+      'A wall-mounted walnut bottle opener with solid hardware — a practical workshop accessory and a warm hardwood accent for kitchens, bars, or garages.',
+    dimensions: 'Details coming soon',
+    features: [
+      'Handmade from walnut',
+      'Wall-mounted bottle opener hardware',
+      'Suitable for kitchen, bar, or workshop walls',
+      'Handmade in the center of Prague',
+    ],
+    shippingNote: DEFAULT_SHIPPING_NOTE,
+  }),
   createProduct({
     id: 'walnut-maple-wall-mount-bottle-opener',
     name: 'Walnut & Maple Wall Mount Bottle Opener',
     category: 'Wall Pieces',
     price: 'CZK 760.92',
     status: 'Low in stock, only 2 left',
+    publicationStatus: 'published',
     woodType: 'Walnut and maple',
     materials: 'Wood',
     description:
@@ -742,21 +789,33 @@ const rawProducts: Product[] = [
     freeShipping: false,
     shippingNote: 'Ships from Czech Republic. Returns accepted within 30 days.',
   }),
-  listing(
-    'maple-blue-epoxy-coasters',
-    'Maple with Blue Epoxy Coasters',
-    'Coasters',
-    'CZK 1,014.56',
-    'Available',
-    'Maple and blue epoxy',
-    { materials: 'Wood and epoxy', hidden: true },
-  ),
+  createProduct({
+    id: 'maple-blue-epoxy-coasters',
+    name: 'Maple with Blue Epoxy Coasters',
+    category: 'Coasters',
+    price: 'CZK 1,014.56',
+    status: 'Available',
+    publicationStatus: 'published',
+    woodType: 'Maple and blue epoxy',
+    materials: 'Wood and epoxy',
+    description:
+      'A set of maple coasters with blue epoxy detail — protective, food-safe finished hardwood accents for serving and everyday table use.',
+    dimensions: 'Details coming soon',
+    features: [
+      'Handmade from maple with blue epoxy resin',
+      'Protective finished surface for drinks',
+      'Suitable for gifting or everyday use',
+      'Handmade in the center of Prague',
+    ],
+    shippingNote: DEFAULT_SHIPPING_NOTE,
+  }),
   createProduct({
     id: 'two-in-one-book-stand-serving-board',
     name: '2-in-1 Book Stand & Serving Board – Black Walnut, Maple and Mahogany',
     category: 'Serving Boards',
     price: 'CZK 2,536.39',
     status: 'Low in stock, only 1 left',
+    publicationStatus: 'published',
     woodType: 'Black walnut, maple, and mahogany',
     materials: 'Wood',
     description:
@@ -778,6 +837,7 @@ const rawProducts: Product[] = [
     category: 'Cutting Boards',
     price: 'CZK 2,029.11',
     status: 'Low in stock, only 1 left',
+    publicationStatus: 'draft',
     woodType: 'Oak',
     materials: 'Wood',
     description:
@@ -813,6 +873,7 @@ const rawProducts: Product[] = [
     category: 'Cutting Boards',
     price: 'CZK 2,029.11',
     status: 'Low in stock, only 1 left',
+    publicationStatus: 'draft',
     woodType: 'Black walnut and hard maple',
     materials: 'Wood',
     description:
@@ -847,6 +908,7 @@ const rawProducts: Product[] = [
     category: 'Wood Care',
     price: 'CZK 253.39',
     status: 'Low in stock, only 5 left',
+    publicationStatus: 'published',
     woodType: 'Beeswax conditioning blend',
     materials: 'Mineral oil, beeswax, carnauba wax',
     description:
@@ -860,15 +922,26 @@ const rawProducts: Product[] = [
     ],
     shippingNote: DEFAULT_SHIPPING_NOTE,
   }),
-  listing(
-    'solid-oak-coat-hanger-black-metal-hooks',
-    'Solid Oak Coat Hanger with Black Metal Hooks',
-    'Wall Pieces',
-    'CZK 2,029.11',
-    'Available',
-    'European oak',
-    { materials: 'Wood and hardware', hidden: true },
-  ),
+  createProduct({
+    id: 'solid-oak-coat-hanger-black-metal-hooks',
+    name: 'Solid Oak Coat Hanger with Black Metal Hooks',
+    category: 'Wall Pieces',
+    price: 'CZK 2,029.11',
+    status: 'Available',
+    publicationStatus: 'published',
+    woodType: 'European oak',
+    materials: 'Wood and hardware',
+    description:
+      'A solid oak wall coat hanger with black metal hooks — a durable entryway piece that pairs clean hardware with natural oak grain.',
+    dimensions: 'Details coming soon',
+    features: [
+      'Handmade from solid European oak',
+      'Black metal coat hooks',
+      'Wall-mounted entryway storage',
+      'Handmade in the center of Prague',
+    ],
+    shippingNote: DEFAULT_SHIPPING_NOTE,
+  }),
   listing(
     'oak-cutting-board-breadboard-black-lines',
     'Oak Cutting Board / Breadboard with Black Lines',
@@ -876,7 +949,7 @@ const rawProducts: Product[] = [
     'CZK 2,029.11',
     'Available',
     'European oak',
-    { hidden: true },
+    { publicationStatus: 'draft' },
   ),
   listing(
     'handcrafted-oak-cutting-board-small-set',
@@ -885,7 +958,7 @@ const rawProducts: Product[] = [
     'CZK 2,029.11',
     'Available',
     'European oak',
-    { hidden: true },
+    { publicationStatus: 'draft' },
   ),
   createProduct({
     id: 'handcrafted-oak-clock-stormy-grey-epoxy',
@@ -893,6 +966,7 @@ const rawProducts: Product[] = [
     category: 'Wall Pieces',
     price: 'CZK 2,029.11',
     status: 'Low in stock, only 1 left',
+    publicationStatus: 'published',
     woodType: 'Oak',
     materials: 'Wood',
     description:
@@ -915,7 +989,7 @@ const rawProducts: Product[] = [
     'Made to order',
     'European oak',
     {
-      hidden: true,
+      publicationStatus: 'draft',
       description:
         'Handmade oak end grain cutting boards can be made to order in the Dom\'s Concepts workshop. More pieces are coming soon — enquire for lead time and sizing.',
       dimensions: 'Custom sizes available on request',
@@ -931,7 +1005,7 @@ const rawProducts: Product[] = [
     'Made to order',
     'Walnut or oak',
     {
-      hidden: true,
+      publicationStatus: 'draft',
       description:
         'An edge grain cutting board designed for everyday prep with a refined hardwood look. Made to order.',
       freeShipping: false,
@@ -946,7 +1020,7 @@ const rawProducts: Product[] = [
     'Made to order',
     'Selected hardwoods',
     {
-      hidden: true,
+      publicationStatus: 'draft',
       description:
         'A custom board designed for logo engraving, gifting, or branded presentation.',
       freeShipping: false,
@@ -962,7 +1036,7 @@ const rawProducts: Product[] = [
     'Made to order',
     'Selected hardwoods',
     {
-      hidden: true,
+      publicationStatus: 'draft',
       description:
         'A tailored set of branded or personalised boards for premium corporate gifting.',
       freeShipping: false,
@@ -978,7 +1052,7 @@ const rawProducts: Product[] = [
     'Made to order',
     'Selected hardwoods',
     {
-      hidden: true,
+      publicationStatus: 'draft',
       description:
         'Serving and presentation boards developed for hospitality and restaurant use.',
       freeShipping: false,
@@ -995,7 +1069,7 @@ const rawProducts: Product[] = [
     woodType: 'Selected hardwoods',
     materials: 'Wood',
     mainImage: '/images/workshop-process.jpg',
-    hidden: true,
+    publicationStatus: 'draft',
     description:
       'A custom engraved corporate serving board made for branded gifting. Similar commissions available.',
     shortDescription:
@@ -1027,8 +1101,47 @@ function hasValidProductAction(product: Product) {
   return product.isAvailable || product.isSold
 }
 
+export function isPublished(product: Pick<Product, 'publicationStatus'>): boolean {
+  return product.publicationStatus === 'published'
+}
+
+export function isPubliclyRoutable(product: Pick<Product, 'publicationStatus'>): boolean {
+  return isPublished(product)
+}
+
+export function getPublicationCounts(items: Product[] = products) {
+  return items.reduce(
+    (counts, product) => {
+      counts[product.publicationStatus] += 1
+      return counts
+    },
+    { published: 0, draft: 0, archived: 0 } as Record<PublicationStatus, number>,
+  )
+}
+
+export function getPublishedProducts(items: Product[] = products) {
+  return items.filter(isPublished)
+}
+
+export function getProductById(productId: string, items: Product[] = products) {
+  return items.find((product) => product.id === productId)
+}
+
+export function getPublicProductById(productId: string, items: Product[] = products) {
+  const product = getProductById(productId, items)
+  if (!product || !isPubliclyRoutable(product)) {
+    return undefined
+  }
+  return product
+}
+
+/** Alias for shop listing queries. */
+export function getShopProducts(items: Product[] = products) {
+  return sortProducts(items.filter(isShopGridVisible))
+}
+
 export function isShopGridVisible(product: Product): boolean {
-  if (product.hidden || product.isDraft) {
+  if (!isPublished(product)) {
     return false
   }
 
@@ -1075,17 +1188,56 @@ export function sortProducts(items: Product[]) {
 
 export const sortedProducts = sortProducts(products)
 
-export const shopProducts = sortProducts(products.filter(isShopGridVisible))
+export const shopProducts = getShopProducts(products)
 
 export function getShopCollections(items: Product[] = shopProducts): ProductCollection[] {
   const collections = new Set(items.map((product) => product.collection))
   return productCollections.filter((collection) => collections.has(collection))
 }
 
-export function getHomepageFeaturedProducts(items: Product[], limit = 8) {
-  const visible = items.filter(isShopGridVisible)
-  const available = visible.filter((piece) => piece.isAvailable)
-  const sold = visible.filter((piece) => piece.isSold)
+/**
+ * Homepage "Available This Week" cards — curated mix of boards, accessories,
+ * care products and epoxy. Independent of Shop sorting order.
+ * Keep Shop listing driven by publicationStatus + getShopProducts only.
+ */
+export const HOMEPAGE_FEATURED_PRODUCT_IDS = [
+  'handmade-end-grain-walnut-breadboard',
+  'handmade-walnut-steak-board-two-cups',
+  'two-in-one-book-stand-serving-board',
+  'european-oak-lux-blue-epoxy-serving-board',
+  'walnut-maple-wall-mount-bottle-opener',
+  'walnut-wall-mount-bottle-opener',
+  'solid-oak-coat-hanger-black-metal-hooks',
+  'maple-blue-epoxy-coasters',
+  'natural-wood-butter-beeswax',
+  'beeswax-wood-wax-natural-wood-conditioner',
+] as const
 
-  return [...available, ...sold].slice(0, limit)
+export function getHomepageFeaturedProducts(items: Product[], limit = 10) {
+  const byId = new Map(
+    items.filter(isShopGridVisible).map((product) => [product.id, product]),
+  )
+
+  const curated = HOMEPAGE_FEATURED_PRODUCT_IDS.map((id) => byId.get(id)).filter(
+    (product): product is Product => Boolean(product),
+  )
+
+  if (curated.length >= Math.min(limit, 8)) {
+    return curated.slice(0, limit)
+  }
+
+  // Fallback: fill from remaining shop-visible published products.
+  const curatedIds = new Set(curated.map((product) => product.id))
+  const extras = items
+    .filter(isShopGridVisible)
+    .filter((product) => !curatedIds.has(product.id))
+
+  return [...curated, ...extras].slice(0, limit)
+}
+
+if (import.meta.env.DEV) {
+  const counts = getPublicationCounts()
+  console.info(
+    `[products] Published: ${counts.published} | Draft: ${counts.draft} | Archived: ${counts.archived}`,
+  )
 }

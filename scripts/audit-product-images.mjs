@@ -32,6 +32,11 @@ function isRealImageFile(filePath) {
   return true
 }
 
+function numericFilenameValue(fileName) {
+  const match = path.basename(fileName).match(/(\d+)/)
+  return match ? Number(match[1]) : Number.POSITIVE_INFINITY
+}
+
 function scanProductFolder(productId) {
   const folder = path.join(PRODUCTS_DIR, productId)
   if (!fs.existsSync(folder) || !fs.statSync(folder).isDirectory()) {
@@ -41,8 +46,8 @@ function scanProductFolder(productId) {
   return fs
     .readdirSync(folder)
     .filter((file) => /^\d{2}\.jpg$/i.test(file))
-    .sort()
     .filter((file) => isRealImageFile(path.join(folder, file)))
+    .sort((a, b) => numericFilenameValue(a) - numericFilenameValue(b))
     .map((file) => `/images/products/${productId}/${file}`)
 }
 

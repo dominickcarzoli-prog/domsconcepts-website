@@ -2,7 +2,6 @@ export {
   pastProjectCategories as bespokeCategories,
   pastProjectsCatalog as bespokeCreationsCatalog,
   getVisibleGalleryProjects,
-  getHomepagePastProjects,
   getPastProjectBySlug as getBespokeCreationBySlug,
 } from './pastProjects'
 

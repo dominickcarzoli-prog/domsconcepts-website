@@ -87,11 +87,30 @@
   }
 
   .luxury-shop-card {
-    @apply overflow-hidden rounded-xl border transition;
+    @apply overflow-hidden rounded-xl border transition duration-300;
     background: linear-gradient(165deg, #1f1814 0%, #171310 52%, #110e0c 100%);
     border-color: rgba(154, 107, 47, 0.3);
     box-shadow: 0 20px 48px -34px rgba(0, 0, 0, 0.72);
     color: #f7efe3;
+  }
+
+  .luxury-shop-card:hover,
+  .luxury-shop-card:focus-within {
+    border-color: rgba(212, 170, 86, 0.48);
+    box-shadow: 0 24px 52px -30px rgba(0, 0, 0, 0.78);
+    transform: translateY(-3px);
+  }
+
+  .luxury-shop-card .product-card-view-link {
+    opacity: 0;
+    transform: translateY(4px);
+  }
+
+  .luxury-shop-card:hover .product-card-view-link,
+  .luxury-shop-card:focus-within .product-card-view-link {
+    opacity: 1;
+    transform: translateY(0);
+    color: rgba(253, 230, 138, 0.9);
   }
 
   .bespoke-card {
@@ -283,39 +302,173 @@
     pointer-events: none;
   }
 
-  .signature-carousel-track {
-    scrollbar-width: none;
-    -ms-overflow-style: none;
+  .signature-work-grid .signature-piece-card {
+    height: 100%;
   }
 
-  .signature-carousel-track::-webkit-scrollbar {
-    display: none;
+  @media (prefers-reduced-motion: reduce) {
+    .signature-piece-card {
+      transition: none;
+    }
+
+    .signature-piece-card:hover {
+      transform: none;
+    }
+
+    .luxury-shop-card:hover,
+    .luxury-shop-card:focus-within {
+      transform: none;
+    }
+
+    .luxury-shop-card .product-card-view-link {
+      opacity: 1;
+      transform: none;
+      color: rgba(253, 230, 138, 0.75);
+    }
+
+    .workshop-drop-image {
+      animation: none !important;
+      transform: none !important;
+    }
+
+    .workshop-drop-cta::after {
+      animation: none !important;
+      opacity: 0 !important;
+    }
+
+    .workshop-drop-section,
+    .workshop-drop-panel {
+      animation: none !important;
+      opacity: 1 !important;
+      transform: none !important;
+    }
+  }
+
+  .workshop-drop-section {
+    animation: workshop-drop-fade 0.9s ease-out both;
+  }
+
+  .workshop-drop-image {
+    transform: scale(1);
+    animation: workshop-drop-zoom 28s ease-in-out infinite alternate;
+    will-change: transform;
+  }
+
+  .workshop-drop-media:hover .workshop-drop-image,
+  .workshop-drop-media:focus-within .workshop-drop-image,
+  .workshop-drop-image.is-paused {
+    animation-play-state: paused;
+  }
+
+  .workshop-drop-cta {
+    position: relative;
+    overflow: hidden;
+  }
+
+  .workshop-drop-cta::after {
+    content: "";
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(
+      110deg,
+      transparent 30%,
+      rgba(255, 255, 255, 0.28) 48%,
+      transparent 64%
+    );
+    transform: translateX(-120%);
+    animation: workshop-drop-sheen 9s ease-in-out infinite;
+    pointer-events: none;
+  }
+
+  .workshop-drop-digit {
+    transition: opacity 0.25s ease;
+  }
+
+  .product-gallery-hero {
+    position: relative;
+    width: min(100%, calc(min(78vh, 38rem) * 4 / 5));
+    margin-inline: auto;
   }
 
   .product-gallery-main {
-    max-height: min(75vh, 32rem);
+    width: 100%;
+    aspect-ratio: 4 / 5;
+    max-height: min(78vh, 38rem);
+    margin-inline: auto;
+    background: #0d0b09;
+  }
+
+  .product-gallery-main img {
+    object-fit: contain;
+    object-position: center center;
+  }
+
+  .product-gallery-nav {
+    position: absolute;
+    top: 50%;
+    z-index: 4;
+    display: inline-flex;
+    height: 2.5rem;
+    width: 2.5rem;
+    translate: 0 -50%;
+    align-items: center;
+    justify-content: center;
+    border-radius: 9999px;
+    border: 1px solid rgba(212, 170, 86, 0.35);
+    background: rgba(13, 11, 9, 0.78);
+    color: #f7efe3;
+    font-size: 1.5rem;
+    line-height: 1;
+    cursor: pointer;
+    transition: border-color 160ms ease, background-color 160ms ease;
+  }
+
+  .product-gallery-nav:hover,
+  .product-gallery-nav:focus-visible {
+    border-color: rgba(212, 170, 86, 0.7);
+    background: rgba(13, 11, 9, 0.92);
+    outline: none;
+  }
+
+  .product-gallery-nav--prev {
+    left: 0.75rem;
+  }
+
+  .product-gallery-nav--next {
+    right: 0.75rem;
   }
 
   .product-thumbnails {
-    display: flex;
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
     gap: 12px;
-    overflow-x: auto;
-    padding-bottom: 6px;
-    scroll-snap-type: x proximity;
-    scrollbar-width: none;
-    -ms-overflow-style: none;
-  }
-
-  .product-thumbnails::-webkit-scrollbar {
-    display: none;
+    width: 100%;
+    overflow: visible;
+    padding-bottom: 0;
   }
 
   .product-thumbnail {
-    flex: 0 0 86px;
-    width: 86px;
-    height: 86px;
-    scroll-snap-align: start;
-    background: linear-gradient(155deg, #1c1511 0%, #120e0c 100%);
+    width: 100%;
+    aspect-ratio: 1;
+    min-width: 0;
+    background: #0d0b09;
+  }
+
+  .product-thumbnail img {
+    object-fit: cover;
+    object-position: center center;
+  }
+
+  @media (min-width: 480px) {
+    .product-thumbnails {
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+    }
+  }
+
+  @media (min-width: 768px) {
+    .product-thumbnails {
+      grid-template-columns: repeat(4, minmax(0, 1fr));
+    }
   }
 
   .partner-logo-wrap {
@@ -594,21 +747,12 @@ body {
 }
 
 @media (min-width: 768px) {
-  .product-thumbnails {
-    display: grid;
-    overflow-x: visible;
-    padding-bottom: 0;
-    scroll-snap-type: none;
-  }
-
-  .product-thumbnail {
-    width: 100%;
-    height: 8rem;
-    min-width: 0;
+  .product-gallery-hero {
+    width: min(100%, calc(min(80vh, 42rem) * 4 / 5));
   }
 
   .product-gallery-main {
-    max-height: none;
+    max-height: min(80vh, 42rem);
   }
 }
 
@@ -622,4 +766,37 @@ input,
 select,
 textarea {
   font: inherit;
+}
+
+@keyframes workshop-drop-fade {
+  from {
+    opacity: 0;
+    transform: translateY(12px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes workshop-drop-zoom {
+  from {
+    transform: scale(1);
+  }
+  to {
+    transform: scale(1.06);
+  }
+}
+
+@keyframes workshop-drop-sheen {
+  0%,
+  72% {
+    transform: translateX(-120%);
+  }
+  85% {
+    transform: translateX(120%);
+  }
+  100% {
+    transform: translateX(120%);
+  }
 }

@@ -11,29 +11,25 @@ export const pastProjectCategories = [
 /** Gallery display order (not array order). */
 const DISPLAY_ORDER = [
   'modern-oak-sideboard',
+  'american-walnut-media-console',
+  'solid-oak-bed',
   'black-walnut-table-combo',
   'black-walnut-smokey-grey-epoxy-table',
   'live-edge-mahogany-table',
+  'solid-black-walnut-dining-table',
   'walnut-dining-table',
   'american-black-walnut-coffee-table-walnut-legs',
   'live-edge-olive-couch-table',
   'zebrano-side-tables',
+  'custom-knife-table-sakuro',
+  'whiskey-wednesday-serving-tray',
   'mixed-hardwood-bottle-openers',
   'walnut-maple-purpleheart-coasters',
   'golf-lisnice-board',
   'pig-roast-event-board',
+  'walnut-maple-chessboard',
   'mahogany-maple-board-game',
   'superman-epoxy-wall-art',
-]
-
-/** Homepage teaser — fixed order of six slugs. */
-const HOMEPAGE_TEASER_SLUGS = [
-  'modern-oak-sideboard',
-  'black-walnut-table-combo',
-  'black-walnut-smokey-grey-epoxy-table',
-  'live-edge-mahogany-table',
-  'live-edge-olive-couch-table',
-  'zebrano-side-tables',
 ]
 
 export const pastProjectsCatalog = [
@@ -50,6 +46,30 @@ export const pastProjectsCatalog = [
     cardObjectPosition: 'center 58%',
     modalObjectPosition: 'center 58%',
     featured: true,
+  },
+  {
+    id: 'american-walnut-media-console',
+    slug: 'american-walnut-media-console',
+    name: 'American Walnut Media Console',
+    material: 'American walnut + steamed European walnut',
+    categories: ['Furniture'],
+    category: 'Furniture',
+    image: '/images/signature/signature-tv-console.jpg',
+    modalImage: '/images/signature/signature-tv-console.jpg',
+    cardObjectPosition: 'center 45%',
+    modalObjectPosition: 'center 45%',
+  },
+  {
+    id: 'solid-oak-bed',
+    slug: 'solid-oak-bed',
+    name: 'Solid Oak Bed',
+    material: 'Solid oak + powder-coated steel',
+    categories: ['Furniture'],
+    category: 'Furniture',
+    image: '/images/signature/signature-oak-bed.jpg',
+    modalImage: '/images/signature/signature-oak-bed.jpg',
+    cardObjectPosition: 'center 40%',
+    modalObjectPosition: 'center 40%',
   },
   {
     id: 'black-walnut-table-combo',
@@ -90,6 +110,18 @@ export const pastProjectsCatalog = [
     modalObjectPosition: 'center 50%',
   },
   {
+    id: 'solid-black-walnut-dining-table',
+    slug: 'solid-black-walnut-dining-table',
+    name: 'Solid Black Walnut Dining Table',
+    material: 'Solid black walnut + powder-coated steel',
+    categories: ['Furniture'],
+    category: 'Furniture',
+    image: '/images/signature/signature-walnut-dining-table.jpg',
+    modalImage: '/images/signature/signature-walnut-dining-table.jpg',
+    cardObjectPosition: 'center 42%',
+    modalObjectPosition: 'center 42%',
+  },
+  {
     id: 'walnut-dining-table',
     slug: 'walnut-dining-table',
     name: 'Walnut Dining Table',
@@ -101,6 +133,42 @@ export const pastProjectsCatalog = [
     sourceIsScreenshot: true,
     cardObjectPosition: 'center 55%',
     modalObjectPosition: 'center 55%',
+  },
+  {
+    id: 'custom-knife-table-sakuro',
+    slug: 'custom-knife-table-sakuro',
+    name: 'Custom Knife Table for Sakuro.cz',
+    material: 'Dark oak + epoxy river',
+    categories: ['Custom Pieces'],
+    category: 'Custom Pieces',
+    image: '/images/signature/signature-knife-table.jpg',
+    modalImage: '/images/signature/signature-knife-table.jpg',
+    cardObjectPosition: 'center 35%',
+    modalObjectPosition: 'center 35%',
+  },
+  {
+    id: 'whiskey-wednesday-serving-tray',
+    slug: 'whiskey-wednesday-serving-tray',
+    name: 'Whiskey Wednesday Serving Tray',
+    material: "Custom tray for Max's Steakhouse",
+    categories: ['Custom Pieces'],
+    category: 'Custom Pieces',
+    image: '/images/signature/signature-maxs-whiskey-tray.jpg',
+    modalImage: '/images/signature/signature-maxs-whiskey-tray.jpg',
+    cardObjectPosition: 'center 42%',
+    modalObjectPosition: 'center 42%',
+  },
+  {
+    id: 'walnut-maple-chessboard',
+    slug: 'walnut-maple-chessboard',
+    name: 'Walnut & Maple Chessboard',
+    material: 'Walnut + maple',
+    categories: ['Custom Pieces'],
+    category: 'Custom Pieces',
+    image: '/images/signature/signature-walnut-maple-chessboard.jpg',
+    modalImage: '/images/signature/signature-walnut-maple-chessboard.jpg',
+    cardObjectPosition: 'center 48%',
+    modalObjectPosition: 'center 48%',
   },
   {
     id: 'american-black-walnut-coffee-table-walnut-legs',
@@ -213,6 +281,11 @@ export const pastProjectsCatalog = [
   },
 ]
 
+/**
+ * Gallery display helpers live below. Homepage Past Projects preview was removed;
+ * Signature Work links into gallery hashes instead.
+ */
+
 const availableSlugSet = new Set(availableSlugs)
 const orderIndex = Object.fromEntries(DISPLAY_ORDER.map((slug, index) => [slug, index]))
 
@@ -230,14 +303,6 @@ function sortByDisplayOrder(projects) {
 
 export function getVisibleGalleryProjects() {
   return sortByDisplayOrder(pastProjectsCatalog.filter(isProjectVisible))
-}
-
-export function getHomepagePastProjects(limit = 6) {
-  const visibleBySlug = Object.fromEntries(
-    getVisibleGalleryProjects().map((project) => [project.slug, project]),
-  )
-
-  return HOMEPAGE_TEASER_SLUGS.map((slug) => visibleBySlug[slug]).filter(Boolean).slice(0, limit)
 }
 
 export function getPastProjectBySlug(slug) {
