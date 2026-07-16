@@ -97,49 +97,58 @@ export const homepageCarouselSlides = [
 ]
 
 export const workshopAboutImagePath = '/images/workshop-placeholder.png'
+export const makerAboutImagePath = '/images/about/dominick-in-workshop.jpg'
 
 export const signaturePieces = [
   {
-    id: 'knife-table',
-    name: 'Knife Table',
+    id: 'american-walnut-media-console',
+    name: 'American Walnut Media Console',
+    subtitle: 'TV Table / Media Console',
     description:
-      'Custom hardwood knife display tables and statement pieces built around special blades, collections or presentation.',
-    image: '/images/signature/knife-table.jpg',
+      'A custom media console featuring a solid American walnut top and steamed European walnut drawer fronts. The drawers use soft-close, push-to-open hardware for a clean exterior without visible handles.',
+    image: '/images/signature/signature-tv-console.jpg',
+    objectPosition: 'center 45%',
   },
   {
-    id: 'dining-table',
-    name: 'Dining Table',
+    id: 'solid-oak-bed',
+    name: 'Solid Oak Bed',
     description:
-      'Handmade dining tables designed around the wood, space and feeling of the room.',
-    image: '/images/signature/dining-table.jpg',
+      'A 2 × 2 metre bed built around a custom-designed steel frame, fabricated and powder-coated before being clad in solid oak slabs. Selected live edges were preserved to add natural character and contrast to the clean steel structure.',
+    image: '/images/signature/signature-oak-bed.jpg',
+    objectPosition: 'center 40%',
   },
   {
-    id: 'side-table',
-    name: 'Side Table',
+    id: 'solid-black-walnut-dining-table',
+    name: 'Solid Black Walnut Dining Table',
     description:
-      'Small furniture pieces with hardwood character, clean lines and a one-of-one handmade feel.',
-    image: '/images/signature/side-table.jpg',
+      'A solid black walnut dining table paired with custom powder-coated steel legs, designed to showcase the natural grain and warmth of the timber.',
+    image: '/images/signature/signature-walnut-dining-table.jpg',
+    objectPosition: 'center 42%',
   },
   {
-    id: 'tv-table-media-console',
-    name: 'TV Table / Media Console',
+    id: 'whiskey-epoxy-cutting-board',
+    name: 'Whiskey Epoxy Cutting Board',
     description:
-      'Custom TV tables and media pieces made to fit the space, equipment and style of the home.',
-    image: '/images/signature/tv-table-media-console.jpg',
+      'A custom walnut and epoxy statement board featuring miniature whiskey bottles embedded inside a flowing resin river. Created as a one-of-one display and serving piece for a whiskey enthusiast.',
+    image: '/images/signature/signature-whiskey-epoxy-board.jpg',
+    objectPosition: 'center center',
   },
   {
-    id: 'bed-bedroom-piece',
-    name: 'Bed / Bedroom Piece',
+    id: 'sakuro-knife-table',
+    name: 'Custom Knife Table for Sakuro.cz',
     description:
-      'Solid wood bedroom pieces and bed projects made with a warm, natural and lasting feel.',
-    image: '/images/signature/bed-bedroom-piece.jpg',
+      'A one-of-one knife display table created for Sakuro.cz. A knife and sharpening tool were suspended inside an epoxy river running through a dark brown stained oak tabletop.',
+    image: '/images/signature/signature-knife-table.jpg',
+    objectPosition: 'center 35%',
   },
   {
-    id: 'custom-boards-serving-pieces',
-    name: 'Custom Boards & Serving Pieces',
+    id: 'whiskey-wednesday-serving-tray',
+    name: 'Whiskey Wednesday Serving Tray',
+    subtitle: "Max's Steakhouse",
     description:
-      'Cutting boards, serving boards, trays and gift pieces made in small batches or to order.',
-    image: '/images/signature/custom-boards-serving-pieces.jpg',
+      "A custom serving tray made for Max's Steakhouse and its Whiskey Wednesday club. The finished piece remains in use and can be seen in person at the restaurant.",
+    image: '/images/signature/signature-maxs-whiskey-tray.jpg',
+    objectPosition: 'center 40%',
   },
 ]
 
@@ -170,26 +179,7 @@ export const pastCustomPieces = [
   },
 ]
 
-export const premiumReviews = [
-  {
-    id: 'review-1',
-    name: 'Etsy Customer',
-    quote: 'Very nice item — would purchase again. Beautiful craftsmanship.',
-    rating: 5,
-  },
-  {
-    id: 'review-2',
-    name: 'Etsy Customer',
-    quote: 'Great wood butter with a lovely smell. Exactly what my boards needed.',
-    rating: 5,
-  },
-  {
-    id: 'review-3',
-    name: 'Etsy Customer',
-    quote: 'Crazy fast shipping and a stunning board. Highly recommended.',
-    rating: 5,
-  },
-]
+export { homepageReviews as premiumReviews } from './data/reviews'
 
 export const etsyTrustPoints = [
   'Secure Etsy checkout',
@@ -249,53 +239,6 @@ export const availablePieces = [
     price: 'Price on request',
     status: 'Available',
     image: '/images/wood-butter.jpg', // Replace with the wood butter product photo.
-  },
-]
-
-export const galleryItems = [
-  {
-    title: 'Walnut end grain board',
-    image: '/images/end-grain-board.jpg', // Replace with a close-up end grain gallery photo.
-  },
-  {
-    title: 'Oak butcher block',
-    image: '/images/butcher-block.jpg', // Replace with the butcher block gallery photo.
-  },
-  {
-    title: 'Serving board with brass handles',
-    image: '/images/serving-board.jpg', // Replace with the serving board gallery photo.
-  },
-  {
-    title: 'Breadboard in warm oak finish',
-    image: '/images/edge-grain-board.jpg', // Replace with a dedicated breadboard photo.
-  },
-  {
-    title: 'Custom engraved board',
-    image: '/images/workshop-process.jpg', // Replace with an engraving detail photo.
-  },
-  {
-    title: 'Coaster set in smoked finish',
-    image: '/images/coaster-set.jpg', // Replace with the coaster set gallery photo.
-  },
-  {
-    title: 'Wall-mounted bottle opener',
-    image: '/images/workshop-process.jpg', // Replace with the bottle opener gallery photo.
-  },
-  {
-    title: 'Wood butter and board conditioner',
-    image: '/images/wood-butter.jpg', // Replace with the care product photo.
-  },
-  {
-    title: 'Epoxy serving board',
-    image: '/images/epoxy-piece.jpg', // Replace with the epoxy project photo.
-  },
-  {
-    title: 'Workshop finishing station',
-    image: '/images/workshop-process.jpg', // Replace with a workshop process photo.
-  },
-  {
-    title: 'Hardwood selection shelf',
-    image: '/images/partner-tools.jpg', // Replace with a materials or tools shelf photo.
   },
 ]
 
@@ -508,7 +451,7 @@ export const pageSeo = {
   home: {
     title: 'Dom\'s Concepts | Handmade Woodworking in Prague',
     description:
-      'Premium handmade cutting boards, serving pieces, breadboards, coasters, wood care products, and custom woodworking from a Prague workshop.',
+      'Handmade cutting boards, serving pieces and one-of-one hardwood creations, crafted in Prague by Dom\'s Concepts.',
   },
   availablePieces: {
     title: 'Shop the Collection | Dom\'s Concepts',
@@ -534,6 +477,16 @@ export const pageSeo = {
     title: 'FAQ | Dom\'s Concepts',
     description:
       'Answers about custom sizes, engraving, lead times, shipping, pickup, board care, and wood butter from Dom\'s Concepts.',
+  },
+  reviews: {
+    title: 'Customer Reviews | Dom\'s Concepts',
+    description:
+      'Real Etsy feedback from customers who have ordered cutting boards, gifts, and workshop care products from Dom\'s Concepts in Prague.',
+  },
+  gallery: {
+    title: 'Past Projects | Dom\'s Concepts',
+    description:
+      'A look back at furniture, serving pieces and one-of-one creations handmade by Dom\'s Concepts in Prague since 2016.',
   },
 }
 

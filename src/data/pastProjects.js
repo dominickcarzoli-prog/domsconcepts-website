@@ -1,0 +1,245 @@
+import availableSlugs from './past-projects-available.json' with { type: 'json' }
+
+export const pastProjectCategories = [
+  'All',
+  'Furniture',
+  'Custom Pieces',
+  'Home Accessories',
+  'Decor',
+]
+
+/** Gallery display order (not array order). */
+const DISPLAY_ORDER = [
+  'modern-oak-sideboard',
+  'black-walnut-table-combo',
+  'black-walnut-smokey-grey-epoxy-table',
+  'live-edge-mahogany-table',
+  'walnut-dining-table',
+  'american-black-walnut-coffee-table-walnut-legs',
+  'live-edge-olive-couch-table',
+  'zebrano-side-tables',
+  'mixed-hardwood-bottle-openers',
+  'walnut-maple-purpleheart-coasters',
+  'golf-lisnice-board',
+  'pig-roast-event-board',
+  'mahogany-maple-board-game',
+  'superman-epoxy-wall-art',
+]
+
+/** Homepage teaser — fixed order of six slugs. */
+const HOMEPAGE_TEASER_SLUGS = [
+  'modern-oak-sideboard',
+  'black-walnut-table-combo',
+  'black-walnut-smokey-grey-epoxy-table',
+  'live-edge-mahogany-table',
+  'live-edge-olive-couch-table',
+  'zebrano-side-tables',
+]
+
+export const pastProjectsCatalog = [
+  {
+    id: 'modern-oak-sideboard',
+    slug: 'modern-oak-sideboard',
+    name: 'Modern Oak Sideboard',
+    material: 'Solid oak',
+    categories: ['Furniture'],
+    category: 'Furniture',
+    image: '/images/gallery/past-projects/modern-oak-sideboard.jpg',
+    modalImage: '/images/projects/modal/modern-oak-sideboard-modal.jpg',
+    sourceIsScreenshot: true,
+    cardObjectPosition: 'center 58%',
+    modalObjectPosition: 'center 58%',
+    featured: true,
+  },
+  {
+    id: 'black-walnut-table-combo',
+    slug: 'black-walnut-table-combo',
+    name: 'Black Walnut Dining and Couch Table Combo',
+    material: 'Black walnut + powder-coated steel',
+    categories: ['Furniture'],
+    category: 'Furniture',
+    image: '/images/gallery/past-projects/black-walnut-table-combo.jpg',
+    modalImage: '/images/projects/modal/black-walnut-table-combo-modal.jpg',
+    sourceIsScreenshot: true,
+    cardObjectPosition: 'center 55%',
+    modalObjectPosition: 'center 55%',
+    featured: true,
+  },
+  {
+    id: 'black-walnut-smokey-grey-epoxy-table',
+    slug: 'black-walnut-smokey-grey-epoxy-table',
+    name: 'Black Walnut and Smokey Grey Epoxy Coffee Table',
+    material: 'Black walnut + smokey grey epoxy + steel',
+    categories: ['Furniture'],
+    category: 'Furniture',
+    image: '/images/gallery/past-projects/black-walnut-smokey-grey-epoxy-table.jpg',
+    modalImage: '/images/projects/modal/black-walnut-smokey-grey-epoxy-table-modal.jpg',
+    sourceIsScreenshot: true,
+  },
+  {
+    id: 'live-edge-mahogany-table',
+    slug: 'live-edge-mahogany-table',
+    name: 'Live Edge Mahogany Slabs Table',
+    material: 'Live-edge mahogany + steel',
+    categories: ['Furniture'],
+    category: 'Furniture',
+    image: '/images/gallery/past-projects/live-edge-mahogany-table.jpg',
+    modalImage: '/images/projects/modal/live-edge-mahogany-table-modal.jpg',
+    sourceIsScreenshot: true,
+    cardObjectPosition: 'center 50%',
+    modalObjectPosition: 'center 50%',
+  },
+  {
+    id: 'walnut-dining-table',
+    slug: 'walnut-dining-table',
+    name: 'Walnut Dining Table',
+    material: 'Walnut + powder-coated steel',
+    categories: ['Furniture'],
+    category: 'Furniture',
+    image: '/images/gallery/past-projects/walnut-dining-table-steel-base.jpg',
+    modalImage: '/images/projects/modal/walnut-dining-table-modal.jpg',
+    sourceIsScreenshot: true,
+    cardObjectPosition: 'center 55%',
+    modalObjectPosition: 'center 55%',
+  },
+  {
+    id: 'american-black-walnut-coffee-table-walnut-legs',
+    slug: 'american-black-walnut-coffee-table-walnut-legs',
+    name: 'American Black Walnut Coffee Table with Walnut Legs',
+    material: 'American black walnut',
+    categories: ['Furniture'],
+    category: 'Furniture',
+    image: '/images/gallery/past-projects/american-black-walnut-coffee-table-walnut-legs.jpg',
+    modalImage: '/images/projects/modal/american-black-walnut-coffee-table-walnut-legs-modal.jpg',
+    sourceIsScreenshot: true,
+    cardObjectPosition: 'center 52%',
+    modalObjectPosition: 'center 52%',
+  },
+  {
+    id: 'live-edge-olive-couch-table',
+    slug: 'live-edge-olive-couch-table',
+    name: 'Live Edge Olive Couch Table with Epoxy',
+    material: 'Live-edge olive wood + epoxy + steel',
+    categories: ['Furniture'],
+    category: 'Furniture',
+    image: '/images/gallery/past-projects/live-edge-olive-couch-table.jpg',
+    modalImage: '/images/projects/modal/live-edge-olive-couch-table-modal.jpg',
+    sourceIsScreenshot: true,
+    cardObjectPosition: 'center 50%',
+    modalObjectPosition: 'center 50%',
+  },
+  {
+    id: 'zebrano-side-tables',
+    slug: 'zebrano-side-tables',
+    name: 'Zebrano Side Tables',
+    material: 'Zebrano + metal',
+    categories: ['Furniture'],
+    category: 'Furniture',
+    image: '/images/gallery/past-projects/zebrano-side-tables.jpg',
+    modalImage: '/images/projects/modal/zebrano-side-tables-modal.jpg',
+    sourceIsScreenshot: true,
+    cardObjectPosition: 'center 58%',
+    modalObjectPosition: 'center 58%',
+  },
+  {
+    id: 'mixed-hardwood-bottle-openers',
+    slug: 'mixed-hardwood-bottle-openers',
+    name: 'Mixed Hardwood Wall-Mounted Bottle Openers',
+    material: 'Mixed hardwood + metal',
+    categories: ['Home Accessories'],
+    category: 'Home Accessories',
+    image: '/images/gallery/past-projects/mixed-hardwood-bottle-openers.jpg',
+    modalImage: '/images/projects/modal/mixed-hardwood-bottle-openers-modal.jpg',
+    sourceIsScreenshot: true,
+  },
+  {
+    id: 'walnut-maple-purpleheart-coasters',
+    slug: 'walnut-maple-purpleheart-coasters',
+    name: 'Walnut, Maple and Purpleheart Coaster Set',
+    material: 'Walnut + maple + purpleheart',
+    categories: ['Home Accessories'],
+    category: 'Home Accessories',
+    image: '/images/gallery/past-projects/walnut-maple-purpleheart-coasters.jpg',
+    modalImage: '/images/projects/modal/walnut-maple-purpleheart-coasters-modal.jpg',
+    sourceIsScreenshot: true,
+  },
+  {
+    id: 'golf-lisnice-board',
+    slug: 'golf-lisnice-board',
+    name: 'Golf Lišnice Board with Added Golf Ball',
+    material: 'Oak',
+    categories: ['Custom Pieces'],
+    category: 'Custom Pieces',
+    image: '/images/projects/golf-lisnice-board-card.jpg',
+    modalImage: '/images/projects/modal/golf-lisnice-board-modal.jpg',
+    sourceIsScreenshot: true,
+    cardObjectPosition: 'center 55%',
+    modalObjectPosition: 'center 55%',
+  },
+  {
+    id: 'pig-roast-event-board',
+    slug: 'pig-roast-event-board',
+    name: 'Pig Roast Event Board',
+    material: 'Solid oak',
+    categories: ['Custom Pieces'],
+    category: 'Custom Pieces',
+    image: '/images/gallery/past-projects/pig-roast-event-board.jpg',
+    modalImage: '/images/projects/modal/pig-roast-event-board-modal.jpg',
+    sourceIsScreenshot: true,
+    cardObjectPosition: 'center 55%',
+    modalObjectPosition: 'center 55%',
+  },
+  {
+    id: 'mahogany-maple-board-game',
+    slug: 'mahogany-maple-board-game',
+    name: 'Mahogany and Maple Board Game',
+    material: 'Mahogany + maple',
+    categories: ['Custom Pieces'],
+    category: 'Custom Pieces',
+    image: '/images/gallery/past-projects/mahogany-maple-board-game.jpg',
+  },
+  {
+    id: 'superman-epoxy-wall-art',
+    slug: 'superman-epoxy-wall-art',
+    name: 'Superman Epoxy Wall Art',
+    material: 'European walnut + epoxy resin',
+    categories: ['Decor'],
+    category: 'Decor',
+    image: '/images/gallery/past-projects/superman-epoxy-wall-art.jpg',
+    modalImage: '/images/projects/modal/superman-epoxy-wall-art-modal.jpg',
+    sourceIsScreenshot: true,
+    cardObjectPosition: 'center 55%',
+    modalObjectPosition: 'center 55%',
+  },
+]
+
+const availableSlugSet = new Set(availableSlugs)
+const orderIndex = Object.fromEntries(DISPLAY_ORDER.map((slug, index) => [slug, index]))
+
+function isProjectVisible(project) {
+  return Boolean(project.image) && availableSlugSet.has(project.slug)
+}
+
+function sortByDisplayOrder(projects) {
+  return [...projects].sort((left, right) => {
+    const leftIndex = orderIndex[left.slug] ?? Number.MAX_SAFE_INTEGER
+    const rightIndex = orderIndex[right.slug] ?? Number.MAX_SAFE_INTEGER
+    return leftIndex - rightIndex
+  })
+}
+
+export function getVisibleGalleryProjects() {
+  return sortByDisplayOrder(pastProjectsCatalog.filter(isProjectVisible))
+}
+
+export function getHomepagePastProjects(limit = 6) {
+  const visibleBySlug = Object.fromEntries(
+    getVisibleGalleryProjects().map((project) => [project.slug, project]),
+  )
+
+  return HOMEPAGE_TEASER_SLUGS.map((slug) => visibleBySlug[slug]).filter(Boolean).slice(0, limit)
+}
+
+export function getPastProjectBySlug(slug) {
+  return getVisibleGalleryProjects().find((project) => project.slug === slug)
+}

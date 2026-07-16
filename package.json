@@ -6,7 +6,7 @@
   "scripts": {
     "dev": "vite",
     "audit:images": "node scripts/audit-product-images.mjs",
-    "prebuild": "node scripts/audit-product-images.mjs",
+    "prebuild": "node scripts/audit-product-images.mjs && node scripts/audit-bespoke-images.mjs",
     "build": "vite build",
     "lint": "oxlint",
     "preview": "vite preview"

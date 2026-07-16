@@ -12,7 +12,6 @@ import {
 } from 'react-router-dom'
 import {
   boardCarePricing,
-  boardCareProductAddonOptions,
   boardCareProducts,
   budgetRanges,
   careGuidePoints,
@@ -20,11 +19,11 @@ import {
   customProductTypes,
   engravingOptions,
   faqItems,
-  galleryItems,
   getBoardCareAddonLabel,
   getBoardCareButtonAction,
   homepageCarouselSlides,
   legalPages,
+  makerAboutImagePath,
   navItems,
   pageSeo,
   partnerItems,
@@ -35,7 +34,14 @@ import {
   woodPreferences,
   workshopAboutImagePath,
 } from './siteData'
+import { getProductSocialProof, reviewTrustPoints, reviews } from './data/reviews'
 import { instagramVideos } from './data/instagramVideos'
+import {
+  bespokeCategories,
+  getBespokeCreationBySlug,
+  getHomepagePastProjects,
+  getVisibleGalleryProjects,
+} from './data/bespokeCreations'
 import {
   CUSTOM_ORDER_FORM_ANCHOR,
   ETSY_SHOP_URL,
@@ -60,7 +66,7 @@ const footerLinks = [
   { label: 'Shop', path: '/available-pieces' },
   { label: 'Custom Orders', path: '/custom-orders' },
   { label: 'About', path: '/about' },
-  { label: 'Reviews', path: '/#reviews' },
+  { label: 'Reviews', path: '/reviews' },
   { label: 'Contact', path: '/contact' },
 ]
 const productBadgeClassesLuxury = {
@@ -85,22 +91,70 @@ const outlineButtonLightClassName = 'btn-outline-light px-6 py-3 text-sm'
 const goldChipActiveClassName =
   'chip-gold-active rounded-full border px-3 py-1.5 text-xs font-medium'
 
-function PageMeta({ title, description }) {
+const SITE_URL = 'https://domsconcepts.com'
+const DEFAULT_OG_IMAGE = '/images/carousel/premium-cutting-boards.jpg'
+
+function upsertMeta(selector, attributes) {
+  let element = document.querySelector(selector)
+
+  if (!element) {
+    element = document.createElement('meta')
+    document.head.appendChild(element)
+  }
+
+  Object.entries(attributes).forEach(([key, value]) => {
+    element.setAttribute(key, value)
+  })
+}
+
+function upsertLink(rel, href) {
+  let element = document.querySelector(`link[rel="${rel}"]`)
+
+  if (!element) {
+    element = document.createElement('link')
+    element.rel = rel
+    document.head.appendChild(element)
+  }
+
+  element.href = href
+}
+
+function PageMeta({ title, description, ogImage = DEFAULT_OG_IMAGE, canonicalPath }) {
+  const location = useLocation()
+
   useEffect(() => {
     document.title = title
 
-    let meta = document.querySelector('meta[name="description"]')
+    upsertMeta('meta[name="description"]', { name: 'description', content: description })
 
-    if (meta) {
-      meta.setAttribute('content', description)
-      return
-    }
+    const path = canonicalPath ?? location.pathname
+    const canonicalUrl = `${SITE_URL}${path === '/' ? '' : path}`
+    const imageUrl = ogImage.startsWith('http') ? ogImage : `${SITE_URL}${ogImage}`
 
-    meta = document.createElement('meta')
-    meta.name = 'description'
-    meta.content = description
-    document.head.appendChild(meta)
-  }, [description, title])
+    upsertLink('canonical', canonicalUrl)
+    upsertMeta('meta[property="og:type"]', { property: 'og:type', content: 'website' })
+    upsertMeta('meta[property="og:site_name"]', {
+      property: 'og:site_name',
+      content: "Dom's Concepts",
+    })
+    upsertMeta('meta[property="og:title"]', { property: 'og:title', content: title })
+    upsertMeta('meta[property="og:description"]', {
+      property: 'og:description',
+      content: description,
+    })
+    upsertMeta('meta[property="og:url"]', { property: 'og:url', content: canonicalUrl })
+    upsertMeta('meta[property="og:image"]', { property: 'og:image', content: imageUrl })
+    upsertMeta('meta[name="twitter:card"]', {
+      name: 'twitter:card',
+      content: 'summary_large_image',
+    })
+    upsertMeta('meta[name="twitter:title"]', { name: 'twitter:title', content: title })
+    upsertMeta('meta[name="twitter:description"]', {
+      name: 'twitter:description',
+      content: description,
+    })
+    upsertMeta('meta[name="twitter:image"]', { name: 'twitter:image', content: imageUrl })
+  }, [canonicalPath, description, location.pathname, ogImage, title])
 
   return null
 }
@@ -133,7 +187,7 @@ function SiteLayout() {
   }, [location.pathname])
 
   return (
-    <div className="min-h-screen bg-[#0d0b09] text-stone-100">
+    <div className="min-h-screen overflow-x-hidden bg-[#0d0b09] text-stone-100">
       <div className="fixed inset-x-0 top-0 z-50 border-b border-white/10 bg-[#0d0b09]/92 backdrop-blur-md">
         <div className="mx-auto flex max-w-7xl items-center justify-between gap-4 px-4 py-4 sm:px-6 lg:px-8">
           <Link to="/" className="flex min-w-0 items-center gap-2.5 sm:gap-3.5 lg:gap-4">
@@ -180,12 +234,14 @@ function SiteLayout() {
           <Route path="available-pieces" element={<AvailablePiecesPage />} />
           <Route path="available-pieces/:productId" element={<ProductDetailPage />} />
           <Route path="gallery" element={<GalleryPage />} />
+          <Route path="bespoke-creations/:projectSlug" element={<BespokeCreationDetailPage />} />
           <Route path="custom-orders" element={<CustomOrdersPage />} />
           <Route path="care-guide" element={<CareGuidePage />} />
           <Route path="partners" element={<PartnersPage />} />
           <Route path="about" element={<AboutPage />} />
           <Route path="contact" element={<ContactPage />} />
           <Route path="faq" element={<FaqPage />} />
+          <Route path="reviews" element={<ReviewsPage />} />
           {legalPages.map((page) => (
             <Route
               key={page.slug}
@@ -252,13 +308,22 @@ function SiteLayout() {
 }
 
 const heroCarouselFallbackImagePath = '/images/hero-workshop-board.jpg'
+const defaultStaticHeroImage = '/images/carousel/premium-cutting-boards.jpg'
+const defaultStaticHeroAlt = 'Kitchen board on counter'
 
 const kitchenBoardHeroSlide = homepageCarouselSlides.find((slide) => slide.id === 'kitchen-board')
 const staticHeroImage =
-  kitchenBoardHeroSlide?.image ?? '/images/carousel/premium-cutting-boards.jpg'
-const staticHeroAlt = kitchenBoardHeroSlide?.label ?? 'Kitchen board on counter'
+  typeof kitchenBoardHeroSlide?.image === 'string' && kitchenBoardHeroSlide.image.trim()
+    ? kitchenBoardHeroSlide.image
+    : defaultStaticHeroImage
+const staticHeroAlt =
+  typeof kitchenBoardHeroSlide?.label === 'string' && kitchenBoardHeroSlide.label.trim()
+    ? kitchenBoardHeroSlide.label
+    : defaultStaticHeroAlt
 const staticHeroFallbackImage =
-  kitchenBoardHeroSlide?.fallbackImage ?? heroCarouselFallbackImagePath
+  typeof kitchenBoardHeroSlide?.fallbackImage === 'string' && kitchenBoardHeroSlide.fallbackImage.trim()
+    ? kitchenBoardHeroSlide.fallbackImage
+    : heroCarouselFallbackImagePath
 
 function BrandMark() {
   const [logoSrc, setLogoSrc] = useState(logoImagePath)
@@ -298,7 +363,7 @@ function NavItem({ item, mobile = false }) {
 
 function PageShell({ eyebrow, title, intro, children }) {
   return (
-    <section className="warm-section w-full">
+    <section className="page-shell warm-section w-full scroll-mt-28">
       <div className="mx-auto max-w-7xl px-4 py-14 sm:px-6 lg:px-8 lg:py-20">
         <div className="mb-10 max-w-3xl space-y-4 sm:space-y-5">
           <p className="text-[11px] uppercase tracking-[0.32em] text-amber-200/80">{eyebrow}</p>
@@ -363,7 +428,7 @@ function HeroCarousel() {
 
   return (
     <section
-      className="dark-section relative w-full min-h-[36rem] overflow-hidden sm:min-h-[40rem] lg:min-h-[46rem]"
+      className="dark-section relative w-full min-h-[34rem] overflow-hidden sm:min-h-[40rem] lg:min-h-[46rem]"
       aria-label="Dom's Concepts signature woodwork"
       {...carouselInteractionProps}
     >
@@ -391,6 +456,7 @@ function HeroCarousel() {
               src={staticHeroImage}
               alt={staticHeroAlt}
               fallbackSrc={staticHeroFallbackImage}
+              positionClassName="object-[58%_72%] md:object-[center_62%]"
             />
           </div>
         )}
@@ -399,8 +465,8 @@ function HeroCarousel() {
       <div className="pointer-events-none absolute inset-0 bg-gradient-to-r from-[#14100e]/92 via-[#14100e]/62 to-[#14100e]/25" />
       <div className="pointer-events-none absolute inset-0 bg-gradient-to-t from-[#0c0a09]/88 via-[#14100e]/25 to-transparent" />
 
-      <div className="relative z-10 mx-auto flex min-h-[36rem] max-w-7xl flex-col justify-end px-4 py-14 sm:min-h-[40rem] sm:px-6 sm:py-18 lg:min-h-[46rem] lg:px-8 lg:py-24">
-        <div className="max-w-3xl space-y-7">
+      <div className="relative z-10 mx-auto flex min-h-[34rem] max-w-7xl flex-col justify-end px-4 py-8 sm:min-h-[40rem] sm:px-6 sm:py-12 lg:min-h-[46rem] lg:px-8 lg:py-24">
+        <div className="max-w-3xl space-y-4 sm:space-y-6 lg:space-y-7">
           <p className="text-[11px] uppercase tracking-[0.38em] text-amber-200/80">
             Dom&apos;s Concepts · Prague workshop
           </p>
@@ -411,15 +477,15 @@ function HeroCarousel() {
             From cutting boards and serving pieces to one-of-one custom woodwork, Dom&apos;s
             Concepts creates small-batch hardwood pieces from a Prague workshop.
           </p>
-          <div className="flex flex-col gap-3 sm:flex-row">
-            <a href="#signature-work" className={goldButtonClassName}>
+          <div className="flex w-full flex-col gap-2.5 sm:w-auto sm:flex-row sm:gap-3">
+            <a href="#signature-work" className={`${goldButtonClassName} w-full sm:w-auto`}>
               Explore Signature Work
             </a>
-            <a href="#available-now" className={outlineButtonLightClassName}>
+            <a href="#available-now" className={`${outlineButtonLightClassName} w-full sm:w-auto`}>
               Shop Available Pieces
             </a>
           </div>
-          <p className="text-xs leading-6 tracking-[0.04em] text-stone-300/90 sm:text-sm">
+          <p className="text-xs leading-5 tracking-[0.04em] text-stone-300/90 sm:text-sm sm:leading-6">
             Handmade in Prague · Custom orders available · Etsy checkout for available pieces
           </p>
         </div>
@@ -468,7 +534,7 @@ function HeroCarousel() {
   )
 }
 
-function HeroCarouselImage({ src, alt, fallbackSrc }) {
+function HeroCarouselImage({ src, alt, fallbackSrc, positionClassName = 'object-center' }) {
   const [imageSrc, setImageSrc] = useState(src)
   const [hasError, setHasError] = useState(false)
 
@@ -496,135 +562,187 @@ function HeroCarouselImage({ src, alt, fallbackSrc }) {
 
         setHasError(true)
       }}
-      className="absolute inset-0 h-full w-full object-cover object-center opacity-75"
+      className={['absolute inset-0 h-full w-full object-cover opacity-75', positionClassName].join(' ')}
     />
   )
 }
 
+const SIGNATURE_AUTOPLAY_MS = 4500
+const SIGNATURE_TRANSITION_MS = 700
+
 function SignatureWorkCarousel() {
-  const trackRef = useRef(null)
+  const touchStartX = useRef(null)
   const [activeIndex, setActiveIndex] = useState(0)
   const [cardsPerView, setCardsPerView] = useState(1)
+  const [isHovered, setIsHovered] = useState(false)
+  const [isFocusPaused, setIsFocusPaused] = useState(false)
+  const [isDocumentHidden, setIsDocumentHidden] = useState(false)
+  const [prefersReducedMotion, setPrefersReducedMotion] = useState(false)
 
   useEffect(() => {
-    const mediaQuery = window.matchMedia('(min-width: 1024px)')
+    const desktopQuery = window.matchMedia('(min-width: 1024px)')
+    const motionQuery = window.matchMedia('(prefers-reduced-motion: reduce)')
 
     const updateCardsPerView = () => {
-      setCardsPerView(mediaQuery.matches ? 2 : 1)
+      setCardsPerView(desktopQuery.matches ? 2 : 1)
+    }
+
+    const updateMotionPreference = () => {
+      setPrefersReducedMotion(motionQuery.matches)
     }
 
     updateCardsPerView()
-    mediaQuery.addEventListener('change', updateCardsPerView)
+    updateMotionPreference()
+    desktopQuery.addEventListener('change', updateCardsPerView)
+    motionQuery.addEventListener('change', updateMotionPreference)
 
-    return () => mediaQuery.removeEventListener('change', updateCardsPerView)
+    return () => {
+      desktopQuery.removeEventListener('change', updateCardsPerView)
+      motionQuery.removeEventListener('change', updateMotionPreference)
+    }
   }, [])
 
-  const maxIndex = Math.max(0, signaturePieces.length - cardsPerView)
-  const slideCount = maxIndex + 1
+  useEffect(() => {
+    const handleVisibility = () => setIsDocumentHidden(document.hidden)
+    handleVisibility()
+    document.addEventListener('visibilitychange', handleVisibility)
+    return () => document.removeEventListener('visibilitychange', handleVisibility)
+  }, [])
 
-  const scrollToIndex = useCallback(
-    (index) => {
-      const track = trackRef.current
-      if (!track) return
-
-      const nextIndex = Math.max(0, Math.min(index, maxIndex))
-      const card = track.children[nextIndex]
-
-      if (card) {
-        card.scrollIntoView({ behavior: 'smooth', inline: 'start', block: 'nearest' })
-      }
-
-      setActiveIndex(nextIndex)
-    },
-    [maxIndex],
-  )
+  const slideCount = Math.ceil(signaturePieces.length / cardsPerView)
+  const maxIndex = Math.max(0, slideCount - 1)
 
   useEffect(() => {
     setActiveIndex((current) => Math.min(current, maxIndex))
   }, [maxIndex])
 
+  const goToSlide = useCallback(
+    (index) => {
+      const nextIndex = ((index % slideCount) + slideCount) % slideCount
+      setActiveIndex(nextIndex)
+    },
+    [slideCount],
+  )
+
+  const isAutoplayPaused =
+    prefersReducedMotion || isHovered || isFocusPaused || isDocumentHidden || slideCount <= 1
+
   useEffect(() => {
-    const track = trackRef.current
-    if (!track) return undefined
+    if (isAutoplayPaused) return undefined
 
-    const handleScroll = () => {
-      const cards = Array.from(track.children)
-      if (!cards.length) return
+    const timer = window.setInterval(() => {
+      setActiveIndex((current) => (current + 1) % slideCount)
+    }, SIGNATURE_AUTOPLAY_MS)
 
-      const trackLeft = track.getBoundingClientRect().left
-      let closestIndex = 0
-      let closestDistance = Number.POSITIVE_INFINITY
+    return () => window.clearInterval(timer)
+  }, [isAutoplayPaused, slideCount, activeIndex])
 
-      cards.forEach((card, index) => {
-        const distance = Math.abs(card.getBoundingClientRect().left - trackLeft)
-        if (distance < closestDistance) {
-          closestDistance = distance
-          closestIndex = index
-        }
-      })
+  useEffect(() => {
+    const nextSlideIndex = (activeIndex + 1) % slideCount
+    const start = nextSlideIndex * cardsPerView
+    const imagesToPreload = signaturePieces.slice(start, start + cardsPerView)
 
-      setActiveIndex(Math.min(closestIndex, maxIndex))
+    imagesToPreload.forEach((piece) => {
+      if (!piece.image) return
+      const img = new Image()
+      img.src = piece.image
+    })
+  }, [activeIndex, cardsPerView, slideCount])
+
+  const handleTouchStart = (event) => {
+    touchStartX.current = event.touches[0].clientX
+  }
+
+  const handleTouchEnd = (event) => {
+    if (touchStartX.current === null) return
+    const delta = touchStartX.current - event.changedTouches[0].clientX
+    if (Math.abs(delta) > 48) {
+      goToSlide(activeIndex + (delta > 0 ? 1 : -1))
     }
+    touchStartX.current = null
+  }
 
-    track.addEventListener('scroll', handleScroll, { passive: true })
-
-    return () => track.removeEventListener('scroll', handleScroll)
-  }, [maxIndex])
+  const transitionStyle = prefersReducedMotion
+    ? { transition: 'none' }
+    : { transition: `transform ${SIGNATURE_TRANSITION_MS}ms cubic-bezier(0.22, 1, 0.36, 1)` }
 
   return (
     <div
       className="mt-14"
       aria-roledescription="carousel"
       aria-label="Signature custom work"
+      onMouseEnter={() => setIsHovered(true)}
+      onMouseLeave={() => setIsHovered(false)}
+      onFocusCapture={() => setIsFocusPaused(true)}
+      onBlurCapture={(event) => {
+        if (!event.currentTarget.contains(event.relatedTarget)) {
+          setIsFocusPaused(false)
+        }
+      }}
+      onTouchStart={handleTouchStart}
+      onTouchEnd={handleTouchEnd}
     >
-      <div
-        ref={trackRef}
-        className="signature-carousel-track flex snap-x snap-mandatory gap-6 overflow-x-auto scroll-smooth pb-1"
-      >
-        {signaturePieces.map((piece) => (
-          <div
-            key={piece.id}
-            className="w-full shrink-0 snap-start lg:w-[calc((100%-1.5rem)/2)]"
-          >
-            <SignaturePieceCard piece={piece} />
-          </div>
-        ))}
+      <div className="overflow-hidden">
+        <div
+          className="flex"
+          style={{
+            ...transitionStyle,
+            transform: `translateX(-${activeIndex * 100}%)`,
+          }}
+        >
+          {Array.from({ length: slideCount }).map((_, slideIndex) => {
+            const start = slideIndex * cardsPerView
+            const pieces = signaturePieces.slice(start, start + cardsPerView)
+
+            return (
+              <div
+                key={`signature-slide-${slideIndex}`}
+                className="grid w-full shrink-0 grid-cols-1 gap-6 lg:grid-cols-2"
+                aria-hidden={slideIndex !== activeIndex ? true : undefined}
+              >
+                {pieces.map((piece) => (
+                  <SignaturePieceCard key={piece.id} piece={piece} />
+                ))}
+              </div>
+            )
+          })}
+        </div>
       </div>
 
       <div className="mt-8 flex items-center justify-between gap-4 border-t border-white/10 pt-6">
-        <div className="flex flex-wrap items-center gap-2">
+        <div className="flex flex-wrap items-center gap-2.5" role="tablist" aria-label="Signature work slides">
           {Array.from({ length: slideCount }).map((_, index) => (
             <button
               key={index}
               type="button"
+              role="tab"
               aria-label={`Show signature work slide ${index + 1}`}
+              aria-selected={index === activeIndex}
               aria-current={index === activeIndex ? 'true' : undefined}
-              onClick={() => scrollToIndex(index)}
+              onClick={() => goToSlide(index)}
               className={[
-                'h-2 rounded-full transition',
+                'h-2.5 rounded-full transition-all duration-300',
                 index === activeIndex
-                  ? 'w-7 bg-amber-200/90'
-                  : 'w-2 bg-white/30 hover:bg-white/50',
+                  ? 'w-8 bg-amber-200/90 shadow-[0_0_12px_rgba(251,191,36,0.25)]'
+                  : 'w-2.5 bg-white/25 hover:bg-white/45',
               ].join(' ')}
             />
           ))}
         </div>
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-3">
           <button
             type="button"
             aria-label="Previous signature work"
-            onClick={() => scrollToIndex(activeIndex - 1)}
-            disabled={activeIndex === 0}
-            className="inline-flex h-10 w-10 items-center justify-center rounded-full border border-white/20 bg-black/35 text-white transition hover:border-amber-200/40 hover:bg-black/55 disabled:cursor-not-allowed disabled:opacity-35"
+            onClick={() => goToSlide(activeIndex - 1)}
+            className="inline-flex h-12 w-12 items-center justify-center rounded-full border border-white/20 bg-black/40 text-lg text-white transition hover:border-amber-200/45 hover:bg-black/60 hover:text-amber-100"
           >
             ←
           </button>
           <button
             type="button"
             aria-label="Next signature work"
-            onClick={() => scrollToIndex(activeIndex + 1)}
-            disabled={activeIndex >= maxIndex}
-            className="inline-flex h-10 w-10 items-center justify-center rounded-full border border-white/20 bg-black/35 text-white transition hover:border-amber-200/40 hover:bg-black/55 disabled:cursor-not-allowed disabled:opacity-35"
+            onClick={() => goToSlide(activeIndex + 1)}
+            className="inline-flex h-12 w-12 items-center justify-center rounded-full border border-white/20 bg-black/40 text-lg text-white transition hover:border-amber-200/45 hover:bg-black/60 hover:text-amber-100"
           >
             →
           </button>
@@ -634,7 +752,7 @@ function SignatureWorkCarousel() {
   )
 }
 
-function SignaturePieceImage({ src, alt }) {
+function SignaturePieceImage({ src, alt, objectPosition = 'center center', priority = false }) {
   const [hasError, setHasError] = useState(false)
 
   useEffect(() => {
@@ -649,9 +767,11 @@ function SignaturePieceImage({ src, alt }) {
     <img
       src={src}
       alt={alt}
-      loading="lazy"
+      loading={priority ? 'eager' : 'lazy'}
+      decoding="async"
       onError={() => setHasError(true)}
-      className="h-full w-full object-cover object-center transition duration-700 group-hover:scale-[1.02]"
+      className="h-full w-full object-cover transition duration-700 group-hover:scale-[1.02]"
+      style={{ objectPosition }}
     />
   )
 }
@@ -659,11 +779,27 @@ function SignaturePieceImage({ src, alt }) {
 function SignaturePieceCard({ piece }) {
   return (
     <article className="group flex h-full flex-col overflow-hidden rounded-2xl border border-white/10 bg-white/[0.04]">
-      <div className="aspect-[16/10] overflow-hidden">
-        <SignaturePieceImage src={piece.image} alt={piece.name} />
-      </div>
-      <div className="flex flex-1 flex-col gap-4 p-6 sm:p-7">
-        <h3 className="font-display text-2xl text-white">{piece.name}</h3>
+      <Link
+        to="/gallery"
+        className="aspect-[16/10] block overflow-hidden focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-amber-200/70"
+        aria-label={`View past projects related to ${piece.name}`}
+      >
+        <SignaturePieceImage
+          src={piece.image}
+          alt={piece.name}
+          objectPosition={piece.objectPosition}
+          priority={piece.id === signaturePieces[0]?.id || piece.id === signaturePieces[1]?.id}
+        />
+      </Link>
+      <div className="flex flex-1 flex-col gap-3 p-6 sm:gap-4 sm:p-7">
+        <div className="space-y-1">
+          <h3 className="font-display text-2xl text-white">{piece.name}</h3>
+          {piece.subtitle ? (
+            <p className="text-[11px] uppercase tracking-[0.22em] text-amber-200/70">
+              {piece.subtitle}
+            </p>
+          ) : null}
+        </div>
         <p className="flex-1 text-sm leading-7 text-stone-300 sm:text-base">
           {piece.description}
         </p>
@@ -672,6 +808,420 @@ function SignaturePieceCard({ piece }) {
         </Link>
       </div>
     </article>
+  )
+}
+
+function getCardObjectPosition(project) {
+  return project.cardObjectPosition ?? 'center center'
+}
+
+function getModalObjectPosition(project) {
+  return project.modalObjectPosition ?? project.cardObjectPosition ?? 'center center'
+}
+
+function PastProjectCardImage({ project, alt, hidePlaceholder = false, className = '' }) {
+  const [hasError, setHasError] = useState(false)
+
+  useEffect(() => {
+    setHasError(false)
+  }, [project.image])
+
+  if (!project.image || hasError) {
+    if (hidePlaceholder) {
+      return null
+    }
+
+    return <div className="signature-image-placeholder h-full w-full" aria-hidden="true" />
+  }
+
+  return (
+    <img
+      src={project.image}
+      alt={alt}
+      loading="lazy"
+      onError={() => setHasError(true)}
+      style={{ objectPosition: getCardObjectPosition(project) }}
+      className={['past-project-card-image', className].filter(Boolean).join(' ')}
+    />
+  )
+}
+
+function PastProjectModalImage({ project, alt }) {
+  const [hasError, setHasError] = useState(false)
+  const displayedImage = project.modalImage || project.image
+
+  useEffect(() => {
+    setHasError(false)
+  }, [displayedImage])
+
+  if (!displayedImage || hasError) {
+    return null
+  }
+
+  return (
+    <img
+      src={displayedImage}
+      alt={alt}
+      onError={() => setHasError(true)}
+      style={{
+        objectPosition: getModalObjectPosition(project),
+      }}
+      className="past-project-modal-image"
+    />
+  )
+}
+
+function BespokeCreationCard({ project, hidePlaceholder = false, onSelect }) {
+  const categoryLabel = project.category ?? project.categories?.[0] ?? ''
+
+  return (
+    <article className="bespoke-card group flex h-full flex-col hover:-translate-y-[3px]">
+      <button
+        type="button"
+        onClick={() => onSelect?.(project)}
+        className="block w-full overflow-hidden text-left"
+        aria-label={`View ${project.name}`}
+      >
+        <div className="relative aspect-[4/3] w-full overflow-hidden bg-[#1c1511]">
+          <PastProjectCardImage
+            project={project}
+            alt={project.name}
+            hidePlaceholder={hidePlaceholder}
+            className="transition duration-500 group-hover:scale-[1.03]"
+          />
+        </div>
+      </button>
+
+      <div className="flex flex-1 flex-col gap-3 p-5 sm:p-6">
+        <p className="text-[10px] uppercase tracking-[0.2em] text-amber-200/75">
+          Completed Project
+        </p>
+        <button
+          type="button"
+          onClick={() => onSelect?.(project)}
+          className="text-left font-display text-xl leading-snug text-stone-100 transition hover:text-amber-200"
+        >
+          {project.name}
+        </button>
+        <p className="text-sm leading-6 text-stone-400">{project.material}</p>
+        {categoryLabel ? (
+          <p className="mt-auto text-[10px] uppercase tracking-[0.18em] text-stone-500">
+            {categoryLabel}
+          </p>
+        ) : null}
+      </div>
+    </article>
+  )
+}
+
+function PastProjectLightbox({ project, projects, currentIndex, onClose, onNavigate }) {
+  const hasPrevious = currentIndex > 0
+  const hasNext = currentIndex < projects.length - 1
+
+  useEffect(() => {
+    const handleKeyDown = (event) => {
+      if (event.key === 'Escape') {
+        onClose()
+        return
+      }
+
+      if (event.key === 'ArrowLeft' && hasPrevious) {
+        onNavigate(currentIndex - 1)
+        return
+      }
+
+      if (event.key === 'ArrowRight' && hasNext) {
+        onNavigate(currentIndex + 1)
+      }
+    }
+
+    const previousOverflow = document.body.style.overflow
+    document.body.style.overflow = 'hidden'
+    window.addEventListener('keydown', handleKeyDown)
+
+    return () => {
+      document.body.style.overflow = previousOverflow
+      window.removeEventListener('keydown', handleKeyDown)
+    }
+  }, [currentIndex, hasNext, hasPrevious, onClose, onNavigate])
+
+  if (!project) {
+    return null
+  }
+
+  const categoryLabel = project.category ?? project.categories?.[0] ?? ''
+
+  return (
+    <div
+      className="fixed inset-0 z-[70] flex items-end justify-center bg-black/82 p-4 backdrop-blur-sm sm:items-center sm:p-6"
+      role="dialog"
+      aria-modal="true"
+      aria-label={project.name}
+      onClick={onClose}
+    >
+      <div
+        className="past-project-lightbox relative flex max-h-[92vh] w-full max-w-[1180px] flex-col overflow-hidden rounded-2xl border border-[rgba(212,170,86,0.28)] bg-[#14100e] shadow-[0_24px_60px_-24px_rgba(0,0,0,0.85)]"
+        onClick={(event) => event.stopPropagation()}
+      >
+        <div className="past-project-modal-viewport">
+          <button
+            type="button"
+            onClick={onClose}
+            aria-label="Close project preview"
+            className="past-project-lightbox-close"
+          >
+            ×
+          </button>
+
+          {hasPrevious ? (
+            <button
+              type="button"
+              onClick={() => onNavigate(currentIndex - 1)}
+              aria-label="Previous project"
+              className="past-project-lightbox-nav past-project-lightbox-nav--prev"
+            >
+              ‹
+            </button>
+          ) : null}
+
+          <PastProjectModalImage project={project} alt={project.name} />
+
+          {hasNext ? (
+            <button
+              type="button"
+              onClick={() => onNavigate(currentIndex + 1)}
+              aria-label="Next project"
+              className="past-project-lightbox-nav past-project-lightbox-nav--next"
+            >
+              ›
+            </button>
+          ) : null}
+        </div>
+
+        <div className="space-y-2 border-t border-white/10 px-5 py-4 sm:px-6 sm:py-4">
+          <p className="text-[10px] uppercase tracking-[0.2em] text-amber-200/75">
+            Completed Project
+          </p>
+          <h2 className="font-display text-2xl text-stone-100 sm:text-3xl">{project.name}</h2>
+          <p className="text-sm leading-7 text-stone-300 sm:text-base">{project.material}</p>
+          {categoryLabel ? (
+            <p className="text-[10px] uppercase tracking-[0.18em] text-stone-500">{categoryLabel}</p>
+          ) : null}
+        </div>
+      </div>
+    </div>
+  )
+}
+
+function PastProjectsCredibilityRow() {
+  return (
+    <div className="flex flex-wrap items-center gap-x-4 gap-y-2 text-xs uppercase tracking-[0.22em] text-stone-500">
+      <span>Handmade in Prague</span>
+      <span className="hidden text-amber-200/30 sm:inline" aria-hidden="true">
+        |
+      </span>
+      <span>Built since 2016</span>
+      <span className="hidden text-amber-200/30 sm:inline" aria-hidden="true">
+        |
+      </span>
+      <span>Furniture and serving pieces</span>
+      <span className="hidden text-amber-200/30 sm:inline" aria-hidden="true">
+        |
+      </span>
+      <span>One-of-one projects</span>
+    </div>
+  )
+}
+
+function PastProjectsGrid({
+  projects,
+  showFilters = false,
+  featuredLayout = false,
+  hidePlaceholder = true,
+  enableLightbox = false,
+}) {
+  const [activeCategory, setActiveCategory] = useState('All')
+  const [selectedProject, setSelectedProject] = useState(null)
+
+  const filteredProjects =
+    !showFilters || activeCategory === 'All'
+      ? projects
+      : projects.filter((project) => project.categories.includes(activeCategory))
+
+  const handleSelect = useCallback(
+    (project) => {
+      if (enableLightbox) {
+        setSelectedProject(project)
+      }
+    },
+    [enableLightbox],
+  )
+
+  const handleCloseLightbox = useCallback(() => {
+    setSelectedProject(null)
+  }, [])
+
+  const handleNavigateLightbox = useCallback(
+    (index) => {
+      const nextProject = filteredProjects[index]
+      if (nextProject) {
+        setSelectedProject(nextProject)
+      }
+    },
+    [filteredProjects],
+  )
+
+  const selectedProjectIndex = selectedProject
+    ? filteredProjects.findIndex((project) => project.id === selectedProject.id)
+    : -1
+
+  if (projects.length === 0) {
+    return null
+  }
+
+  return (
+    <>
+      {showFilters ? (
+        <div className="-mx-4 mt-8 overflow-x-auto px-4 sm:mx-0 sm:overflow-visible sm:px-0">
+          <div className="flex w-max gap-2 sm:w-auto sm:flex-wrap">
+            {bespokeCategories.map((category) => {
+              const isActive = activeCategory === category
+
+              return (
+                <button
+                  key={category}
+                  type="button"
+                  onClick={() => setActiveCategory(category)}
+                  className={[
+                    'shrink-0',
+                    isActive
+                      ? goldChipActiveClassName
+                      : 'rounded-full border border-[rgba(212,170,86,0.22)] bg-[rgba(24,18,14,0.72)] px-3 py-1.5 text-xs font-medium text-stone-200 transition hover:border-amber-200/40 hover:text-stone-100',
+                  ].join(' ')}
+                >
+                  {category}
+                </button>
+              )
+            })}
+          </div>
+        </div>
+      ) : null}
+
+      <div
+        className={[
+          'grid grid-cols-1 gap-6',
+          showFilters ? 'mt-8' : 'mt-0',
+          'sm:grid-cols-2 lg:grid-cols-3',
+        ].join(' ')}
+      >
+        {filteredProjects.map((project) => (
+          <div
+            key={project.id}
+            className={featuredLayout && project.featured ? 'sm:col-span-2 lg:col-span-2' : ''}
+          >
+            <BespokeCreationCard
+              project={project}
+              hidePlaceholder={hidePlaceholder}
+              onSelect={enableLightbox ? handleSelect : undefined}
+            />
+          </div>
+        ))}
+      </div>
+
+      {enableLightbox && selectedProject && selectedProjectIndex >= 0 ? (
+        <PastProjectLightbox
+          project={selectedProject}
+          projects={filteredProjects}
+          currentIndex={selectedProjectIndex}
+          onClose={handleCloseLightbox}
+          onNavigate={handleNavigateLightbox}
+        />
+      ) : null}
+    </>
+  )
+}
+
+function PastProjectsTeaser() {
+  const teaserProjects = getHomepagePastProjects(6)
+
+  if (teaserProjects.length === 0) {
+    return null
+  }
+
+  return (
+    <section id="past-projects" className="dark-section scroll-mt-28 w-full py-14 sm:py-20">
+      <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
+        <div className="mb-10 flex flex-col gap-6 lg:flex-row lg:items-end lg:justify-between">
+          <div className="max-w-3xl space-y-4">
+            <p className="text-[11px] uppercase tracking-[0.38em] text-amber-200/80">
+              PAST PROJECTS
+            </p>
+            <h2 className="font-display text-4xl text-stone-100 sm:text-[2.75rem]">
+              A look back at pieces built over the years.
+            </h2>
+            <p className="text-base leading-8 text-stone-300">
+              Furniture, serving pieces and one-of-one creations handmade by Dom&apos;s Concepts
+              since 2016.
+            </p>
+          </div>
+          <PrimaryLink to="/gallery">Explore Past Projects</PrimaryLink>
+        </div>
+
+        <PastProjectsGrid projects={teaserProjects} hidePlaceholder enableLightbox />
+      </div>
+    </section>
+  )
+}
+
+function BespokeCreationDetailPage() {
+  const { projectSlug } = useParams()
+  const project = getBespokeCreationBySlug(projectSlug)
+
+  if (!project) {
+    return (
+      <PageShell
+        eyebrow="PAST PROJECTS"
+        title="Project not found"
+        intro="This completed project may have moved or the link may be incomplete."
+      >
+        <PrimaryLink to="/gallery">Back to Past Projects</PrimaryLink>
+      </PageShell>
+    )
+  }
+
+  const categoryLabel = project.categories.join(' · ')
+
+  return (
+    <>
+      <PageMeta
+        title={`${project.name} | Past Projects | Dom's Concepts`}
+        description={`${project.name} — ${project.material}. A completed commission from Dom's Concepts in Prague.`}
+        ogImage={project.image}
+        canonicalPath={`/bespoke-creations/${project.slug}`}
+      />
+      <PageShell
+        eyebrow="PAST PROJECTS"
+        title={project.name}
+        intro={project.material}
+      >
+        <div className="mb-8">
+          <SecondaryLink to="/gallery">Back to Past Projects</SecondaryLink>
+        </div>
+        <div className="grid gap-8 lg:grid-cols-[1.1fr_0.9fr] lg:items-start">
+          <div className="aspect-[4/3] w-full overflow-hidden rounded-2xl border border-white/10 bg-[#1c1511]">
+            <PastProjectCardImage project={project} alt={project.name} hidePlaceholder />
+          </div>
+          <Card luxury>
+            <p className="text-[10px] uppercase tracking-[0.2em] text-amber-200/75">
+              Completed Project
+            </p>
+            <h2 className="mt-4 font-display text-3xl text-white">{project.name}</h2>
+            <p className="mt-4 text-base leading-8 text-stone-300">{project.material}</p>
+            <p className="mt-6 text-sm uppercase tracking-[0.22em] text-stone-500">{categoryLabel}</p>
+          </Card>
+        </div>
+      </PageShell>
+    </>
   )
 }
 
@@ -684,25 +1234,7 @@ function HomePage() {
 
       <HeroCarousel />
 
-      <section id="signature-work" className="scroll-mt-28 w-full border-t border-white/5 bg-[#0c0a09] py-16 sm:py-20 text-stone-100">
-        <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
-          <div className="max-w-3xl space-y-5">
-            <p className="text-[11px] uppercase tracking-[0.38em] text-amber-200/80">
-              SIGNATURE WORK
-            </p>
-            <h2 className="font-display text-4xl text-white sm:text-5xl">
-              More than cutting boards.
-            </h2>
-            <p className="text-base leading-8 text-stone-300 sm:text-lg">
-              From knife tables and furniture-style pieces to serving boards and custom gifts,
-              Dom&apos;s Concepts creates handmade hardwood work one piece at a time.
-            </p>
-          </div>
-          <SignatureWorkCarousel />
-        </div>
-      </section>
-
-      <section id="available-now" className="dark-section scroll-mt-28 w-full py-16 sm:py-20">
+      <section id="available-now" className="dark-section scroll-mt-28 w-full py-14 sm:py-20">
         <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
           <div className="mb-10 flex flex-col gap-6 lg:flex-row lg:items-end lg:justify-between">
             <div className="max-w-3xl space-y-4">
@@ -728,15 +1260,36 @@ function HomePage() {
         </div>
       </section>
 
-      <section id="reviews" className="dark-section w-full py-16 sm:py-20">
+      <PastProjectsTeaser />
+
+      <section id="signature-work" className="scroll-mt-28 w-full border-t border-white/5 bg-[#0c0a09] py-14 sm:py-20 text-stone-100">
+        <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
+          <div className="max-w-3xl space-y-5">
+            <p className="text-[11px] uppercase tracking-[0.38em] text-amber-200/80">
+              SIGNATURE WORK
+            </p>
+            <h2 className="font-display text-4xl text-white sm:text-5xl">
+              Boards, tables, and workshop favourites.
+            </h2>
+            <p className="text-base leading-8 text-stone-300 sm:text-lg">
+              From statement furniture and one-of-one knife displays to serving pieces and custom
+              gifts, each project is designed around the material, its purpose and the space it
+              belongs in.
+            </p>
+          </div>
+          <SignatureWorkCarousel />
+        </div>
+      </section>
+
+      <section id="reviews" className="dark-section w-full py-14 sm:py-20">
         <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
           <SectionHeading
-            eyebrow="Customer trust"
-            title="Loved by customers"
-            intro="A few words from Etsy buyers who have ordered boards, care products, and workshop pieces."
+            eyebrow="CUSTOMER STORIES"
+            title="Craftsmanship customers remember."
+            intro="Real feedback from customers who have ordered boards, gifts and workshop care products from Dom's Concepts."
             compact
           />
-          <div className="mt-8 grid gap-5 md:grid-cols-3">
+          <div className="mt-8 grid grid-cols-1 gap-5 md:grid-cols-2 lg:grid-cols-3">
             {premiumReviews.map((review) => (
               <ReviewCard key={review.id} review={review} luxury />
             ))}
@@ -754,27 +1307,57 @@ function HomePage() {
         </div>
       </section>
 
-      <section className="warm-section w-full py-16 sm:py-20">
+      <section className="warm-section w-full py-14 sm:py-20">
         <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
-          <div className="grid gap-10 lg:grid-cols-[1.05fr_0.95fr] lg:items-center">
-            <WorkshopAboutImage
-              className="aspect-[5/4] min-h-[18rem] w-full sm:aspect-[16/10] sm:min-h-[22rem]"
+          <div className="grid gap-6 sm:gap-8 lg:grid-cols-2 lg:items-center lg:gap-12">
+            <MakerAboutImage
+              className="aspect-[4/3] w-full lg:order-1"
               priority
             />
-            <div className="space-y-5">
+            <div className="space-y-5 lg:order-2">
               <p className="text-[11px] uppercase tracking-[0.38em] text-amber-200/80">
-                About the workshop
+                MEET THE MAKER
               </p>
               <h2 className="font-display text-3xl text-white sm:text-4xl">
-                Handmade in Prague. Built one piece at a time.
+                Built by hand. Shaped by precision.
               </h2>
-              <p className="text-base leading-8 text-stone-300">
-                Dom&apos;s Concepts is a small Prague-based woodworking workshop creating
-                cutting boards, butcher blocks, serving pieces, chessboards and one-of-one
-                custom hardwood projects. Each piece is made in small batches with attention
-                to grain, finish and long-term use.
+              <div className="space-y-4 text-base leading-8 text-stone-300">
+                <p>Hi, I&apos;m Dominick.</p>
+                <p>
+                  I started Dom&apos;s Concepts in 2016 as a creative counterpoint to my
+                  professional background in IT and technical problem-solving.
+                </p>
+                <p>
+                  The two worlds have more in common than they might seem. Both depend on
+                  precision, patience, careful planning and finding the right solution when
+                  the obvious one does not work.
+                </p>
+                <p>
+                  In the workshop, that means selecting hardwood for its grain and character,
+                  refining every detail by hand and creating pieces designed to be used for
+                  years.
+                </p>
+                <p>
+                  From cutting boards and serving pieces to desks, dining tables and
+                  one-of-one commissions, every Dom&apos;s Concepts project is built
+                  individually in Prague.
+                </p>
+              </div>
+              <p className="font-display text-xl text-stone-100">
+                Technical thinking. Honest materials. Handmade results.
               </p>
-              <PrimaryLink to={CUSTOM_ORDER_FORM_ANCHOR}>Request a custom piece</PrimaryLink>
+              <div className="flex flex-col gap-3 sm:flex-row">
+                <PrimaryLink to="/gallery">
+                  Explore Past Projects
+                </PrimaryLink>
+                <SecondaryLink
+                  to={CUSTOM_ORDER_FORM_ANCHOR}
+                  variant="button"
+                  className="text-center"
+                >
+                  Request a Custom Piece
+                </SecondaryLink>
+              </div>
             </div>
           </div>
         </div>
@@ -803,6 +1386,32 @@ function HomePage() {
         </div>
       </section>
     </>
+  )
+}
+
+function MakerAboutImage({ className = '', priority = false }) {
+  const [imageSrc, setImageSrc] = useState(makerAboutImagePath)
+
+  return (
+    <div
+      className={[
+        'relative overflow-hidden rounded-2xl border border-white/10',
+        className,
+      ].join(' ')}
+    >
+      <img
+        src={imageSrc}
+        alt="Dominick in the Dom's Concepts workshop in Prague"
+        loading={priority ? 'eager' : 'lazy'}
+        onError={() => {
+          if (imageSrc !== workshopAboutImagePath) {
+            setImageSrc(workshopAboutImagePath)
+          }
+        }}
+        className="h-full w-full object-cover object-center"
+      />
+      <div className="pointer-events-none absolute inset-0 bg-gradient-to-t from-[#0c0a09]/50 via-[#14100e]/10 to-transparent" />
+    </div>
   )
 }
 
@@ -893,7 +1502,8 @@ function ProductDetailPage() {
   const { productId } = useParams()
   const redirectTarget = productId ? productIdRedirects[productId] : undefined
   const product = products.find((item) => item.id === productId)
-  const galleryImages = product ? getProductRealImages(product) : []
+  const rawGalleryImages = product ? getProductRealImages(product) : []
+  const galleryImages = Array.isArray(rawGalleryImages) ? rawGalleryImages.filter(Boolean) : []
   const primaryGalleryImage = galleryImages[0] || ''
   const [activeImage, setActiveImage] = useState(primaryGalleryImage)
 
@@ -920,6 +1530,7 @@ function ProductDetailPage() {
   const primaryAction = getProductPrimaryAction(product)
   const secondaryAction = getProductSecondaryAction(product)
   const showBoardCareUpsell = product.careAddOnAvailable
+  const socialProof = getProductSocialProof(product)
 
   return (
     <PageShell
@@ -927,13 +1538,13 @@ function ProductDetailPage() {
       title={product.name}
       intro={product.longDescription}
     >
-      <div className="grid gap-10 lg:grid-cols-[1.05fr_0.95fr]">
-        <div className="space-y-4">
+      <div className="grid gap-8 overflow-x-hidden lg:grid-cols-[1.05fr_0.95fr] lg:gap-10">
+        <div className="min-w-0 space-y-4">
           {galleryImages.length > 0 ? (
             <PhotoFrame
               src={activeImage}
               alt={product.name}
-              className="h-[26rem]"
+              className="product-gallery-main aspect-[4/5] w-full md:h-[28rem] md:aspect-auto lg:h-[26rem]"
               overlay="none"
               priority
               showLabels={false}
@@ -943,7 +1554,7 @@ function ProductDetailPage() {
             <ProductDetailImageFallback productName={product.name} />
           )}
           {galleryImages.length > 1 ? (
-            <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+            <div className="product-thumbnails">
               {galleryImages.map((image, index) => (
                 <GalleryThumbnail
                   key={`${product.id}-${image}`}
@@ -982,16 +1593,15 @@ function ProductDetailPage() {
               <ProductMeta label="Dimensions" value={product.dimensions} />
               <ProductMeta label="Wood Type" value={product.woodType} />
               <ProductMeta label="Materials" value={product.materials || 'Selected materials'} />
-              <ProductMeta
-                label="Photos"
-                value={
-                  galleryImages.length > 0
-                    ? `${galleryImages.length} image${galleryImages.length === 1 ? '' : 's'}`
-                    : 'Photos coming soon'
-                }
-              />
+              {galleryImages.length > 0 ? (
+                <ProductMeta
+                  label="Photos"
+                  value={`${galleryImages.length} image${galleryImages.length === 1 ? '' : 's'}`}
+                />
+              ) : null}
             </div>
             <p className="mt-6 leading-8 text-stone-300">{product.longDescription}</p>
+            {socialProof ? <ProductSocialProof review={socialProof} /> : null}
             <div className="mt-8 flex flex-col gap-3">
               <ProductActionButton action={primaryAction} className={goldButtonClassName} />
               <ProductActionButton
@@ -1072,29 +1682,35 @@ function ProductDetailPage() {
 }
 
 function GalleryPage() {
+  const visibleProjects = getVisibleGalleryProjects()
+
   return (
-    <PageShell
-      eyebrow="Gallery"
-      title="A visual gallery of finished work and workshop atmosphere."
-      intro="Selected pieces, details and workshop moments from Dom's Concepts."
-    >
-      <div className="grid gap-5 md:grid-cols-2 xl:grid-cols-3">
-        {galleryItems.map((item, index) => (
-          <Card key={item.title} className={index % 3 === 0 ? 'xl:col-span-2' : ''}>
-            <PhotoFrame
-              src={item.image}
-              alt={item.title}
-              label={item.title}
-              className="mb-5 h-64"
-            />
-            <h2 className="font-serif text-2xl text-stone-100">{item.title}</h2>
-            <p className="mt-3 text-sm leading-7 text-stone-400">
-              Handmade hardwood work, surface detail, and workshop atmosphere from Dom&apos;s Concepts.
-            </p>
-          </Card>
-        ))}
-      </div>
-    </PageShell>
+    <>
+      <PageMeta
+        title={pageSeo.gallery?.title ?? "Past Projects | Dom's Concepts"}
+        description={
+          pageSeo.gallery?.description ??
+          'A look back at furniture, serving pieces and one-of-one creations handmade by Dom\'s Concepts in Prague since 2016.'
+        }
+      />
+      <PageShell
+        eyebrow="PAST PROJECTS"
+        title="A look back at pieces built over the years."
+        intro="Furniture, serving pieces and one-of-one creations handmade by Dom's Concepts since 2016."
+      >
+        <PastProjectsCredibilityRow />
+
+        <div id="past-projects" className="scroll-mt-28">
+          <PastProjectsGrid
+            projects={visibleProjects}
+            showFilters
+            featuredLayout
+            hidePlaceholder
+            enableLightbox
+          />
+        </div>
+      </PageShell>
+    </>
   )
 }
 
@@ -1391,6 +2007,47 @@ function AboutPage() {
         </div>
       </div>
     </PageShell>
+    </>
+  )
+}
+
+function ReviewsPage() {
+  return (
+    <>
+      <PageMeta title={pageSeo.reviews.title} description={pageSeo.reviews.description} />
+      <PageShell
+        eyebrow="Customer Stories"
+        title="Craftsmanship customers remember."
+        intro="Real feedback from customers who have ordered boards, gifts and workshop care products from Dom's Concepts."
+      >
+        <div className="mb-10 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+          {reviewTrustPoints.map((point) => (
+            <div
+              key={point}
+              className="rounded-2xl border border-amber-200/20 bg-black/25 px-5 py-4 text-center text-sm text-stone-200"
+            >
+              {point}
+            </div>
+          ))}
+        </div>
+
+        <div className="grid grid-cols-1 gap-5 md:grid-cols-2 lg:grid-cols-3">
+          {reviews.map((review) => (
+            <ReviewCard key={review.id} review={review} luxury />
+          ))}
+        </div>
+
+        <div className="mt-10">
+          <a
+            href={etsyShopUrl}
+            target="_blank"
+            rel="noreferrer"
+            className={outlineButtonLightClassName}
+          >
+            Read more reviews on Etsy
+          </a>
+        </div>
+      </PageShell>
     </>
   )
 }
@@ -1714,26 +2371,7 @@ function BoardCareUpsell({ product }) {
       </p>
       <h2 className="mt-3 font-serif text-2xl text-white">Add board care and save 30%</h2>
       <p className="mt-3 text-sm leading-7 text-stone-300">
-        Keep your board protected from day one. Add Dom&apos;s Concepts wood butter or
-        wood wax to any board order and save 30%.
-      </p>
-      <ul className="mt-5 space-y-2 text-sm text-stone-300">
-        {boardCareProductAddonOptions
-          .filter((option) => option.value !== 'none')
-          .map((option) => (
-            <li
-              key={option.value}
-              className="rounded-2xl border border-white/10 bg-black/20 px-4 py-3"
-            >
-              {option.label}
-            </li>
-          ))}
-        <li className="rounded-2xl border border-white/10 bg-black/20 px-4 py-3">
-          No care add-on
-        </li>
-      </ul>
-      <p className="mt-5 text-sm leading-7 text-stone-300">
-        You&apos;ll choose the board care option on the Etsy listing before checkout.
+        Choose Wood Butter or Wood Wax as a discounted add-on on the Etsy listing.
       </p>
       <div className="mt-6 flex flex-col gap-3">
         {purchaseOptions.map((option) => (
@@ -1742,7 +2380,7 @@ function BoardCareUpsell({ product }) {
             href={option.href}
             target="_blank"
             rel="noreferrer"
-            className={goldButtonClassName}
+            className={option.label === 'Buy without add-on on Etsy' ? outlineButtonLightClassName : goldButtonClassName}
           >
             {option.label}
           </a>
@@ -1871,29 +2509,47 @@ function ProductCard({ piece, variant = 'luxury' }) {
 }
 
 function ReviewCard({ review, luxury = false }) {
-  if (luxury) {
-    return (
-      <div className="luxury-review-card">
-        <div className="flex gap-1 text-amber-200/90" aria-label={`${review.rating} out of 5 stars`}>
-          {Array.from({ length: review.rating }).map((_, index) => (
-            <span key={index}>★</span>
-          ))}
-        </div>
-        <p className="mt-4 text-sm leading-7 text-stone-300">&ldquo;{review.quote}&rdquo;</p>
-        <p className="mt-5 text-sm font-medium text-stone-100">{review.name}</p>
-      </div>
-    )
-  }
+  const cardClassName = luxury ? 'luxury-review-card' : 'premium-card h-full p-6'
 
   return (
-    <div className="premium-card h-full p-6">
-      <div className="flex gap-1 text-amber-200/90" aria-label={`${review.rating} out of 5 stars`}>
+    <article className={cardClassName}>
+      <div
+        className="flex gap-1 text-amber-200/90"
+        aria-label={`${review.rating} out of 5 stars`}
+      >
         {Array.from({ length: review.rating }).map((_, index) => (
-          <span key={index}>★</span>
+          <span key={index} aria-hidden="true">
+            ★
+          </span>
         ))}
       </div>
-      <p className="mt-4 text-sm leading-7 text-stone-300">&ldquo;{review.quote}&rdquo;</p>
-      <p className="mt-5 text-sm font-medium text-stone-100">{review.name}</p>
+      <blockquote className="mt-4 text-sm leading-7 text-stone-200">
+        &ldquo;{review.quote}&rdquo;
+      </blockquote>
+      <footer className="mt-5 space-y-1">
+        <p className="text-sm font-medium text-stone-100">{review.name}</p>
+        <p className="text-xs uppercase tracking-[0.18em] text-amber-200/70">
+          Verified Etsy review
+        </p>
+        {review.product ? (
+          <p className="text-xs text-stone-400">{review.product}</p>
+        ) : null}
+      </footer>
+    </article>
+  )
+}
+
+function ProductSocialProof({ review }) {
+  return (
+    <div className="product-social-proof mt-6">
+      <p className="text-sm leading-7 text-stone-200">
+        <span className="text-amber-200/90" aria-label={`${review.rating} out of 5 stars`}>
+          {Array.from({ length: review.rating })
+            .map(() => '★')
+            .join('')}
+        </span>{' '}
+        &ldquo;{review.shortQuote || review.quote}&rdquo; — {review.name}, verified Etsy review
+      </p>
     </div>
   )
 }
@@ -2159,7 +2815,7 @@ function GalleryThumbnail({ image, alt, isActive, onSelect }) {
     setHasError(false)
   }, [image])
 
-  if (hasError) {
+  if (!image || hasError) {
     return null
   }
 
@@ -2168,7 +2824,7 @@ function GalleryThumbnail({ image, alt, isActive, onSelect }) {
       type="button"
       onClick={onSelect}
       className={[
-        'overflow-hidden rounded-[1.2rem] border transition',
+        'product-thumbnail overflow-hidden rounded-[1.2rem] border transition',
         isActive
           ? 'border-amber-100/70'
           : 'border-white/10 hover:border-amber-200/45',
@@ -2179,7 +2835,7 @@ function GalleryThumbnail({ image, alt, isActive, onSelect }) {
         alt={alt}
         loading="lazy"
         onError={() => setHasError(true)}
-        className="h-32 w-full object-contain object-center bg-gradient-to-br from-[#1c1511] via-stone-950 to-black p-2"
+        className="h-full w-full object-cover object-center bg-gradient-to-br from-[#1c1511] via-stone-950 to-black md:object-contain md:p-2"
       />
     </button>
   )
@@ -2198,6 +2854,7 @@ function PhotoFrame({
 }) {
   const [hasError, setHasError] = useState(false)
   const isContained = imageFit === 'contain'
+  const hasUsableSrc = typeof src === 'string' && src.trim().length > 0
 
   useEffect(() => {
     setHasError(false)
@@ -2219,7 +2876,7 @@ function PhotoFrame({
           <div className="pointer-events-none absolute inset-0 bg-gradient-to-t from-black/35 via-transparent to-black/20" />
         </>
       ) : null}
-      {!hasError ? (
+      {!hasError && hasUsableSrc ? (
         <img
           src={src}
           alt={alt}
@@ -2232,7 +2889,7 @@ function PhotoFrame({
           ].join(' ')}
         />
       ) : null}
-      {hasError ? (
+      {hasError || !hasUsableSrc ? (
         <>
           <div className="absolute inset-0 bg-gradient-to-br from-[#1c1511] via-stone-950 to-black" />
           <div className="absolute inset-0 bg-[radial-gradient(circle_at_top_left,_rgba(255,255,255,0.12),_transparent_35%)]" />

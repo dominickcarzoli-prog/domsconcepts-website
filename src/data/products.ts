@@ -310,7 +310,7 @@ export function getProductPrimaryAction(product: Product): ProductButtonAction {
 export function getProductSecondaryAction(product: Product): ProductButtonAction {
   if (product.isAvailable) {
     return {
-      label: 'Ask a question / custom enquiry',
+      label: 'Ask a question',
       href: getProductEnquiryHref(product),
       external: false,
     }
@@ -481,6 +481,7 @@ const rawProducts: Product[] = [
     'CZK 2,029.11',
     'Available',
     'Black walnut, oak, maple, and padouk',
+    { hidden: true },
   ),
   listing(
     'oak-maple-mahogany-strip-cutting-board',
@@ -489,6 +490,7 @@ const rawProducts: Product[] = [
     'CZK 2,029.11',
     'Available',
     'Oak, maple, and mahogany',
+    { hidden: true },
   ),
   createProduct({
     id: 'american-walnut-maple-padouk-cutting-board',
@@ -586,7 +588,7 @@ const rawProducts: Product[] = [
     'CZK 2,029.11',
     'Available',
     'Oak and epoxy',
-    { materials: 'Wood and epoxy' },
+    { materials: 'Wood and epoxy', hidden: true },
   ),
   createProduct({
     id: 'natural-wood-butter-beeswax',
@@ -715,6 +717,7 @@ const rawProducts: Product[] = [
     'CZK 2,029.11',
     'Available',
     'European oak',
+    { hidden: true },
   ),
   listing(
     'walnut-wall-mount-bottle-opener',
@@ -723,7 +726,7 @@ const rawProducts: Product[] = [
     'CZK 760.92',
     'Available',
     'Walnut',
-    { materials: 'Wood and hardware' },
+    { materials: 'Wood and hardware', hidden: true },
   ),
   createProduct({
     id: 'walnut-maple-wall-mount-bottle-opener',
@@ -746,7 +749,7 @@ const rawProducts: Product[] = [
     'CZK 1,014.56',
     'Available',
     'Maple and blue epoxy',
-    { materials: 'Wood and epoxy' },
+    { materials: 'Wood and epoxy', hidden: true },
   ),
   createProduct({
     id: 'two-in-one-book-stand-serving-board',
@@ -864,7 +867,7 @@ const rawProducts: Product[] = [
     'CZK 2,029.11',
     'Available',
     'European oak',
-    { materials: 'Wood and hardware' },
+    { materials: 'Wood and hardware', hidden: true },
   ),
   listing(
     'oak-cutting-board-breadboard-black-lines',
@@ -873,6 +876,7 @@ const rawProducts: Product[] = [
     'CZK 2,029.11',
     'Available',
     'European oak',
+    { hidden: true },
   ),
   listing(
     'handcrafted-oak-cutting-board-small-set',
@@ -1005,6 +1009,24 @@ const rawProducts: Product[] = [
 
 export const products: Product[] = rawProducts.map(applyRealImages)
 
+function isValidPriceLabel(priceLabel: string) {
+  const trimmed = priceLabel?.trim()
+  if (!trimmed) return false
+  if (/___/.test(trimmed)) return false
+  if (/coming soon/i.test(trimmed)) return false
+  return true
+}
+
+function isUnfinishedProductContent(product: Product) {
+  if (product.description === PLACEHOLDER_DESCRIPTION) return true
+  if (product.longDescription === PLACEHOLDER_DESCRIPTION) return true
+  return false
+}
+
+function hasValidProductAction(product: Product) {
+  return product.isAvailable || product.isSold
+}
+
 export function isShopGridVisible(product: Product): boolean {
   if (product.hidden || product.isDraft) {
     return false
@@ -1019,11 +1041,19 @@ export function isShopGridVisible(product: Product): boolean {
   }
 
   const priceLabel = product.priceFrom || product.price
-  if (!priceLabel?.trim()) {
+  if (!isValidPriceLabel(priceLabel)) {
     return false
   }
 
   if (!hasProductMainImage(product)) {
+    return false
+  }
+
+  if (isUnfinishedProductContent(product)) {
+    return false
+  }
+
+  if (!hasValidProductAction(product)) {
     return false
   }
 
