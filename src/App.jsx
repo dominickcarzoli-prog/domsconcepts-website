@@ -1258,6 +1258,8 @@ function HomePage() {
         </div>
       </section>
 
+      <InstagramWorkshopSection />
+
       <section id="reviews" className="dark-section w-full py-14 sm:py-20">
         <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
           <SectionHeading
@@ -2040,29 +2042,6 @@ function AboutPage() {
           </div>
         </Card>
       </div>
-      <div className="mt-12">
-        <SectionHeading
-          eyebrow="Instagram"
-          title="Follow the Workshop"
-          intro="See new builds, behind-the-scenes moments, finishing techniques and completed pieces from the Dom’s Concepts workshop."
-          compact
-        />
-        <div className="grid gap-5 md:grid-cols-3">
-          {instagramVideos.map((video) => (
-            <InstagramVideoCard key={video.id} video={video} />
-          ))}
-        </div>
-        <div className="mt-8 flex justify-center">
-          <a
-            href={instagramUrl}
-            target="_blank"
-            rel="noopener noreferrer"
-            className={goldButtonClassName}
-          >
-            Follow @doms_concepts on Instagram
-          </a>
-        </div>
-      </div>
     </PageShell>
     </>
   )
@@ -2257,6 +2236,36 @@ function FaqCard({ item }) {
       <h2 className="font-serif text-xl text-white">{item.question}</h2>
       <p className="mt-3 text-sm leading-7 text-stone-300">{item.answer}</p>
     </Card>
+  )
+}
+
+function InstagramWorkshopSection() {
+  return (
+    <section id="follow-the-workshop" className="dark-section scroll-mt-28 w-full py-14 sm:py-20">
+      <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
+        <SectionHeading
+          eyebrow="Instagram"
+          title="Follow the Workshop"
+          intro="See new builds, behind-the-scenes moments, finishing techniques and completed pieces from the Dom’s Concepts workshop."
+          compact
+        />
+        <div className="grid gap-5 md:grid-cols-3">
+          {instagramVideos.map((video) => (
+            <InstagramVideoCard key={video.id} video={video} />
+          ))}
+        </div>
+        <div className="mt-8 flex justify-center">
+          <a
+            href={instagramUrl}
+            target="_blank"
+            rel="noopener noreferrer"
+            className={goldButtonClassName}
+          >
+            Follow @doms_concepts on Instagram
+          </a>
+        </div>
+      </div>
+    </section>
   )
 }
 
