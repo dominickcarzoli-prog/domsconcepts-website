@@ -56,6 +56,8 @@ export type Product = {
   badge: ProductBadge
   availability: string
   shippingNote?: string
+  /** Relative folder under public/images/products/ (may be nested, e.g. oak/solid-oak-cutting-board). Defaults to id. */
+  imageFolder: string
   mainImage: string
   image: string
   galleryImages: string[]
@@ -140,8 +142,17 @@ export function hasDisplayableDimensions(dimensions?: string): boolean {
   return true
 }
 
-export function getProductRealImages(product: Pick<Product, 'id' | 'galleryImages' | 'mainImage'>) {
-  const fromInventory = imageInventory[product.id]
+export function getProductImageFolder(
+  product: Pick<Product, 'id' | 'imageFolder'>,
+): string {
+  return product.imageFolder || product.id
+}
+
+export function getProductRealImages(
+  product: Pick<Product, 'id' | 'imageFolder' | 'galleryImages' | 'mainImage'>,
+) {
+  const folder = getProductImageFolder(product)
+  const fromInventory = imageInventory[folder] ?? imageInventory[product.id]
   if (fromInventory?.length) {
     return sortProductImagesByNumericFilename(fromInventory)
   }
@@ -154,7 +165,9 @@ export function getProductRealImages(product: Pick<Product, 'id' | 'galleryImage
   )
 }
 
-export function hasProductMainImage(product: Pick<Product, 'id' | 'galleryImages' | 'mainImage'>) {
+export function hasProductMainImage(
+  product: Pick<Product, 'id' | 'imageFolder' | 'galleryImages' | 'mainImage'>,
+) {
   return getProductRealImages(product).length > 0
 }
 
@@ -174,26 +187,57 @@ function applyRealImages(product: Product): Product {
 }
 
 // Product photo rule:
-// Upload product images into public/images/products/{product.id}/
-// Use filenames 01.jpg, 02.jpg, 03.jpg up to 08.jpg.
-// The product id, URL slug, and image folder name must match exactly.
+// Upload product images into public/images/products/{imageFolder}/
+// Prefer nested category folders: oak/, walnut/, epoxy/, wood-care/, specialties/.
+// Use numbered filenames: 01.jpg (also .jpeg / .png / .webp).
+// Product id / URL slug stay stable; imageFolder may differ (short nested path).
 // Do not create new product image folders unless the product is added to this file.
 // Inactive / made-to-order reference images live in _archive/ or _future/ subfolders.
 
-const imagePath = (id: string, file: string) => `/images/products/${id}/${file}`
+const imagePath = (folder: string, file: string) => `/images/products/${folder}/${file}`
 
-const galleryFor = (id: string, count = 8) =>
+const galleryFor = (folder: string, count = 8) =>
   Array.from({ length: count }, (_, index) =>
-    imagePath(id, `${String(index + 1).padStart(2, '0')}.jpg`),
+    imagePath(folder, `${String(index + 1).padStart(2, '0')}.jpg`),
   )
 
-// Legacy Etsy / old site URLs → current product id (also used as image folder name).
+/** product id → nested imageFolder under public/images/products/ */
+export const productImageFolders: Record<string, string> = {
+  'handmade-solid-oak-cutting-board': 'oak/solid-oak-cutting-board',
+  'handmade-oak-end-grain-cutting-board': 'oak/oak-end-grain-cutting-board',
+  'oak-cutting-board-breadboard-black-lines': 'oak/oak-breadboard-black-lines',
+  'oak-maple-mahogany-strip-cutting-board': 'oak/oak-maple-mahogany-strip',
+  'handmade-end-grain-walnut-breadboard': 'walnut/end-grain-walnut-breadboard',
+  'handmade-black-walnut-maple-end-grain-cutting-board':
+    'walnut/black-walnut-maple-end-grain',
+  'american-walnut-maple-padouk-cutting-board': 'walnut/walnut-maple-padouk',
+  'american-black-walnut-oak-maple-padouk-cutting-board':
+    'walnut/walnut-oak-maple-padouk',
+  'european-oak-lux-blue-epoxy-serving-board': 'epoxy/oak-lux-blue-epoxy',
+  'european-walnut-aztec-gold-epoxy-serving-board': 'epoxy/walnut-aztec-gold-epoxy',
+  'handmade-oak-epoxy-lego-brick-serving-board': 'epoxy/oak-epoxy-lego-brick',
+  'walnut-live-edge-charcuterie-board': 'epoxy/walnut-live-edge-charcuterie',
+  'natural-wood-butter-beeswax': 'wood-care/natural-wood-butter',
+  'beeswax-wood-wax-natural-wood-conditioner': 'wood-care/beeswax-wood-wax',
+  'solid-oak-coat-hanger-black-metal-hooks': 'specialties/solid-oak-coat-hanger',
+  'walnut-wall-mount-bottle-opener': 'specialties/walnut-bottle-opener',
+  'walnut-maple-wall-mount-bottle-opener': 'specialties/walnut-maple-bottle-opener',
+  'maple-blue-epoxy-coasters': 'specialties/maple-blue-epoxy-coasters',
+  'handmade-walnut-steak-board-two-cups': 'specialties/walnut-steak-board-two-cups',
+  'two-in-one-book-stand-serving-board': 'specialties/book-stand-serving-board',
+  'handcrafted-oak-clock-stormy-grey-epoxy': 'specialties/oak-clock-stormy-grey',
+}
+
+// Legacy Etsy / old site URLs → current product id (URL slug). Image folders may be nested.
 export const productIdRedirects: Record<string, string> = {
   'Walnut-steak-board-two-cups': 'handmade-walnut-steak-board-two-cups',
   'walnut-steak-board-two-cups': 'handmade-walnut-steak-board-two-cups',
   'epoxy-wall-clock': 'handcrafted-oak-clock-stormy-grey-epoxy',
   'epoxy-clock': 'handcrafted-oak-clock-stormy-grey-epoxy',
   'black-walnut-end-grain-board': 'handmade-black-walnut-maple-end-grain-cutting-board',
+  // Legacy breadboard slug was a duplicate of the maple end-grain board (wrong oak photos).
+  'handmade-end-grain-walnut-breadboard':
+    'handmade-black-walnut-maple-end-grain-cutting-board',
   'bottle-opener': 'walnut-wall-mount-bottle-opener',
   // Older Lux Blue / epoxy serving-board slugs → corrected product
   'european-oak-lux-blue-epoxy-board': 'european-oak-lux-blue-epoxy-serving-board',
@@ -337,24 +381,8 @@ export function getProductPrimaryAction(product: Product): ProductButtonAction {
 }
 
 export function getProductSecondaryAction(product: Product): ProductButtonAction {
-  if (product.isAvailable) {
-    return {
-      label: 'Ask a question',
-      href: getProductEnquiryHref(product),
-      external: false,
-    }
-  }
-
-  if (product.isSold) {
-    return {
-      label: 'Ask about this piece',
-      href: getProductEnquiryHref(product),
-      external: false,
-    }
-  }
-
   return {
-    label: 'Ask a question',
+    label: 'Ask about this piece',
     href: getProductEnquiryHref(product),
     external: false,
   }
@@ -377,6 +405,8 @@ type ProductInput = {
   shippingNote?: string
   freeShipping?: boolean
   galleryCount?: number
+  /** Nested folder under public/images/products/; defaults via productImageFolders or id. */
+  imageFolder?: string
   collection?: ProductCollection
   badge?: ProductBadge
   featured?: boolean
@@ -392,6 +422,10 @@ type ProductInput = {
   whyEndGrain?: string
   careInstructions?: string
   publicationStatus?: PublicationStatus
+}
+
+function resolveImageFolder(id: string, explicit?: string): string {
+  return explicit || productImageFolders[id] || id
 }
 
 function createProduct(input: ProductInput): Product {
@@ -412,6 +446,7 @@ function createProduct(input: ProductInput): Product {
     longDescription,
     priceFrom,
     mainImage: inputMainImage,
+    imageFolder: inputImageFolder,
     ...rest
   } = input
 
@@ -421,7 +456,8 @@ function createProduct(input: ProductInput): Product {
   const resolvedCollection =
     collection ?? deriveCollection(input.category, status, input.name)
   const resolvedBadge = deriveBadge(status, input.category, badge)
-  const resolvedMainImage = inputMainImage ?? imagePath(input.id, '01.jpg')
+  const imageFolder = resolveImageFolder(input.id, inputImageFolder)
+  const resolvedMainImage = inputMainImage ?? imagePath(imageFolder, '01.jpg')
   const resolvedEtsyUrl = etsyUrl
 
   const productFlags = {
@@ -456,11 +492,12 @@ function createProduct(input: ProductInput): Product {
     availability: status,
     shippingNote: shippingNote ?? DEFAULT_SHIPPING_NOTE,
     freeShipping: freeShipping ?? true,
+    imageFolder,
     mainImage: resolvedMainImage,
     image: resolvedMainImage,
     galleryImages: inputMainImage
       ? [inputMainImage]
-      : galleryFor(input.id, galleryCount),
+      : galleryFor(imageFolder, galleryCount),
     etsyUrl: resolvedEtsyUrl,
     requestCtaText:
       status === 'Made to order' ? 'Request Custom Quote' : 'Buy on Etsy',
@@ -563,7 +600,7 @@ const rawProducts: Product[] = [
     woodType: 'European oak with lux blue epoxy resin',
     materials: 'Wood and epoxy resin',
     // Canonical card/hero: styled kitchen 01.jpg (public folder). Inventory supplies full gallery.
-    mainImage: '/images/products/european-oak-lux-blue-epoxy-serving-board/01.jpg',
+    mainImage: '/images/products/epoxy/oak-lux-blue-epoxy/01.jpg',
     description:
       'This is a European oak and lux blue epoxy resin serving tray. Perfect as a gift for family or friends. It has a durable, food-safe finish and is finished with a three-step finishing procedure for a long-lasting surface.',
     dimensions: '39.5 × 30 × 2.1 cm',
@@ -612,15 +649,43 @@ const rawProducts: Product[] = [
     freeShipping: false,
     badge: 'Available',
   }),
-  listing(
-    'handmade-oak-epoxy-lego-brick-serving-board',
-    'Handmade Oak & Epoxy LEGO Brick Serving Board',
-    'Epoxy Pieces',
-    'CZK 2,029.11',
-    'Available',
-    'Oak and epoxy',
-    { materials: 'Wood and epoxy', publicationStatus: 'draft' },
-  ),
+  createProduct({
+    id: 'handmade-oak-epoxy-lego-brick-serving-board',
+    name: 'Handmade Oak & Epoxy LEGO Brick Serving Board',
+    category: 'Epoxy Pieces',
+    // One-of-One via Epoxy Pieces default collection
+    price: 'CZK 2,029.11',
+    status: 'Available',
+    publicationStatus: 'published',
+    woodType: 'Oak and epoxy',
+    materials: 'Wood and epoxy',
+    badge: 'Available',
+    buttonLabel: 'Buy on Etsy',
+    galleryCount: 8,
+    // TODO(Dominick): paste exact Etsy listing URL when ready
+    // etsyUrl: '',
+    // TODO(Dominick): confirm exact dimensions, price, and stock
+    description:
+      'A handmade oak serving board with epoxy resin poured in a LEGO brick motif — a playful statement piece for serving and display. Finished for food-safe use and suitable as a gift for family or friends.',
+    dimensions: 'Details coming soon',
+    features: [
+      'Handmade from oak with epoxy resin',
+      'Distinctive LEGO brick epoxy motif',
+      'Food-safe finished surface',
+      'Suitable for serving or display',
+      'Handmade in the center of Prague',
+    ],
+    perfectFor: [
+      'Entertaining and gifting',
+      'Statement kitchen or table décor',
+      'Customers looking for a unique epoxy piece',
+    ],
+    whyThisPiece:
+      'Oak paired with a LEGO brick epoxy inlay makes a memorable one-of-a-kind serving board — craftsmanship with a playful twist.',
+    careInstructions:
+      'Hand wash only. Do not soak or place in dishwasher. Dry immediately and refresh with board oil or wax as needed.',
+    shippingNote: DEFAULT_SHIPPING_NOTE,
+  }),
   createProduct({
     id: 'natural-wood-butter-beeswax',
     name: 'Natural Wood Butter: Beeswax Wood Finish Conditioner',
@@ -645,13 +710,16 @@ const rawProducts: Product[] = [
     shippingNote: DEFAULT_SHIPPING_NOTE,
   }),
   createProduct({
+    // Legacy duplicate of handmade-black-walnut-maple-end-grain-cutting-board.
+    // Kept as draft so old title/oak-copied nested images never appear in Shop All.
+    // URL redirects via productIdRedirects.
     id: 'handmade-end-grain-walnut-breadboard',
     name: 'Handmade End Grain Walnut Breadboard',
     category: 'Breadboards',
     collection: 'Available Pieces',
     price: 'CZK 2,029.11',
     status: 'Available',
-    publicationStatus: 'published',
+    publicationStatus: 'draft',
     woodType: 'American black walnut',
     materials: 'Wood',
     badge: 'Available',
@@ -745,15 +813,48 @@ const rawProducts: Product[] = [
       'Bring elegance and practicality to your next steak night with this walnut steak serving board — where craftsmanship meets functionality.',
     shippingNote: DEFAULT_SHIPPING_NOTE,
   }),
-  listing(
-    'handmade-solid-oak-cutting-board',
-    'Handmade Solid Oak Cutting Board',
-    'Cutting Boards',
-    'CZK 2,029.11',
-    'Available',
-    'European oak',
-    { publicationStatus: 'draft' },
-  ),
+  createProduct({
+    id: 'handmade-solid-oak-cutting-board',
+    name: 'Handmade Solid Oak Cutting Board',
+    category: 'Cutting Boards',
+    collection: 'Available Pieces',
+    price: 'CZK 2,025.92',
+    status: 'Low in stock, only 2 left',
+    publicationStatus: 'published',
+    woodType: 'Solid European Oak',
+    materials: 'Wood · Edge grain',
+    badge: 'Available',
+    buttonLabel: 'Buy on Etsy',
+    galleryCount: 6,
+    // TODO(Dominick): paste exact Etsy listing URL when ready
+    // etsyUrl: '',
+    shortDescription:
+      'A strong, simple and timeless cutting board handcrafted from solid European oak. Designed for everyday chopping, slicing, food preparation and serving.',
+    description:
+      'Crafted from solid European oak, this handmade cutting board is built for reliable daily use while bringing natural warmth to the kitchen. Its durable edge-grain construction offers a practical cutting surface, while the natural grain ensures that every piece is unique.',
+    longDescription:
+      'Crafted from solid European oak, this handmade cutting board is built for reliable daily use while bringing natural warmth to the kitchen. Its durable edge-grain construction offers a practical cutting surface, while the natural grain ensures that every piece is unique.',
+    dimensions: '38 × 25 × 2.5 cm',
+    features: [
+      'Handmade from solid European oak',
+      'Durable edge-grain construction',
+      'Natural grain variation makes each board unique',
+      'Finished with food-safe oil and wax',
+      'Suitable for chopping, slicing, meal preparation and serving',
+      'Ideal as a wedding, housewarming or cooking gift',
+    ],
+    perfectFor: [
+      'Everyday chopping and meal prep',
+      'Serving bread, cheese, or snacks',
+      'Wedding, housewarming, or cooking gifts',
+      'A simple, timeless kitchen board',
+    ],
+    careInstructions:
+      'Hand wash only. Never soak. Dry immediately after washing. Do not place in a dishwasher. Reapply board oil periodically.',
+    whyThisPiece:
+      'Handmade in the center of Prague with love and passion for wood. Slow wood — enjoy nature.',
+    shippingNote: DEFAULT_SHIPPING_NOTE,
+  }),
   createProduct({
     id: 'walnut-wall-mount-bottle-opener',
     name: 'Walnut Wall Mount Bottle Opener',
@@ -835,22 +936,35 @@ const rawProducts: Product[] = [
     id: 'handmade-oak-end-grain-cutting-board',
     name: 'Handmade Oak End Grain Cutting Board',
     category: 'Cutting Boards',
-    price: 'CZK 2,029.11',
-    status: 'Low in stock, only 1 left',
-    publicationStatus: 'draft',
-    woodType: 'Oak',
-    materials: 'Wood',
+    collection: 'Available Pieces',
+    price: 'CZK 2,025.92',
+    status: 'Available',
+    publicationStatus: 'published',
+    woodType: 'Solid Oak',
+    materials: 'Wood · End grain',
+    badge: 'Available',
+    buttonLabel: 'Buy on Etsy',
+    galleryCount: 11,
+    // TODO(Dominick): paste exact Etsy listing URL when ready
+    // etsyUrl: '',
+    shortDescription:
+      'A handmade solid-oak end-grain cutting board featuring a distinctive geometric pattern, substantial butcher-block construction and a durable knife-friendly surface.',
     description:
-      'Crafted from solid oak with a striking geometric end grain pattern, this handmade cutting board combines durability, functionality, and modern design. The rich natural wood tones and detailed layout make it both a practical kitchen tool and a beautiful countertop centerpiece.',
+      'Crafted from premium solid oak with a striking geometric end-grain pattern, this handmade cutting board combines durability, functionality and modern design. The rich natural tones and detailed layout make it both a practical kitchen tool and a beautiful countertop centrepiece.',
+    longDescription:
+      'Crafted from premium solid oak with a striking geometric end-grain pattern, this handmade cutting board combines durability, functionality and modern design. The rich natural tones and detailed layout make it both a practical kitchen tool and a beautiful countertop centrepiece.',
     dimensions: '35.5 × 27.5 cm',
     features: [
       'Handmade from premium solid oak',
-      'Durable end grain construction',
-      'Unique decorative pattern design',
+      'Durable end-grain construction',
+      'Distinctive geometric pattern',
       'Gentle on knife edges',
-      'Thick butcher block style for stability',
-      'Sanded smooth and finished by hand',
+      'Thick butcher-block construction',
+      'Sanded and finished by hand',
       'Treated with food-safe mineral oil and beeswax',
+      'Suitable for food preparation, serving and charcuterie',
+      'Each board has unique natural grain and colour variation',
+      'Personalisation available',
     ],
     perfectFor: [
       'Everyday cooking and meal prep',
@@ -860,20 +974,21 @@ const rawProducts: Product[] = [
       'Professional or home chefs',
     ],
     whyEndGrain:
-      'End grain cutting boards are highly valued for their durability and self-healing properties. The wood fibers absorb knife impact, helping reduce wear on blades and minimizing visible cut marks.',
+      'End-grain boards are valued for durability and their ability to better absorb knife impact. This helps reduce visible cutting marks and can be gentler on knife edges than conventional cutting surfaces.',
     careInstructions:
-      'Hand wash only. Do not soak or place in dishwasher. Reapply board oil periodically to maintain the finish and longevity.',
+      'Hand wash only. Do not soak. Do not place in a dishwasher. Dry immediately. Reapply board oil periodically.',
     whyThisPiece:
-      'Each board is handmade and one of a kind, with natural variations in grain and color that make every piece unique. This is the oak end grain board currently available from the workshop.',
+      'Each board is handmade and one of a kind, with natural variations in grain and colour that make every piece unique. Personalisation is available on request.',
     shippingNote: DEFAULT_SHIPPING_NOTE,
   }),
   createProduct({
     id: 'handmade-black-walnut-maple-end-grain-cutting-board',
-    name: 'Handmade Black Walnut & Maple End Grain Cutting Board',
+    name: 'American Black Walnut & Maple End Grain Cutting Board',
     category: 'Cutting Boards',
     price: 'CZK 2,029.11',
-    status: 'Low in stock, only 1 left',
-    publicationStatus: 'draft',
+    // Available so Shop All sorts this ahead of other Available boards (name A…).
+    status: 'Available',
+    publicationStatus: 'published',
     woodType: 'Black walnut and hard maple',
     materials: 'Wood',
     description:
@@ -1201,7 +1316,7 @@ export function getShopCollections(items: Product[] = shopProducts): ProductColl
  * Keep Shop listing driven by publicationStatus + getShopProducts only.
  */
 export const HOMEPAGE_FEATURED_PRODUCT_IDS = [
-  'handmade-end-grain-walnut-breadboard',
+  'handmade-black-walnut-maple-end-grain-cutting-board',
   'handmade-walnut-steak-board-two-cups',
   'two-in-one-book-stand-serving-board',
   'european-oak-lux-blue-epoxy-serving-board',

@@ -594,7 +594,12 @@ function SignatureWorkGrid() {
   )
 }
 
-function SignaturePieceImage({ src, objectPosition = 'center center', priority = false }) {
+function SignaturePieceImage({
+  src,
+  objectPosition = 'center center',
+  imageScale = 0.92,
+  priority = false,
+}) {
   const [hasError, setHasError] = useState(false)
 
   useEffect(() => {
@@ -612,8 +617,11 @@ function SignaturePieceImage({ src, objectPosition = 'center center', priority =
       loading={priority ? 'eager' : 'lazy'}
       decoding="async"
       onError={() => setHasError(true)}
-      className="h-full w-full object-cover transition duration-700 motion-safe:group-hover:scale-[1.02]"
-      style={{ objectPosition }}
+      className="h-full w-full object-cover"
+      style={{
+        objectPosition,
+        '--signature-img-scale': String(imageScale),
+      }}
     />
   )
 }
@@ -625,12 +633,13 @@ function SignaturePieceCard({ piece, priority = false }) {
     <Link
       to={galleryTo}
       aria-label={`View ${piece.name} in Past Projects`}
-      className="signature-piece-card group flex h-full min-h-0 flex-col overflow-hidden rounded-2xl border border-[rgba(212,170,86,0.22)] bg-white/[0.04] shadow-[0_20px_48px_-34px_rgba(0,0,0,0.72)] outline-none transition duration-300 motion-safe:hover:-translate-y-1 hover:border-amber-200/45 hover:shadow-[0_24px_52px_-30px_rgba(0,0,0,0.78)] focus-visible:border-amber-200/60 focus-visible:ring-2 focus-visible:ring-amber-200/50 focus-visible:ring-offset-2 focus-visible:ring-offset-[#0c0a09]"
+      className="signature-piece-card group flex h-full min-h-0 flex-col overflow-hidden rounded-2xl border border-[rgba(212,170,86,0.22)] bg-white/[0.04] shadow-[0_20px_48px_-34px_rgba(0,0,0,0.72)] outline-none transition duration-[400ms] ease-out motion-safe:hover:-translate-y-1.5 hover:border-amber-200/45 hover:shadow-[0_28px_56px_-28px_rgba(40,24,12,0.82)] focus-visible:border-amber-200/60 focus-visible:ring-2 focus-visible:ring-amber-200/50 focus-visible:ring-offset-2 focus-visible:ring-offset-[#0c0a09]"
     >
-      <div className="aspect-[16/10] w-full shrink-0 overflow-hidden bg-[#1c1511]">
+      <div className="signature-piece-card__media aspect-[16/10] w-full shrink-0 overflow-hidden bg-[#0d0b09]">
         <SignaturePieceImage
           src={piece.image}
           objectPosition={piece.objectPosition}
+          imageScale={piece.imageScale}
           priority={priority}
         />
       </div>
@@ -2034,8 +2043,8 @@ function AboutPage() {
       <div className="mt-12">
         <SectionHeading
           eyebrow="Instagram"
-          title="From the workshop"
-          intro="Short process clips, finished pieces and workshop moments from Dom's Concepts."
+          title="Follow the Workshop"
+          intro="See new builds, behind-the-scenes moments, finishing techniques and completed pieces from the Dom’s Concepts workshop."
           compact
         />
         <div className="grid gap-5 md:grid-cols-3">

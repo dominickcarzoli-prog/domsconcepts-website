@@ -1,10 +1,12 @@
 #!/usr/bin/env node
 /**
- * Scans public/images/products/{id}/ for numbered gallery files (01.jpg …).
- * Writes src/data/product-image-inventory.json with real image paths per product id.
+ * Scans public/images/products/ for numbered gallery files (01.jpg …),
+ * including nested category folders (oak/, walnut/, epoxy/, wood-care/, specialties/).
+ * Writes src/data/product-image-inventory.json keyed by relative folder path
+ * (e.g. "oak/solid-oak-cutting-board") with real image paths.
  *
  * Real image heuristic:
- * - File exists and matches /^\d{2}\.jpg$/
+ * - File exists and matches /^\d{2}\.(jpe?g|png|webp)$/i
  * - Not the brown placeholder frame (~54838 bytes, 1600×1000)
  * - Path/name does not include placeholder / coming-soon tokens
  */
@@ -17,13 +19,16 @@ const __dirname = path.dirname(fileURLToPath(import.meta.url))
 const ROOT = path.resolve(__dirname, '..')
 const PRODUCTS_DIR = path.join(ROOT, 'public/images/products')
 const OUTPUT = path.join(ROOT, 'src/data/product-image-inventory.json')
+const FOLDERS_MAP = path.join(ROOT, 'src/data/products.ts')
 
 const PLACEHOLDER_BYTE_SIZE = 54838
 const PLACEHOLDER_PATH_RE = /placeholder|coming-soon|photo-coming/i
+const NUMBERED_IMAGE_RE = /^\d{2}\.(jpe?g|png|webp)$/i
+const CATEGORY_DIRS = new Set(['oak', 'walnut', 'epoxy', 'wood-care', 'specialties'])
 
 function isRealImageFile(filePath) {
   const base = path.basename(filePath)
-  if (!/^\d{2}\.jpg$/i.test(base)) return false
+  if (!NUMBERED_IMAGE_RE.test(base)) return false
   if (PLACEHOLDER_PATH_RE.test(filePath)) return false
 
   const stat = fs.statSync(filePath)
@@ -37,18 +42,67 @@ function numericFilenameValue(fileName) {
   return match ? Number(match[1]) : Number.POSITIVE_INFINITY
 }
 
-function scanProductFolder(productId) {
-  const folder = path.join(PRODUCTS_DIR, productId)
+function scanProductFolder(relativeFolder) {
+  const folder = path.join(PRODUCTS_DIR, relativeFolder)
   if (!fs.existsSync(folder) || !fs.statSync(folder).isDirectory()) {
     return []
   }
 
   return fs
     .readdirSync(folder)
-    .filter((file) => /^\d{2}\.jpg$/i.test(file))
+    .filter((file) => NUMBERED_IMAGE_RE.test(file))
     .filter((file) => isRealImageFile(path.join(folder, file)))
     .sort((a, b) => numericFilenameValue(a) - numericFilenameValue(b))
-    .map((file) => `/images/products/${productId}/${file}`)
+    .map((file) => `/images/products/${relativeFolder.replace(/\\/g, '/')}/${file}`)
+}
+
+/** Parse productImageFolders map from products.ts (id → nested folder). */
+function loadPreferredFolders() {
+  if (!fs.existsSync(FOLDERS_MAP)) return {}
+  const source = fs.readFileSync(FOLDERS_MAP, 'utf8')
+  const block = source.match(
+    /export const productImageFolders: Record<string, string> = \{([\s\S]*?)\n\}/,
+  )
+  if (!block) return {}
+
+  const map = {}
+  const re = /['"]([^'"]+)['"]\s*:\s*['"]([^'"]+)['"]/g
+  let match
+  while ((match = re.exec(block[1])) !== null) {
+    map[match[1]] = match[2]
+  }
+  return map
+}
+
+function collectScanTargets(preferredFolders) {
+  const targets = new Set()
+
+  for (const folder of Object.values(preferredFolders)) {
+    targets.add(folder)
+  }
+
+  if (!fs.existsSync(PRODUCTS_DIR)) return [...targets]
+
+  const topEntries = fs.readdirSync(PRODUCTS_DIR, { withFileTypes: true })
+  for (const entry of topEntries) {
+    if (!entry.isDirectory()) continue
+    if (entry.name.startsWith('_') || entry.name.startsWith('.')) continue
+
+    if (CATEGORY_DIRS.has(entry.name)) {
+      const categoryPath = path.join(PRODUCTS_DIR, entry.name)
+      for (const child of fs.readdirSync(categoryPath, { withFileTypes: true })) {
+        if (!child.isDirectory()) continue
+        if (child.name.startsWith('.') || child.name.startsWith('_')) continue
+        targets.add(`${entry.name}/${child.name}`)
+      }
+      continue
+    }
+
+    // Legacy flat product folders (kept during migration)
+    targets.add(entry.name)
+  }
+
+  return [...targets]
 }
 
 function main() {
@@ -57,16 +111,21 @@ function main() {
     process.exit(1)
   }
 
+  const preferredFolders = loadPreferredFolders()
   const inventory = {}
-  const entries = fs.readdirSync(PRODUCTS_DIR, { withFileTypes: true })
+  const targets = collectScanTargets(preferredFolders)
 
-  for (const entry of entries) {
-    if (!entry.isDirectory()) continue
-    if (entry.name.startsWith('_') || entry.name.startsWith('.')) continue
-
-    const images = scanProductFolder(entry.name)
+  for (const relativeFolder of targets) {
+    const images = scanProductFolder(relativeFolder)
     if (images.length > 0) {
-      inventory[entry.name] = images
+      inventory[relativeFolder] = images
+    }
+  }
+
+  // Prefer nested folder paths for product-id keys (overrides legacy flat scans).
+  for (const [productId, imageFolder] of Object.entries(preferredFolders)) {
+    if (inventory[imageFolder]) {
+      inventory[productId] = inventory[imageFolder]
     }
   }
 
@@ -75,7 +134,7 @@ function main() {
 
   const productCount = Object.keys(inventory).length
   const imageCount = Object.values(inventory).reduce((sum, list) => sum + list.length, 0)
-  console.log(`Wrote ${productCount} products (${imageCount} images) → ${OUTPUT}`)
+  console.log(`Wrote ${productCount} folder keys (${imageCount} path entries) → ${OUTPUT}`)
 }
 
 main()

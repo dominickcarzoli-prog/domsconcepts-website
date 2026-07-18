@@ -107,9 +107,10 @@ export const signaturePieces = [
     description:
       'A custom media console featuring a solid American walnut top and steamed European walnut drawer fronts. The drawers use soft-close, push-to-open hardware for a clean exterior without visible handles.',
     image: '/images/signature/signature-tv-console.jpg',
-    objectPosition: 'center 45%',
+    objectPosition: 'center center',
+    imageScale: 0.92,
     galleryHash: 'american-walnut-media-console',
-    featured: true,
+    featured: false,
   },
   {
     id: 'solid-oak-bed',
@@ -117,7 +118,8 @@ export const signaturePieces = [
     description:
       'A 2 × 2 metre bed built around a custom-designed steel frame, fabricated and powder-coated before being clad in solid oak slabs. Selected live edges were preserved to add natural character and contrast to the clean steel structure.',
     image: '/images/signature/signature-oak-bed.jpg',
-    objectPosition: 'center 40%',
+    objectPosition: 'center 42%',
+    imageScale: 0.92,
     galleryHash: 'solid-oak-bed',
     featured: true,
   },
@@ -127,9 +129,10 @@ export const signaturePieces = [
     description:
       'A solid black walnut dining table paired with custom powder-coated steel legs, designed to showcase the natural grain and warmth of the timber.',
     image: '/images/signature/signature-walnut-dining-table.jpg',
-    objectPosition: 'center 42%',
+    objectPosition: 'center 55%',
+    imageScale: 0.92,
     galleryHash: 'solid-black-walnut-dining-table',
-    featured: false,
+    featured: true,
   },
   {
     id: 'walnut-maple-chessboard',
@@ -137,7 +140,8 @@ export const signaturePieces = [
     description:
       'A handcrafted walnut and maple board-game piece with contrasting hardwoods, precise grid work, and a refined edge profile — built as a display piece and heirloom gift.',
     image: '/images/signature/signature-walnut-maple-chessboard.jpg',
-    objectPosition: 'center 48%',
+    objectPosition: 'center center',
+    imageScale: 1,
     galleryHash: 'walnut-maple-chessboard',
     featured: true,
   },
@@ -147,7 +151,8 @@ export const signaturePieces = [
     description:
       'A one-of-one knife display table created for Sakuro.cz. A knife and sharpening tool were suspended inside an epoxy river running through a dark brown stained oak tabletop.',
     image: '/images/signature/signature-knife-table.jpg',
-    objectPosition: 'center 35%',
+    objectPosition: 'center 58%',
+    imageScale: 0.9,
     galleryHash: 'custom-knife-table-sakuro',
     featured: true,
   },
@@ -158,7 +163,8 @@ export const signaturePieces = [
     description:
       "A custom serving tray made for Max's Steakhouse and its Whiskey Wednesday club. The finished piece remains in use and can be seen in person at the restaurant.",
     image: '/images/signature/signature-maxs-whiskey-tray.jpg',
-    objectPosition: 'center 42%',
+    objectPosition: 'center center',
+    imageScale: 0.92,
     galleryHash: 'whiskey-wednesday-serving-tray',
     featured: false,
   },
@@ -166,7 +172,7 @@ export const signaturePieces = [
 
 /** Homepage Signature Work — four permanent featured projects (no carousel). */
 export const featuredSignaturePieces = [
-  'american-walnut-media-console',
+  'solid-black-walnut-dining-table',
   'solid-oak-bed',
   'walnut-maple-chessboard',
   'sakuro-knife-table',
@@ -524,7 +530,7 @@ export const boardCareProducts = [
   {
     id: 'wood-butter',
     title: "Dom's Concepts Wood Butter",
-    image: '/images/products/natural-wood-butter-beeswax/01.jpg',
+    image: '/images/products/wood-care/natural-wood-butter/01.jpg',
     description:
       'A soft board conditioner for routine care. Helps refresh the surface, deepen the wood tone, and keep boards protected between uses.',
     ctaLabel: 'Add on Etsy',
@@ -536,7 +542,7 @@ export const boardCareProducts = [
   {
     id: 'wood-wax',
     title: "Dom's Concepts Wood Wax",
-    image: '/images/products/beeswax-wood-wax-natural-wood-conditioner/01.jpg',
+    image: '/images/products/wood-care/beeswax-wood-wax/01.jpg',
     description:
       'A protective wax blend with mineral oil, beeswax, and carnauba wax. Good for wood pieces that need a stronger protective finish.',
     ctaLabel: 'Add on Etsy',

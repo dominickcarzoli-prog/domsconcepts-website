@@ -306,7 +306,34 @@
     height: 100%;
   }
 
+  /* Signature media: cover fill, modest zoom-out via --signature-img-scale */
+  .signature-piece-card__media {
+    overflow: hidden;
+    background: #0d0b09;
+  }
+
+  .signature-piece-card__media img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    transform: scale(var(--signature-img-scale, 0.92));
+    transform-origin: center center;
+    transition: transform 400ms ease;
+  }
+
+  @media (prefers-reduced-motion: no-preference) {
+    .signature-piece-card:hover .signature-piece-card__media img,
+    .signature-piece-card:focus-visible .signature-piece-card__media img {
+      transform: scale(calc(var(--signature-img-scale, 0.92) * 1.02));
+    }
+  }
+
   @media (prefers-reduced-motion: reduce) {
+    .signature-piece-card__media img {
+      transition: none;
+      transform: scale(var(--signature-img-scale, 0.92));
+    }
+
     .signature-piece-card {
       transition: none;
     }
