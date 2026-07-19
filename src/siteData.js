@@ -522,7 +522,7 @@ export const boardCareUpsellCategories = [
 ]
 
 export const boardCarePricing = {
-  normalPrice: 'CZK 253.39',
+  normalPrice: 'CZK 252.89',
   addonPrice: 'CZK 177.37',
   discountLabel: '30%',
 }
@@ -563,9 +563,27 @@ export const boardCareAddonOptions = [
 
 export const boardCareProductAddonOptions = [
   { value: 'none', label: 'No care add-on' },
-  { value: 'wood-butter', label: 'Wood Butter — CZK 177.37 with board order' },
-  { value: 'wood-wax', label: 'Wood Wax — CZK 177.37 with board order' },
+  { value: 'wood-butter', label: 'Wood Butter — add-on with board order' },
+  { value: 'wood-wax', label: 'Wood Wax — add-on with board order' },
 ]
+
+/** Build board-care addon select labels with converted display prices. */
+export function getBoardCareProductAddonOptions(formatProductPrice) {
+  const addon = formatProductPrice
+    ? formatProductPrice(boardCarePricing.addonPrice)
+    : boardCarePricing.addonPrice
+  return [
+    { value: 'none', label: 'No care add-on' },
+    {
+      value: 'wood-butter',
+      label: `Wood Butter — ${addon} with board order`,
+    },
+    {
+      value: 'wood-wax',
+      label: `Wood Wax — ${addon} with board order`,
+    },
+  ]
+}
 
 export function resolveBoardCareAddon(searchParams) {
   const addon = searchParams.get('addon') || searchParams.get('care') || 'none'

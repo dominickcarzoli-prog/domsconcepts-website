@@ -35,6 +35,9 @@ import {
   woodPreferences,
   workshopAboutImagePath,
 } from './siteData'
+import { useCurrency } from './currency/useCurrency'
+import { CurrencySelector, EtsyPriceNote } from './currency/CurrencySelector.jsx'
+import { FormattedPrice } from './currency/FormattedPrice.jsx'
 import { getProductSocialProof, reviewTrustPoints, reviews } from './data/reviews'
 import { instagramVideos } from './data/instagramVideos'
 import {
@@ -220,11 +223,14 @@ function SiteLayout() {
             Menu
           </button>
 
-          <nav className="hidden items-center gap-6 lg:flex">
-            {navItems.map((item) => (
-              <NavItem key={item.path} item={item} />
-            ))}
-          </nav>
+          <div className="hidden items-center gap-5 lg:flex">
+            <nav className="flex items-center gap-6">
+              {navItems.map((item) => (
+                <NavItem key={item.path} item={item} />
+              ))}
+            </nav>
+            <CurrencySelector variant="desktop" />
+          </div>
         </div>
 
         {menuOpen ? (
@@ -233,6 +239,7 @@ function SiteLayout() {
               {navItems.map((item) => (
                 <NavItem key={item.path} item={item} mobile />
               ))}
+              <CurrencySelector variant="mobile" />
             </div>
           </nav>
         ) : null}
@@ -1545,6 +1552,11 @@ function AvailablePiecesPage() {
 
 function ProductDetailPage() {
   const { productId } = useParams()
+  const {
+    isCzechia,
+    shippingMessageDetail,
+    localizeShippingNote,
+  } = useCurrency()
   const redirectTarget = productId ? productIdRedirects[productId] : undefined
   const product = productId ? getProductById(productId) : undefined
   const isDevUnpublishedPreview =
@@ -1679,13 +1691,19 @@ function ProductDetailPage() {
                 {productBadgeLabels[product.badge] ?? product.badge}
               </span>
               {product.freeShipping ? (
-                <span className="rounded-full border border-emerald-400/25 bg-emerald-950/40 px-3 py-1.5 text-sm text-emerald-200">
-                  Free shipping
-                </span>
+                isCzechia ? (
+                  <span className="rounded-full border border-emerald-400/25 bg-emerald-950/40 px-3 py-1.5 text-sm text-emerald-200">
+                    {shippingMessageDetail}
+                  </span>
+                ) : (
+                  <span className="rounded-full border border-white/10 bg-black/25 px-3 py-1.5 text-sm text-stone-300">
+                    {shippingMessageDetail}
+                  </span>
+                )
               ) : null}
             </div>
             <div className="mt-6 grid gap-4 sm:grid-cols-2">
-              <ProductMeta label="Price" value={product.priceFrom} />
+              <ProductPriceMeta priceFrom={product.priceFrom} price={product.price} />
               {hasDisplayableDimensions(product.dimensions) ? (
                 <ProductMeta label="Dimensions" value={product.dimensions} />
               ) : null}
@@ -1706,6 +1724,7 @@ function ProductDetailPage() {
                 action={secondaryAction}
                 className={outlineButtonLightClassName}
               />
+              <EtsyPriceNote className="mt-1" />
               <SecondaryLink to="/available-pieces" className="mt-1 self-start text-stone-400">
                 Back to collection
               </SecondaryLink>
@@ -1755,7 +1774,9 @@ function ProductDetailPage() {
           {product.shippingNote ? (
             <Card>
               <h2 className="font-serif text-3xl text-white">Returns / Shipping</h2>
-              <p className="mt-5 leading-8 text-stone-300">{product.shippingNote}</p>
+              <p className="mt-5 leading-8 text-stone-300">
+                {localizeShippingNote(product.shippingNote)}
+              </p>
             </Card>
           ) : null}
           {product.etsyUrl ? (
@@ -2525,11 +2546,14 @@ function BoardCareProductCard({ product, compact = false, luxury = false }) {
         <div className="text-sm text-stone-300">
           <p>
             Normal price:{' '}
-            <span className="text-stone-200">{boardCarePricing.normalPrice}</span>
+            <FormattedPrice price={boardCarePricing.normalPrice} className="text-stone-200" />
           </p>
           <p className="mt-1">
             Board add-on price:{' '}
-            <span className="font-medium text-amber-100">{boardCarePricing.addonPrice}</span>
+            <FormattedPrice
+              price={boardCarePricing.addonPrice}
+              className="font-medium text-amber-100"
+            />
           </p>
         </div>
         {compact ? null : (
@@ -2636,6 +2660,7 @@ function ProductActionButton({ action, className = goldButtonClassNameCompact })
 }
 
 function ProductCard({ piece, variant = 'luxury' }) {
+  const { isCzechia, shippingMessage } = useCurrency()
   const action = getProductPrimaryAction(piece)
   const isLuxury = variant === 'luxury'
   const badgeLabel = productBadgeLabels[piece.badge] ?? piece.badge
@@ -2691,10 +2716,19 @@ function ProductCard({ piece, variant = 'luxury' }) {
         </div>
 
         <div className="mt-auto space-y-3">
-          <p className="text-base font-medium text-stone-200">{piece.priceFrom}</p>
+          <FormattedPrice
+            price={piece.priceFrom || piece.price}
+            className="text-base font-medium text-stone-200"
+            as="p"
+          />
           {piece.freeShipping ? (
-            <p className="text-[11px] uppercase tracking-[0.18em] text-emerald-400/85">
-              Free shipping
+            <p
+              className={[
+                'text-[11px] uppercase tracking-[0.18em]',
+                isCzechia ? 'text-emerald-400/85' : 'text-stone-500',
+              ].join(' ')}
+            >
+              {shippingMessage}
             </p>
           ) : null}
           <Link
@@ -2757,6 +2791,7 @@ function ProductSocialProof({ review }) {
 }
 
 function OrderForm({ title, presetProduct = '', presetCareAddon = 'none', defaultMessage = '' }) {
+  const { formatProductPrice, pricesReady } = useCurrency()
   const [formState, setFormState] = useState({
     name: '',
     email: '',
@@ -2782,6 +2817,13 @@ function OrderForm({ title, presetProduct = '', presetCareAddon = 'none', defaul
     }))
   }, [defaultMessage, presetCareAddon, presetProduct])
 
+  const formattedAddonPrice = pricesReady
+    ? formatProductPrice(boardCarePricing.addonPrice)
+    : boardCarePricing.addonPrice
+  const formattedNormalPrice = pricesReady
+    ? formatProductPrice(boardCarePricing.normalPrice)
+    : boardCarePricing.normalPrice
+
   const mailtoHref = useMemo(() => {
     const subject = formState.product
       ? `Dom's Concepts enquiry: ${formState.product}`
@@ -2789,7 +2831,7 @@ function OrderForm({ title, presetProduct = '', presetCareAddon = 'none', defaul
     const careLabel = getBoardCareAddonLabel(formState.boardCareAddon)
     const carePriceNote =
       formState.boardCareAddon === 'wood-butter' || formState.boardCareAddon === 'wood-wax'
-        ? ` (${boardCarePricing.addonPrice} board add-on price, normally ${boardCarePricing.normalPrice})`
+        ? ` (${formattedAddonPrice} board add-on price, normally ${formattedNormalPrice})`
         : ''
 
     const body = [
@@ -2811,7 +2853,7 @@ function OrderForm({ title, presetProduct = '', presetCareAddon = 'none', defaul
     ].join('\n')
 
     return `mailto:${contactEmail}?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`
-  }, [formState])
+  }, [formState, formattedAddonPrice, formattedNormalPrice])
 
   function updateField(event) {
     const { name, value } = event.target
@@ -2842,7 +2884,7 @@ function OrderForm({ title, presetProduct = '', presetCareAddon = 'none', defaul
           <p className="mt-2 text-sm text-stone-200">
             {getBoardCareAddonLabel(presetCareAddon)}
             {presetCareAddon === 'wood-butter' || presetCareAddon === 'wood-wax'
-              ? ` · ${boardCarePricing.addonPrice} (normally ${boardCarePricing.normalPrice})`
+              ? ` · ${formattedAddonPrice} (normally ${formattedNormalPrice})`
               : ''}
           </p>
         </div>
@@ -2960,6 +3002,16 @@ function SelectField({ label, name, value, onChange, options, optionValues }) {
         ))}
       </select>
     </div>
+  )
+}
+
+function ProductPriceMeta({ priceFrom, price }) {
+  const label = priceFrom || price
+  return (
+    <ProductMeta
+      label="Price"
+      value={<FormattedPrice price={label} className="text-stone-100" />}
+    />
   )
 }
 
