@@ -23,6 +23,7 @@ import {
   getBoardCareButtonAction,
   homepageCarouselSlides,
   legalPages,
+  aboutMakerPortraitPath,
   makerAboutImagePath,
   navItems,
   pageSeo,
@@ -688,14 +689,29 @@ function PastProjectCardImage({ project, alt, hidePlaceholder = false, className
     return <div className="signature-image-placeholder h-full w-full" aria-hidden="true" />
   }
 
+  const scale = project.thumbnailScale
+  const hasCustomZoom = scale != null
+  const style = { objectPosition: getCardObjectPosition(project) }
+  if (hasCustomZoom) {
+    style['--thumb-scale'] = String(scale)
+    style.transform = `scale(${scale})`
+    style.transformOrigin = 'center center'
+  }
+
   return (
     <img
       src={project.image}
       alt={alt}
       loading="lazy"
       onError={() => setHasError(true)}
-      style={{ objectPosition: getCardObjectPosition(project) }}
-      className={['past-project-card-image', className].filter(Boolean).join(' ')}
+      style={style}
+      className={[
+        'past-project-card-image',
+        hasCustomZoom ? 'past-project-card-image--custom-zoom' : '',
+        className,
+      ]
+        .filter(Boolean)
+        .join(' ')}
     />
   )
 }
@@ -741,7 +757,7 @@ function BespokeCreationCard({ project, hidePlaceholder = false, onSelect }) {
             project={project}
             alt={project.name}
             hidePlaceholder={hidePlaceholder}
-            className="transition duration-500 group-hover:scale-[1.03]"
+            className="transition duration-500"
           />
         </div>
       </button>
@@ -1974,6 +1990,56 @@ function PartnersPage() {
   )
 }
 
+function AboutMeetTheMaker() {
+  return (
+    <div className="mb-14 border-b border-[rgba(212,170,86,0.14)] pb-14 sm:mb-16 sm:pb-16">
+      <div className="grid items-center gap-10 sm:gap-12 lg:grid-cols-[minmax(0,0.9fr)_minmax(0,1.1fr)] lg:gap-16 xl:gap-20">
+        <div className="mx-auto w-full max-w-[17.5rem] sm:max-w-[19rem] lg:mx-0 lg:max-w-[21rem]">
+          <div className="about-maker-portrait relative aspect-[4/5] overflow-hidden rounded-[1.35rem] border border-[rgba(212,170,86,0.38)] bg-[#1a1511] shadow-[0_0_32px_-10px_rgba(212,170,86,0.42),0_18px_40px_-28px_rgba(0,0,0,0.7)]">
+            <img
+              src={aboutMakerPortraitPath}
+              alt="Dominick Carzoli, maker behind Dom’s Concepts, in his Prague workshop"
+              loading="eager"
+              className="h-full w-full object-cover object-[center_18%]"
+            />
+          </div>
+        </div>
+
+        <div className="mx-auto max-w-xl space-y-5 text-center lg:mx-0 lg:max-w-none lg:text-left">
+          <p className="text-[11px] uppercase tracking-[0.38em] text-amber-200/80">
+            MEET THE MAKER
+          </p>
+          <h2 className="font-display text-3xl text-[#f7efe3] sm:text-4xl">
+            Dominick Carzoli
+          </h2>
+          <div className="space-y-4 text-base leading-8 text-stone-300">
+            <p>I&apos;m Dominick, the maker behind Dom&apos;s Concepts.</p>
+            <p>
+              Dom&apos;s Concepts began in a small 3 × 3 metre workshop at home,
+              where limited space never limited the ideas. What started as a
+              passion for woodworking grew into a place where cutting boards,
+              furniture and completely one-of-one pieces are designed and built
+              by hand.
+            </p>
+            <p>
+              From a simple serving board to a fully custom table, the goal has
+              always been the same: if you can imagine it, we can work together
+              to make it a reality.
+            </p>
+            <p>
+              Every piece is made with care, honest materials and close
+              attention to the details that make it truly personal.
+            </p>
+          </div>
+          <p className="font-display text-lg text-stone-200 sm:text-xl">
+            Handmade in Prague. Built from an idea into something real.
+          </p>
+        </div>
+      </div>
+    </div>
+  )
+}
+
 function AboutPage() {
   return (
     <>
@@ -1981,8 +2047,20 @@ function AboutPage() {
       <PageShell
       eyebrow="About"
       title="A Prague woodworking brand centered on material, function, and finish."
-      intro="Founded in 2016, Dom&apos;s Concepts makes premium handmade kitchen and serving pieces with a small-batch workshop approach."
+      intro={
+        <>
+          Dom&apos;s Concepts began in a small 3 × 3 metre workshop at home,
+          built around one simple idea: anything you can imagine can be turned
+          into something real.
+          <span className="mt-3 block">
+            From premium kitchen and serving pieces to furniture and completely
+            custom creations, every project is designed and handcrafted in
+            Prague.
+          </span>
+        </>
+      }
     >
+      <AboutMeetTheMaker />
       <div className="grid gap-8 lg:grid-cols-[1fr_0.9fr]">
         <Card>
           <p className="text-xs uppercase tracking-[0.35em] text-amber-200/80">

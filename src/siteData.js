@@ -98,6 +98,7 @@ export const homepageCarouselSlides = [
 
 export const workshopAboutImagePath = '/images/workshop-placeholder.png'
 export const makerAboutImagePath = '/images/about/dominick-in-workshop.jpg'
+export const aboutMakerPortraitPath = '/images/about/dominick-maker.jpg'
 
 export const signaturePieces = [
   {

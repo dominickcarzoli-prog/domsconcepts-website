@@ -598,6 +598,17 @@
     height: 100%;
     object-fit: cover;
     object-position: center center;
+    transform-origin: center center;
+  }
+
+  .past-project-card-image--custom-zoom {
+    transform: scale(var(--thumb-scale, 1));
+    transform-origin: center center;
+  }
+
+  /* Combine base thumb scale with hover bump (~1.50 when base is 1.45) */
+  .group:hover .past-project-card-image--custom-zoom {
+    transform: scale(calc(var(--thumb-scale, 1) * 1.034)) !important;
   }
 
   .past-project-modal-viewport {
