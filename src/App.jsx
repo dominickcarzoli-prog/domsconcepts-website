@@ -48,11 +48,13 @@ import {
   getHomepageFeaturedProducts,
   getProductById,
   getProductEtsyHref,
+  getProductMaterialKey,
   getProductPrimaryAction,
   getProductRealImages,
   getProductSecondaryAction,
   getShopCollections,
   hasDisplayableDimensions,
+  isProductMaterialKey,
   isPublished,
   productIdRedirects,
   products,
@@ -1209,8 +1211,37 @@ function BespokeCreationDetailPage() {
   )
 }
 
+function useIsMobileViewport(maxWidthPx = 767) {
+  const query = `(max-width: ${maxWidthPx}px)`
+  const [isMobile, setIsMobile] = useState(() => {
+    if (typeof window === 'undefined' || typeof window.matchMedia !== 'function') {
+      return false
+    }
+    return window.matchMedia(query).matches
+  })
+
+  useEffect(() => {
+    if (typeof window === 'undefined' || typeof window.matchMedia !== 'function') {
+      return undefined
+    }
+
+    const mediaQuery = window.matchMedia(query)
+    const sync = () => setIsMobile(mediaQuery.matches)
+
+    sync()
+    mediaQuery.addEventListener('change', sync)
+    return () => mediaQuery.removeEventListener('change', sync)
+  }, [query])
+
+  return isMobile
+}
+
 function HomePage() {
-  const featuredProducts = getHomepageFeaturedProducts(shopProducts, 10)
+  const isMobile = useIsMobileViewport(767)
+  const featuredProducts = getHomepageFeaturedProducts(shopProducts, 10).filter(
+    (p) => p.id !== workshopDrop.productId && p.slug !== workshopDrop.productId,
+  )
+  const visibleProducts = isMobile ? featuredProducts.slice(0, 3) : featuredProducts
 
   return (
     <>
@@ -1238,10 +1269,17 @@ function HomePage() {
             </SecondaryLink>
           </div>
           <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 md:grid-cols-3 xl:grid-cols-4">
-            {featuredProducts.map((piece) => (
+            {visibleProducts.map((piece) => (
               <ProductCard key={piece.id} piece={piece} variant="luxury" />
             ))}
           </div>
+          {isMobile && featuredProducts.length > 3 ? (
+            <div className="mt-8">
+              <SecondaryLink to="/available-pieces" className="text-amber-200/90 hover:text-amber-100">
+                View all available pieces
+              </SecondaryLink>
+            </div>
+          ) : null}
         </div>
       </section>
 
@@ -1446,11 +1484,23 @@ function WorkshopAboutImage({ className = '', priority = false }) {
 }
 
 function AvailablePiecesPage() {
+  const [searchParams, setSearchParams] = useSearchParams()
+  const materialParam = searchParams.get('material')
+  const activeMaterial = isProductMaterialKey(materialParam) ? materialParam : null
   const [activeCollection, setActiveCollection] = useState('All')
   const visibleCollections = ['All', ...getShopCollections()]
-  const filteredProducts = activeCollection === 'All'
-    ? shopProducts
-    : shopProducts.filter((product) => product.collection === activeCollection)
+  const filteredProducts = activeMaterial
+    ? shopProducts.filter((product) => getProductMaterialKey(product) === activeMaterial)
+    : activeCollection === 'All'
+      ? shopProducts
+      : shopProducts.filter((product) => product.collection === activeCollection)
+
+  const selectCollection = (collection) => {
+    setActiveCollection(collection)
+    if (activeMaterial) {
+      setSearchParams({}, { replace: true })
+    }
+  }
 
   return (
     <>
@@ -1465,13 +1515,13 @@ function AvailablePiecesPage() {
       >
         <div className="mb-8 flex flex-wrap gap-2">
           {visibleCollections.map((collection) => {
-            const isActive = activeCollection === collection
+            const isActive = !activeMaterial && activeCollection === collection
 
             return (
               <button
                 key={collection}
                 type="button"
-                onClick={() => setActiveCollection(collection)}
+                onClick={() => selectCollection(collection)}
                 className={[
                   isActive
                     ? goldChipActiveClassName

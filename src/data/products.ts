@@ -1328,6 +1328,45 @@ export const HOMEPAGE_FEATURED_PRODUCT_IDS = [
   'beeswax-wood-wax-natural-wood-conditioner',
 ] as const
 
+/** Material folders under public/images/products/ — used for mobile homepage groups. */
+export type ProductMaterialKey =
+  | 'oak'
+  | 'walnut'
+  | 'epoxy'
+  | 'specialties'
+  | 'wood-care'
+
+export const PRODUCT_MATERIAL_GROUPS: ReadonlyArray<{
+  key: ProductMaterialKey
+  label: string
+}> = [
+  { key: 'oak', label: 'Oak Pieces' },
+  { key: 'walnut', label: 'Walnut Pieces' },
+  { key: 'epoxy', label: 'Epoxy Pieces' },
+  { key: 'specialties', label: 'Specialties' },
+  { key: 'wood-care', label: 'Wood Care' },
+]
+
+const PRODUCT_MATERIAL_KEYS = new Set<string>(
+  PRODUCT_MATERIAL_GROUPS.map((group) => group.key),
+)
+
+export function isProductMaterialKey(value: string | null | undefined): value is ProductMaterialKey {
+  return Boolean(value && PRODUCT_MATERIAL_KEYS.has(value))
+}
+
+export function getProductMaterialKey(
+  product: Pick<Product, 'id' | 'imageFolder'>,
+): ProductMaterialKey | null {
+  const folder = product.imageFolder || productImageFolders[product.id] || ''
+  const top = folder.split('/')[0]
+  return isProductMaterialKey(top) ? top : null
+}
+
+export function getAvailablePiecesMaterialHref(key: ProductMaterialKey) {
+  return `/available-pieces?material=${encodeURIComponent(key)}`
+}
+
 export function getHomepageFeaturedProducts(items: Product[], limit = 10) {
   const byId = new Map(
     items.filter(isShopGridVisible).map((product) => [product.id, product]),
@@ -1348,6 +1387,52 @@ export function getHomepageFeaturedProducts(items: Product[], limit = 10) {
     .filter((product) => !curatedIds.has(product.id))
 
   return [...curated, ...extras].slice(0, limit)
+}
+
+/**
+ * Mobile homepage "Available This Week" — shop-visible products grouped by
+ * material folder, max `perGroup` cards each. Featured IDs surface first
+ * within a group; remaining keep shop sort order.
+ */
+export function getHomepageMobileMaterialGroups(
+  items: Product[] = shopProducts,
+  perGroup = 3,
+) {
+  const visible = items.filter(isShopGridVisible)
+  const featuredIndex = new Map(
+    HOMEPAGE_FEATURED_PRODUCT_IDS.map((id, index) => [id, index]),
+  )
+
+  return PRODUCT_MATERIAL_GROUPS.flatMap(({ key, label }) => {
+    const inGroup = visible.filter((product) => getProductMaterialKey(product) === key)
+    if (inGroup.length === 0) return []
+
+    const ordered = [...inGroup].sort((left, right) => {
+      const leftFeatured = featuredIndex.has(left.id)
+        ? featuredIndex.get(left.id)!
+        : Number.POSITIVE_INFINITY
+      const rightFeatured = featuredIndex.has(right.id)
+        ? featuredIndex.get(right.id)!
+        : Number.POSITIVE_INFINITY
+
+      if (leftFeatured !== rightFeatured) {
+        return leftFeatured - rightFeatured
+      }
+
+      return 0
+    })
+
+    return [
+      {
+        key,
+        label,
+        href: getAvailablePiecesMaterialHref(key),
+        products: ordered.slice(0, perGroup),
+        total: ordered.length,
+        hasMore: ordered.length > perGroup,
+      },
+    ]
+  })
 }
 
 if (import.meta.env.DEV) {
