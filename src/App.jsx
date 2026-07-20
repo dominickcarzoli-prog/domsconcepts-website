@@ -2184,14 +2184,24 @@ function AboutPage() {
                 service, and wood care products.
               </p>
             </div>
-            <a
-              href={etsyShopUrl}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="inline-flex items-center justify-center rounded-full border border-amber-200/35 bg-stone-900 px-6 py-3 text-sm font-medium text-amber-50 transition hover:border-amber-200 hover:bg-stone-800"
-            >
-              View Etsy Shop
-            </a>
+            <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
+              <a
+                href={etsyShopUrl}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="inline-flex items-center justify-center rounded-full border border-amber-200/35 bg-stone-900 px-6 py-3 text-sm font-medium text-amber-50 transition hover:border-amber-200 hover:bg-stone-800"
+              >
+                View Etsy Shop
+              </a>
+              {import.meta.env.DEV ? (
+                <a
+                  href="/api/etsy/oauth/start"
+                  className="inline-flex items-center justify-center rounded-full border border-dashed border-stone-500 px-6 py-3 text-sm font-medium text-stone-400 transition hover:border-stone-300 hover:text-stone-200"
+                >
+                  Connect Etsy
+                </a>
+              ) : null}
+            </div>
           </div>
         </Card>
       </div>
