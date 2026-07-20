@@ -2,7 +2,7 @@
  * Cloudflare Pages Function — GET /api/etsy/oauth/callback
  *
  * Validates OAuth state, exchanges authorization code for tokens (server-side),
- * never returns tokens to the browser. Persistence is a placeholder until D1/KV.
+ * persists tokens in D1, never returns tokens to the browser.
  */
 
 import {
@@ -80,13 +80,12 @@ export async function onRequestGet(context) {
   }
 
   const secrets = requireEtsySecrets(env)
-  if (!secrets) {
-    console.log('[etsy-oauth] callback: secrets missing')
+  if (!secrets.ok) {
+    console.log('[etsy-oauth] callback: secrets misconfigured', secrets.error)
     const res = jsonResponse(
       {
-        error: 'misconfigured',
-        message:
-          'ETSY_API_KEY and ETSY_SHARED_SECRET must be set as Cloudflare environment secrets.',
+        error: secrets.error,
+        message: secrets.message,
       },
       { status: 503 },
     )
@@ -122,7 +121,8 @@ export async function onRequestGet(context) {
     }
 
     tokenPayload = await tokenRes.json()
-    const { access_token, refresh_token, expires_in, token_type } = tokenPayload
+    const { access_token, refresh_token, expires_in, token_type, scope } =
+      tokenPayload
 
     if (!access_token || !refresh_token) {
       console.log('[etsy-oauth] token exchange: incomplete response')
@@ -131,13 +131,13 @@ export async function onRequestGet(context) {
 
     console.log('[etsy-oauth] token exchange succeeded')
 
-    // PLACEHOLDER: tokens are obtained but not persisted until D1/KV exists.
     const saveResult = await saveEtsyTokens(
       {
         access_token,
         refresh_token,
         expires_in: Number(expires_in) || 0,
         token_type: token_type || 'Bearer',
+        scope,
       },
       env,
     )
@@ -146,21 +146,24 @@ export async function onRequestGet(context) {
     tokenPayload = null
 
     if (!saveResult.ok) {
-      console.log(
-        '[etsy-oauth] tokens obtained but not stored:',
-        saveResult.error,
+      console.log('[etsy-oauth] token save failed:', saveResult.error)
+      const res = htmlErrorResponse(
+        503,
+        'Could not save Etsy connection',
+        'Authorization succeeded but token storage failed. Please try again later.',
       )
-      return redirectWithClearedCookies(
-        request,
-        '/about?etsy=storage_pending',
-      )
+      const headers = new Headers(res.headers)
+      for (const cookie of clearOAuthCookies(request)) {
+        headers.append('Set-Cookie', cookie)
+      }
+      return new Response(res.body, { status: 503, headers })
     }
 
     return redirectWithClearedCookies(request, '/about?etsy=connected')
   } catch (error) {
     console.log(
       '[etsy-oauth] callback failed:',
-      error instanceof Error ? error.message : 'unknown',
+      error instanceof Error ? error.name : 'unknown',
     )
     return redirectWithClearedCookies(request, '/about?etsy=error')
   }

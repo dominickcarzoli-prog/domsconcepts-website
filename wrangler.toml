@@ -1,0 +1,17 @@
+# Cloudflare Pages + Functions configuration.
+# D1 binding is available in Functions as context.env.CATALOGUE_DB.
+# Deploy with: npx wrangler pages deploy (after npm run build).
+# If the Pages project was previously bound only in the dashboard, keep the
+# Variable name as CATALOGUE_DB so it matches this file and context.env.
+
+name = "domsconcepts-website"
+pages_build_output_dir = "./dist"
+compatibility_date = "2026-07-20"
+
+[[d1_databases]]
+binding = "CATALOGUE_DB"
+database_name = "domsconcepts-catalogue"
+database_id = "a81fd4c2-c52b-4cc8-8b69-7d7f10076d2d"
+# Required for local Pages + D1 (`wrangler pages dev`).
+preview_database_id = "CATALOGUE_DB"
+migrations_dir = "migrations"

@@ -21,25 +21,32 @@ import {
 
 export async function onRequestGet(context) {
   const secrets = requireEtsySecrets(context.env)
-  if (!secrets) {
+  if (!secrets.ok) {
+    console.log('[etsy-oauth] start: misconfigured', secrets.error)
     return jsonResponse(
       {
-        error: 'misconfigured',
-        message:
-          'ETSY_API_KEY and ETSY_SHARED_SECRET must be set as Cloudflare environment secrets.',
+        error: secrets.error,
+        message: secrets.message,
       },
       { status: 503 },
     )
   }
 
   try {
+    // client_id = trimmed ETSY_API_KEY keystring only (never includes shared secret).
+    const clientId = secrets.apiKey
+    console.log(
+      '[etsy-oauth] start: building authorize URL',
+      `clientIdLength=${clientId.length}`,
+    )
+
     const state = randomBase64Url(32)
     const codeVerifier = randomBase64Url(32)
     const codeChallenge = await pkceChallengeS256(codeVerifier)
 
     const authorize = new URL(ETSY_AUTHORIZE_URL)
     authorize.searchParams.set('response_type', 'code')
-    authorize.searchParams.set('client_id', secrets.apiKey)
+    authorize.searchParams.set('client_id', clientId)
     authorize.searchParams.set('redirect_uri', ETSY_REDIRECT_URI)
     authorize.searchParams.set('scope', ETSY_SCOPES)
     authorize.searchParams.set('state', state)
