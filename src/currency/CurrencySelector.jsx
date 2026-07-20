@@ -90,6 +90,7 @@ export function CurrencySelector({ variant = 'desktop' }) {
     <div ref={rootRef} className="relative">
       <button
         type="button"
+        aria-label="Select currency"
         aria-haspopup="listbox"
         aria-expanded={open}
         aria-controls={listId}

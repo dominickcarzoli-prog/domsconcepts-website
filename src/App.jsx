@@ -96,7 +96,7 @@ const productBadgeLabels = {
 }
 const icoNumber = '14010615'
 const logoImagePath = '/images/doms-concepts-logo-gold.png'
-const logoFallbackImagePath = '/images/doms-concepts-logo.png'
+const logoFallbackImagePath = '/images/doms-concepts-logo-gold.png'
 const goldButtonClassName = 'btn-gold gold-button px-6 py-3 text-sm text-[#111111]'
 const goldButtonClassNameCompact = 'btn-gold gold-button px-4 py-2 text-xs text-[#111111]'
 const outlineButtonClassName = 'btn-outline px-6 py-3 text-sm'
@@ -298,10 +298,10 @@ function SiteLayout() {
 
             <div className="space-y-4 text-sm text-stone-400">
               <p className="font-medium text-stone-200">Connect</p>
-              <a href={instagramUrl} target="_blank" rel="noreferrer" className="block transition hover:text-[var(--color-accent)]">
+              <a href={instagramUrl} target="_blank" rel="noopener noreferrer" className="block transition hover:text-[var(--color-accent)]">
                 Instagram: {instagramHandle}
               </a>
-              <a href={etsyShopUrl} target="_blank" rel="noreferrer" className="block transition hover:text-[var(--color-accent)]">
+              <a href={etsyShopUrl} target="_blank" rel="noopener noreferrer" className="block transition hover:text-[var(--color-accent)]">
                 Etsy: {etsyShopName}
               </a>
               <p>IČO: {icoNumber}</p>
@@ -606,6 +606,7 @@ function SignatureWorkGrid() {
 
 function SignaturePieceImage({
   src,
+  alt = '',
   objectPosition = 'center center',
   imageScale = 0.92,
   priority = false,
@@ -623,7 +624,7 @@ function SignaturePieceImage({
   return (
     <img
       src={src}
-      alt=""
+      alt={alt}
       loading={priority ? 'eager' : 'lazy'}
       decoding="async"
       onError={() => setHasError(true)}
@@ -648,6 +649,7 @@ function SignaturePieceCard({ piece, priority = false }) {
       <div className="signature-piece-card__media aspect-[16/10] w-full shrink-0 overflow-hidden bg-[#0d0b09]">
         <SignaturePieceImage
           src={piece.image}
+          alt=""
           objectPosition={piece.objectPosition}
           imageScale={piece.imageScale}
           priority={priority}
@@ -741,6 +743,8 @@ function PastProjectModalImage({ project, alt }) {
     <img
       src={displayedImage}
       alt={alt}
+      loading="lazy"
+      decoding="async"
       onError={() => setHasError(true)}
       style={{
         objectPosition: getModalObjectPosition(project),
@@ -1153,7 +1157,7 @@ function WorkshopDropSection() {
               <a
                 href={etsyHref}
                 target="_blank"
-                rel="noreferrer"
+                rel="noopener noreferrer"
                 className={[goldButtonClassName, 'workshop-drop-cta w-full sm:w-auto'].join(' ')}
               >
                 {workshopDrop.ctaLabel}
@@ -1338,7 +1342,7 @@ function HomePage() {
             <a
               href={etsyShopUrl}
               target="_blank"
-              rel="noreferrer"
+              rel="noopener noreferrer"
               className={outlineButtonLightClassName}
             >
               Read more reviews on Etsy
@@ -1787,7 +1791,7 @@ function ProductDetailPage() {
               <a
                 href={product.etsyUrl}
                 target="_blank"
-                rel="noreferrer"
+                rel="noopener noreferrer"
                 className="mt-4 inline-flex rounded-full border border-amber-200/35 bg-stone-900 px-5 py-3 text-sm font-medium text-amber-50 transition hover:border-amber-200 hover:bg-stone-800"
               >
                 View on Etsy
@@ -1903,7 +1907,7 @@ function CustomOrdersPage() {
               <a
                 href={instagramUrl}
                 target="_blank"
-                rel="noreferrer"
+                rel="noopener noreferrer"
                 className={outlineButtonLightClassName}
               >
                 Message on Instagram
@@ -1956,7 +1960,7 @@ function CareGuidePage() {
             <a
               href={etsyShopUrl}
               target="_blank"
-              rel="noreferrer"
+              rel="noopener noreferrer"
               className="inline-flex items-center justify-center rounded-full border border-amber-200/35 bg-stone-900 px-6 py-3 text-sm font-medium text-amber-50 transition hover:border-amber-200 hover:bg-stone-800"
             >
               Reorder Wood Butter
@@ -2183,7 +2187,7 @@ function AboutPage() {
             <a
               href={etsyShopUrl}
               target="_blank"
-              rel="noreferrer"
+              rel="noopener noreferrer"
               className="inline-flex items-center justify-center rounded-full border border-amber-200/35 bg-stone-900 px-6 py-3 text-sm font-medium text-amber-50 transition hover:border-amber-200 hover:bg-stone-800"
             >
               View Etsy Shop
@@ -2226,7 +2230,7 @@ function ReviewsPage() {
           <a
             href={etsyShopUrl}
             target="_blank"
-            rel="noreferrer"
+            rel="noopener noreferrer"
             className={outlineButtonLightClassName}
           >
             Read more reviews on Etsy
@@ -2338,33 +2342,42 @@ function PartnerLogo({ partner, compact = false }) {
   )
 }
 
+function isExternalHttpUrl(url) {
+  return typeof url === 'string' && /^https?:\/\//i.test(url.trim())
+}
+
 function PartnerCard({ partner, compact = false }) {
+  const hasUrl = isExternalHttpUrl(partner.url)
+  const visitLabel = hasUrl ? 'Visit partner ↗' : 'Workshop partner'
+
   if (compact) {
-    return (
-      <a
-        href={partner.url}
-        target="_blank"
-        rel="noopener noreferrer"
-        className="group flex min-h-[11.5rem] flex-col rounded-2xl border border-amber-200/20 bg-stone-900/90 px-4 py-4 text-center transition hover:border-amber-200/45 hover:bg-stone-800"
-      >
+    const className =
+      'group flex min-h-[11.5rem] flex-col rounded-2xl border border-amber-200/20 bg-stone-900/90 px-4 py-4 text-center transition hover:border-amber-200/45 hover:bg-stone-800'
+    const body = (
+      <>
         <PartnerLogo partner={partner} compact />
         <span className="font-medium text-amber-50 transition group-hover:text-amber-100">
           {partner.name}
         </span>
         <span className="mt-auto pt-3 text-[10px] uppercase tracking-[0.18em] text-stone-500 transition group-hover:text-amber-200/80">
-          Visit partner ↗
+          {visitLabel}
         </span>
+      </>
+    )
+    if (!hasUrl) {
+      return <div className={className}>{body}</div>
+    }
+    return (
+      <a href={partner.url} target="_blank" rel="noopener noreferrer" className={className}>
+        {body}
       </a>
     )
   }
 
-  return (
-    <a
-      href={partner.url}
-      target="_blank"
-      rel="noopener noreferrer"
-      className="group flex h-full flex-col rounded-[2rem] border border-white/10 bg-white/[0.04] p-6 shadow-xl shadow-black/20 transition duration-300 hover:-translate-y-1 hover:border-amber-300/30 hover:bg-white/[0.05]"
-    >
+  const className =
+    'group flex h-full flex-col rounded-[2rem] border border-white/10 bg-white/[0.04] p-6 shadow-xl shadow-black/20 transition duration-300 hover:-translate-y-1 hover:border-amber-300/30 hover:bg-white/[0.05]'
+  const body = (
+    <>
       <PartnerLogo partner={partner} />
       <h2 className="font-serif text-2xl text-white transition group-hover:text-amber-100">
         {partner.name}
@@ -2373,8 +2386,16 @@ function PartnerCard({ partner, compact = false }) {
         {partner.description}
       </p>
       <p className="mt-4 text-xs uppercase tracking-[0.2em] text-stone-500 transition group-hover:text-amber-200/80">
-        Visit partner ↗
+        {visitLabel}
       </p>
+    </>
+  )
+  if (!hasUrl) {
+    return <div className={className}>{body}</div>
+  }
+  return (
+    <a href={partner.url} target="_blank" rel="noopener noreferrer" className={className}>
+      {body}
     </a>
   )
 }
@@ -2504,7 +2525,7 @@ function ContactPage() {
             <a
               href={etsyShopUrl}
               target="_blank"
-              rel="noreferrer"
+              rel="noopener noreferrer"
               className="inline-block text-stone-200 transition hover:text-amber-200"
             >
               Etsy: {etsyShopName}
@@ -2563,7 +2584,7 @@ function BoardCareProductCard({ product, compact = false, luxury = false }) {
           <a
             href={action.href}
             target="_blank"
-            rel="noreferrer"
+            rel="noopener noreferrer"
             className={goldButtonClassName}
           >
             {action.label}
@@ -2597,7 +2618,7 @@ function BoardCareUpsell({ product }) {
             key={option.label}
             href={option.href}
             target="_blank"
-            rel="noreferrer"
+            rel="noopener noreferrer"
             className={option.label === 'Buy without add-on on Etsy' ? outlineButtonLightClassName : goldButtonClassName}
           >
             {option.label}
@@ -2636,7 +2657,7 @@ function ProductActionButton({ action, className = goldButtonClassNameCompact })
       <a
         href={action.href}
         target="_blank"
-        rel="noreferrer"
+        rel="noopener noreferrer"
         className={className}
       >
         {action.label}
@@ -2890,13 +2911,21 @@ function OrderForm({ title, presetProduct = '', presetCareAddon = 'none', defaul
         </div>
       ) : null}
 
-      <form className="mt-8 grid gap-5" action={mailtoHref}>
+      <form className="mt-8 grid gap-5" action={mailtoHref} method="get">
         <div className="grid gap-5 sm:grid-cols-2">
-          <FormField label="Name" name="name" value={formState.name} onChange={updateField} required />
+          <FormField
+            label="Name"
+            name="name"
+            autoComplete="name"
+            value={formState.name}
+            onChange={updateField}
+            required
+          />
           <FormField
             label="Email"
             name="email"
             type="email"
+            autoComplete="email"
             value={formState.email}
             onChange={updateField}
             required
@@ -2905,6 +2934,7 @@ function OrderForm({ title, presetProduct = '', presetCareAddon = 'none', defaul
         <SelectField
           label="Product type"
           name="productType"
+          autoComplete="off"
           value={formState.productType}
           onChange={updateField}
           options={customProductTypes}
@@ -2912,12 +2942,14 @@ function OrderForm({ title, presetProduct = '', presetCareAddon = 'none', defaul
         <FormField
           label="Product / piece name optional"
           name="product"
+          autoComplete="off"
           value={formState.product}
           onChange={updateField}
         />
         <SelectField
           label="Budget range"
           name="budget"
+          autoComplete="off"
           value={formState.budget}
           onChange={updateField}
           options={budgetRanges}
@@ -2930,6 +2962,7 @@ function OrderForm({ title, presetProduct = '', presetCareAddon = 'none', defaul
             id="message"
             name="message"
             rows="5"
+            autoComplete="off"
             value={formState.message}
             onChange={updateField}
             className="form-textarea"
@@ -2945,7 +2978,7 @@ function OrderForm({ title, presetProduct = '', presetCareAddon = 'none', defaul
           <a
             href={instagramUrl}
             target="_blank"
-            rel="noreferrer"
+            rel="noopener noreferrer"
             className={outlineButtonLightClassName}
           >
             Message on Instagram
@@ -2956,7 +2989,15 @@ function OrderForm({ title, presetProduct = '', presetCareAddon = 'none', defaul
   )
 }
 
-function FormField({ label, name, type = 'text', value, onChange, required = false }) {
+function FormField({
+  label,
+  name,
+  type = 'text',
+  value,
+  onChange,
+  required = false,
+  autoComplete,
+}) {
   return (
     <div className="grid gap-2">
       <label className="form-label" htmlFor={name}>
@@ -2969,13 +3010,14 @@ function FormField({ label, name, type = 'text', value, onChange, required = fal
         value={value}
         onChange={onChange}
         required={required}
+        autoComplete={autoComplete}
         className="form-input"
       />
     </div>
   )
 }
 
-function SelectField({ label, name, value, onChange, options, optionValues }) {
+function SelectField({ label, name, value, onChange, options, optionValues, autoComplete }) {
   const entries = optionValues
     ? options.map((optionLabel, index) => ({
         label: optionLabel,
@@ -2993,6 +3035,7 @@ function SelectField({ label, name, value, onChange, options, optionValues }) {
         name={name}
         value={value}
         onChange={onChange}
+        autoComplete={autoComplete}
         className="form-select"
       >
         {entries.map((entry) => (

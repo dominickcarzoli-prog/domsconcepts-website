@@ -66,38 +66,39 @@ export const homepageCarouselSlides = [
   },
   {
     id: 'knife-table',
-    image: '/images/carousel/knife-table.jpg',
+    image: '/images/signature/signature-knife-table.jpg',
     label: 'Knife table',
     fallbackImage: '/images/hero-workshop-board.jpg',
   },
   {
     id: 'dining-table',
-    image: '/images/carousel/dining-table.jpg',
+    image: '/images/signature/signature-walnut-dining-table.jpg',
     label: 'Dining table',
     fallbackImage: '/images/hero-workshop-board.jpg',
   },
   {
     id: 'tv-table-media-console',
-    image: '/images/carousel/tv-table-media-console.jpg',
+    image: '/images/signature/signature-tv-console.jpg',
     label: 'TV table / media console',
     fallbackImage: '/images/hero-workshop-board.jpg',
   },
   {
     id: 'side-table',
-    image: '/images/carousel/side-table.jpg',
+    image: '/images/hero-workshop-board.jpg',
     label: 'Side table',
     fallbackImage: '/images/hero-workshop-board.jpg',
   },
   {
     id: 'bed-bedroom-piece',
-    image: '/images/carousel/bed-bedroom-piece.jpg',
+    image: '/images/signature/signature-oak-bed.jpg',
     label: 'Bed / bedroom piece',
     fallbackImage: '/images/hero-workshop-board.jpg',
   },
 ]
 
 export const workshopAboutImagePath = '/images/workshop-placeholder.png'
-export const makerAboutImagePath = '/images/about/dominick-in-workshop.jpg'
+// Primary workshop portrait (dominick-in-workshop.jpg not yet uploaded).
+export const makerAboutImagePath = '/images/about/dominick-maker.jpg'
 export const aboutMakerPortraitPath = '/images/about/dominick-maker.jpg'
 
 export const signaturePieces = [
@@ -185,19 +186,22 @@ export const pastCustomPieces = [
   {
     id: 'past-aztec-gold-serving-board',
     name: 'European Walnut Aztec Gold Serving Board',
-    image: '/images/past-custom/aztec-gold-serving-board.jpg',
+    // past-custom asset not uploaded yet
+    image: '/images/epoxy-piece.jpg',
     fallbackImage: '/images/epoxy-piece.jpg',
   },
   {
     id: 'past-restaurant-board-set',
     name: 'Restaurant Board Set',
-    image: '/images/past-custom/restaurant-board-set.jpg',
+    // past-custom asset not uploaded yet
+    image: '/images/serving-board.jpg',
     fallbackImage: '/images/serving-board.jpg',
   },
   {
     id: 'past-logo-engraved-board',
     name: 'Logo Engraved Corporate Board',
-    image: '/images/past-custom/logo-engraved-board.jpg',
+    // past-custom asset not uploaded yet
+    image: '/images/workshop-process.jpg',
     fallbackImage: '/images/workshop-process.jpg',
   },
 ]
@@ -322,7 +326,7 @@ export const partnerItems = [
     name: 'Sortwall',
     description:
       'Workshop collaborator supporting Dom\'s Concepts projects and finishes.',
-    url: 'SORTWALL_URL_PLACEHOLDER',
+    url: '', // Real URL TBD — PartnerCard renders as non-link until set
     logo: '/images/partners/sortwall.png',
     logoClass: 'partner-logo--sortwall',
     logoWrapClass: 'partner-logo-wrap--light',
@@ -333,7 +337,7 @@ export const partnerItems = [
     name: 'Iluka Designs',
     description:
       'Design collaborator connected to custom work and creative workshop projects.',
-    url: 'ILUKA_DESIGNS_URL_PLACEHOLDER',
+    url: '', // Real URL TBD — PartnerCard renders as non-link until set
     logo: '/images/partners/iluka-designs-logo.png',
     logoClass: 'partner-logo--iluka',
     fallbackInitial: 'ID',

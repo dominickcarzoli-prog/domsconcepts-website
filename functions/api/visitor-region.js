@@ -70,6 +70,16 @@ function resolveCountry(request) {
   return null
 }
 
+/** Pages Functions do not inherit public/_headers — apply security headers here. */
+const SECURITY_HEADERS = {
+  'X-Content-Type-Options': 'nosniff',
+  'Referrer-Policy': 'strict-origin-when-cross-origin',
+  'X-Frame-Options': 'DENY',
+  'Permissions-Policy':
+    'camera=(), microphone=(), geolocation=(), payment=(), usb=(), interest-cohort=()',
+  'Strict-Transport-Security': 'max-age=31536000; includeSubDomains; preload',
+}
+
 export async function onRequestGet(context) {
   const country = resolveCountry(context.request)
   const currency = countryToCurrency(country)
@@ -78,6 +88,7 @@ export async function onRequestGet(context) {
     headers: {
       'Content-Type': 'application/json; charset=utf-8',
       'Cache-Control': 'private, no-store',
+      ...SECURITY_HEADERS,
     },
   })
 }

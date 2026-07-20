@@ -175,7 +175,6 @@ function logDevCurrencyDebug({
   visitorCountry,
   countrySource,
 }) {
-  if (!import.meta.env.DEV) return
   const example = formatProductPriceLabel('CZK 2,911.20', {
     currency,
     rates,
@@ -240,15 +239,17 @@ export function CurrencyProvider({ children }) {
     // formatProductPrice falls back to CZK if rates are still null.
     setPricesReady(true)
 
-    logDevCurrencyDebug({
-      currency: detected.currency,
-      rates: ratesResult.rates,
-      source: detected.source,
-      ratesSource: ratesResult.ratesSource,
-      locale,
-      visitorCountry: countryResult.country,
-      countrySource: countryResult.countrySource,
-    })
+    if (import.meta.env.DEV) {
+      logDevCurrencyDebug({
+        currency: detected.currency,
+        rates: ratesResult.rates,
+        source: detected.source,
+        ratesSource: ratesResult.ratesSource,
+        locale,
+        visitorCountry: countryResult.country,
+        countrySource: countryResult.countrySource,
+      })
+    }
 
     return { ...detected, ...countryResult }
   }, [locale])
@@ -270,15 +271,17 @@ export function CurrencyProvider({ children }) {
       setSource('manual')
       setPricesReady(true)
 
-      logDevCurrencyDebug({
-        currency: next,
-        rates: ratesRef.current,
-        source: 'manual',
-        ratesSource: ratesSourceRef.current,
-        locale,
-        visitorCountry,
-        countrySource: 'unchanged',
-      })
+      if (import.meta.env.DEV) {
+        logDevCurrencyDebug({
+          currency: next,
+          rates: ratesRef.current,
+          source: 'manual',
+          ratesSource: ratesSourceRef.current,
+          locale,
+          visitorCountry,
+          countrySource: 'unchanged',
+        })
+      }
     },
     [locale, visitorCountry],
   )

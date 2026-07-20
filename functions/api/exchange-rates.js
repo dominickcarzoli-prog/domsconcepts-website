@@ -25,12 +25,23 @@ const SUPPORTED = [
 const CACHE_SECONDS = 43200 // 12 hours
 const FRANKFURTER_URL = `https://api.frankfurter.app/latest?from=EUR&to=${SUPPORTED.filter((c) => c !== 'EUR').join(',')}`
 
+/** Pages Functions do not inherit public/_headers — apply security headers here. */
+const SECURITY_HEADERS = {
+  'X-Content-Type-Options': 'nosniff',
+  'Referrer-Policy': 'strict-origin-when-cross-origin',
+  'X-Frame-Options': 'DENY',
+  'Permissions-Policy':
+    'camera=(), microphone=(), geolocation=(), payment=(), usb=(), interest-cohort=()',
+  'Strict-Transport-Security': 'max-age=31536000; includeSubDomains; preload',
+}
+
 function jsonResponse(body, init = {}) {
   return new Response(JSON.stringify(body), {
     ...init,
     headers: {
       'Content-Type': 'application/json; charset=utf-8',
       'Cache-Control': `public, s-maxage=${CACHE_SECONDS}`,
+      ...SECURITY_HEADERS,
       ...(init.headers || {}),
     },
   })
@@ -94,6 +105,9 @@ export async function onRequestGet(context) {
     if (cached) {
       const headers = new Headers(cached.headers)
       headers.set('X-Rates-Source', 'cache-fallback')
+      for (const [key, value] of Object.entries(SECURITY_HEADERS)) {
+        headers.set(key, value)
+      }
       return new Response(cached.body, {
         status: cached.status,
         headers,
