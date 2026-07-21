@@ -1,5 +1,7 @@
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import AdminCataloguePage from './admin/AdminCataloguePage.jsx'
+import { ProductDetailInfo } from './components/ProductDescription.js'
+import { parseEtsyDescription } from './data/parseEtsyDescription.js'
 import {
   BrowserRouter,
   Link,
@@ -58,7 +60,6 @@ import {
   getProductRealImages,
   getProductSecondaryAction,
   getShopCollections,
-  hasDisplayableDimensions,
   isProductMaterialKey,
   isPublished,
   productIdRedirects,
@@ -384,16 +385,51 @@ function NavItem({ item, mobile = false }) {
   )
 }
 
-function PageShell({ eyebrow, title, intro, children }) {
+function PageShell({ eyebrow, title, intro, children, variant = 'default' }) {
+  const isProduct = variant === 'product'
+
   return (
-    <section className="page-shell warm-section w-full scroll-mt-28">
-      <div className="mx-auto max-w-7xl px-4 py-14 sm:px-6 lg:px-8 lg:py-20">
-        <div className="mb-10 max-w-3xl space-y-4 sm:space-y-5">
+    <section
+      className={[
+        'page-shell warm-section w-full scroll-mt-28',
+        isProduct ? 'page-shell--product' : '',
+      ]
+        .filter(Boolean)
+        .join(' ')}
+    >
+      <div
+        className={[
+          'mx-auto max-w-7xl px-4 sm:px-6 lg:px-8',
+          isProduct ? 'pb-14 pt-10 sm:pb-16 sm:pt-12 lg:pb-20 lg:pt-14' : 'py-14 lg:py-20',
+        ].join(' ')}
+      >
+        <div
+          className={[
+            'max-w-3xl',
+            isProduct ? 'product-detail-header mb-6 space-y-3 sm:mb-8 sm:space-y-3' : 'mb-10 space-y-4 sm:space-y-5',
+          ].join(' ')}
+        >
           <p className="text-[11px] uppercase tracking-[0.32em] text-amber-200/80">{eyebrow}</p>
-          <h1 className="font-display text-[2.2rem] leading-[1.08] text-stone-100 sm:text-[2.9rem] lg:text-[3.5rem]">
+          <h1
+            className={
+              isProduct
+                ? 'product-detail-title font-display text-stone-100'
+                : 'font-display text-[2.2rem] leading-[1.08] text-stone-100 sm:text-[2.9rem] lg:text-[3.5rem]'
+            }
+          >
             {title}
           </h1>
-          <p className="max-w-2xl text-base leading-7 text-stone-300 sm:text-lg sm:leading-8">{intro}</p>
+          {intro ? (
+            <p
+              className={
+                isProduct
+                  ? 'product-detail-subtitle max-w-xl text-base leading-7 text-stone-400 sm:text-[1.05rem]'
+                  : 'max-w-2xl text-base leading-7 text-stone-300 sm:text-lg sm:leading-8'
+              }
+            >
+              {intro}
+            </p>
+          ) : null}
         </div>
         {children}
       </div>
@@ -1632,19 +1668,31 @@ function ProductDetailPage() {
   const socialProof = getProductSocialProof(product)
   const productOgImage = primaryGalleryImage || product.image || product.mainImage
   const detailSlug = product.slug || product.id
+  const descriptionSource =
+    product.description || product.longDescription || product.shortDescription || ''
+  const parsedDescription = parseEtsyDescription(descriptionSource, {
+    title: product.name || product.title,
+  })
+  const availabilityLabel =
+    productBadgeLabels[product.badge] ?? product.availability ?? product.badge ?? 'Available'
 
   return (
     <>
       <PageMeta
         title={`${product.name} | Dom's Concepts`}
-        description={product.shortDescription || product.longDescription || product.description}
+        description={
+          parsedDescription.intro ||
+          product.shortDescription ||
+          product.longDescription ||
+          product.description
+        }
         ogImage={productOgImage}
         canonicalPath={`/available-pieces/${detailSlug}`}
       />
     <PageShell
-      eyebrow={product.collection}
+      variant="product"
+      eyebrow="Available Pieces"
       title={product.name}
-      intro={product.longDescription}
     >
       {isDevUnpublishedPreview ? (
         <div className="mb-6 rounded-2xl border border-amber-300/40 bg-amber-950/50 px-4 py-3 text-sm text-amber-100">
@@ -1652,7 +1700,7 @@ function ProductDetailPage() {
           production returns 404.
         </div>
       ) : null}
-      <div className="grid gap-8 overflow-x-hidden lg:grid-cols-[1.05fr_0.95fr] lg:gap-10">
+      <div className="product-detail-layout grid gap-8 overflow-x-hidden lg:grid-cols-[minmax(0,1.05fr)_minmax(0,0.95fr)] lg:gap-10">
         <div className="min-w-0 space-y-4">
           {galleryImages.length > 0 ? (
             <div className="product-gallery-hero relative">
@@ -1704,19 +1752,16 @@ function ProductDetailPage() {
           ) : null}
         </div>
 
-        <div className="space-y-6">
-          <Card>
+        <div className="product-detail-copy min-w-0 space-y-6">
+          <Card className="product-detail-summary">
             <div className="flex flex-wrap items-center gap-3">
-              <span className="rounded-full border border-white/10 bg-black/25 px-3 py-1.5 text-sm text-stone-200">
-                {product.collection}
-              </span>
               <span
                 className={[
                   'rounded-full border px-3 py-1.5 text-sm',
                   productBadgeClassesLuxury[product.badge],
                 ].join(' ')}
               >
-                {productBadgeLabels[product.badge] ?? product.badge}
+                {availabilityLabel}
               </span>
               {product.freeShipping ? (
                 isCzechia ? (
@@ -1730,21 +1775,20 @@ function ProductDetailPage() {
                 )
               ) : null}
             </div>
-            <div className="mt-6 grid gap-4 sm:grid-cols-2">
-              <ProductPriceMeta priceFrom={product.priceFrom} price={product.price} />
-              {hasDisplayableDimensions(product.dimensions) ? (
-                <ProductMeta label="Dimensions" value={product.dimensions} />
-              ) : null}
-              <ProductMeta label="Wood Type" value={product.woodType} />
-              <ProductMeta label="Materials" value={product.materials || 'Selected materials'} />
-              {galleryImages.length > 0 ? (
-                <ProductMeta
-                  label="Photos"
-                  value={`${galleryImages.length} image${galleryImages.length === 1 ? '' : 's'}`}
+
+            {/* Single description path: ProductDetailInfo → ProductDescription only */}
+            <ProductDetailInfo
+              product={product}
+              galleryImageCount={galleryImages.length}
+              availabilityLabel={availabilityLabel}
+              priceValue={
+                <FormattedPrice
+                  price={product.priceFrom || product.price}
+                  className="text-stone-100"
                 />
-              ) : null}
-            </div>
-            <p className="mt-6 leading-8 text-stone-300">{product.longDescription}</p>
+              }
+            />
+
             {socialProof ? <ProductSocialProof review={socialProof} /> : null}
             <div className="mt-8 flex flex-col gap-3">
               {product.isAvailable ? (
@@ -1768,50 +1812,10 @@ function ProductDetailPage() {
             </div>
             {showBoardCareUpsell ? <BoardCareUpsell product={product} /> : null}
           </Card>
-          {product.features?.length ? (
-            <Card>
-              <h2 className="font-serif text-3xl text-white">Features</h2>
-              <ul className="mt-5 space-y-3 text-stone-300">
-                {product.features.map((feature) => (
-                  <li key={feature} className="rounded-2xl border border-white/10 bg-black/20 px-4 py-3">
-                    {feature}
-                  </li>
-                ))}
-              </ul>
-            </Card>
-          ) : null}
-          {product.perfectFor?.length ? (
-            <Card>
-              <h2 className="font-serif text-3xl text-white">Perfect For</h2>
-              <ul className="mt-5 space-y-3 text-stone-300">
-                {product.perfectFor.map((item) => (
-                  <li key={item} className="rounded-2xl border border-white/10 bg-black/20 px-4 py-3">
-                    {item}
-                  </li>
-                ))}
-              </ul>
-            </Card>
-          ) : null}
-          {product.whyThisPiece || product.whyEndGrain ? (
-            <Card>
-              <h2 className="font-serif text-3xl text-white">
-                {product.whyEndGrain ? 'Why End Grain' : 'Why This Piece'}
-              </h2>
-              <p className="mt-5 leading-8 text-stone-300">
-                {product.whyEndGrain || product.whyThisPiece}
-              </p>
-            </Card>
-          ) : null}
-          {product.careInstructions ? (
-            <Card>
-              <h2 className="font-serif text-3xl text-white">Care Instructions</h2>
-              <p className="mt-5 leading-8 text-stone-300">{product.careInstructions}</p>
-            </Card>
-          ) : null}
           {product.shippingNote ? (
             <Card>
-              <h2 className="font-serif text-3xl text-white">Returns / Shipping</h2>
-              <p className="mt-5 leading-8 text-stone-300">
+              <h2 className="font-display text-2xl text-white sm:text-3xl">Returns / Shipping</h2>
+              <p className="product-description__body mt-5">
                 {localizeShippingNote(product.shippingNote)}
               </p>
             </Card>
