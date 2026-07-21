@@ -1,4 +1,5 @@
 import productImageInventory from './product-image-inventory.json'
+import { resolveProductDisplayImages } from './resolveProductDisplayImages.js'
 
 export type ProductStatus =
   | 'Available'
@@ -76,6 +77,11 @@ export type Product = {
   whyThisPiece?: string
   whyEndGrain?: string
   careInstructions?: string
+  /** Present on Etsy-backed catalogue products */
+  source?: 'etsy' | 'hardcoded'
+  listingId?: number
+  useLocalImages?: boolean
+  websiteStatus?: string
 }
 
 export const ETSY_SHOP_URL = 'https://www.etsy.com/shop/DomsConcepts'
@@ -149,20 +155,12 @@ export function getProductImageFolder(
 }
 
 export function getProductRealImages(
-  product: Pick<Product, 'id' | 'imageFolder' | 'galleryImages' | 'mainImage'>,
+  product: Pick<
+    Product,
+    'id' | 'imageFolder' | 'galleryImages' | 'mainImage' | 'source' | 'useLocalImages'
+  >,
 ) {
-  const folder = getProductImageFolder(product)
-  const fromInventory = imageInventory[folder] ?? imageInventory[product.id]
-  if (fromInventory?.length) {
-    return sortProductImagesByNumericFilename(fromInventory)
-  }
-
-  const candidates =
-    product.galleryImages.length > 0 ? product.galleryImages : [product.mainImage]
-
-  return sortProductImagesByNumericFilename(
-    candidates.filter(Boolean).filter((image) => !isLikelyPlaceholderPath(image)),
-  )
+  return resolveProductDisplayImages(product, { inventory: imageInventory })
 }
 
 export function hasProductMainImage(
@@ -341,8 +339,8 @@ export function getProductEnquiryHref(product: Pick<Product, 'name'>): string {
   return `/custom-orders?product=${encodeURIComponent(product.name)}#custom-quote-form`
 }
 
-export function getProductDetailHref(product: Pick<Product, 'id'>): string {
-  return `/available-pieces/${product.id}`
+export function getProductDetailHref(product: Pick<Product, 'id' | 'slug'>): string {
+  return `/available-pieces/${product.slug || product.id}`
 }
 
 export function getProductEtsyHref(product: Pick<Product, 'etsyUrl'>): string {
@@ -360,7 +358,7 @@ export function getProductPrimaryAction(product: Product): ProductButtonAction {
 
   if (product.isSold) {
     return {
-      label: 'Request Similar Piece',
+      label: 'Request something similar',
       href: getProductEnquiryHref(product),
       external: false,
     }
@@ -383,7 +381,7 @@ export function getProductPrimaryAction(product: Product): ProductButtonAction {
 
 export function getProductSecondaryAction(product: Product): ProductButtonAction {
   return {
-    label: 'Ask about this piece',
+    label: 'Request something similar',
     href: getProductEnquiryHref(product),
     external: false,
   }
@@ -1243,6 +1241,12 @@ export function getProductById(productId: string, items: Product[] = products) {
   return items.find((product) => product.id === productId)
 }
 
+export function getProductBySlugOrId(identifier: string, items: Product[] = products) {
+  return items.find(
+    (product) => product.slug === identifier || product.id === identifier,
+  )
+}
+
 export function getPublicProductById(productId: string, items: Product[] = products) {
   const product = getProductById(productId, items)
   if (!product || !isPubliclyRoutable(product)) {
@@ -1369,9 +1373,14 @@ export function getAvailablePiecesMaterialHref(key: ProductMaterialKey) {
 }
 
 export function getHomepageFeaturedProducts(items: Product[], limit = 10) {
-  const byId = new Map(
-    items.filter(isShopGridVisible).map((product) => [product.id, product]),
-  )
+  const visible = items.filter(isShopGridVisible)
+
+  const featured = sortProducts(visible.filter((product) => product.featured))
+  if (featured.length > 0) {
+    return featured.slice(0, limit)
+  }
+
+  const byId = new Map(visible.map((product) => [product.id, product]))
 
   const curated = HOMEPAGE_FEATURED_PRODUCT_IDS.map((id) => byId.get(id)).filter(
     (product): product is Product => Boolean(product),
@@ -1383,9 +1392,7 @@ export function getHomepageFeaturedProducts(items: Product[], limit = 10) {
 
   // Fallback: fill from remaining shop-visible published products.
   const curatedIds = new Set(curated.map((product) => product.id))
-  const extras = items
-    .filter(isShopGridVisible)
-    .filter((product) => !curatedIds.has(product.id))
+  const extras = visible.filter((product) => !curatedIds.has(product.id))
 
   return [...curated, ...extras].slice(0, limit)
 }

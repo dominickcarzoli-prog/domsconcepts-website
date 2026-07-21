@@ -280,17 +280,62 @@ export async function saveEtsyTokens(tokens, env) {
 }
 
 /**
- * Server-only: return a usable Etsy access token, refreshing via D1 when needed.
- * Never expose this to public API responses.
+ * Sanitize upstream error text — strip tokens/secrets patterns, cap length.
+ * @param {unknown} body
+ * @param {string} [rawText]
+ * @returns {string | null}
+ */
+export function sanitizeUpstreamMessage(body, rawText) {
+  let message = null
+  if (body && typeof body === 'object') {
+    const b = /** @type {Record<string, unknown>} */ (body)
+    const candidate =
+      b.error_description ||
+      b.error ||
+      b.message ||
+      (b.error && typeof b.error === 'object'
+        ? /** @type {Record<string, unknown>} */ (b.error).message
+        : null)
+    if (candidate != null) message = String(candidate)
+  }
+  if (!message && rawText) message = String(rawText)
+
+  if (!message) return null
+
+  let cleaned = message
+    .replace(/Bearer\s+\S+/gi, 'Bearer [redacted]')
+    .replace(/access_token[=:]\s*\S+/gi, 'access_token=[redacted]')
+    .replace(/refresh_token[=:]\s*\S+/gi, 'refresh_token=[redacted]')
+    .replace(/[0-9a-f]{8,}\.[A-Za-z0-9_-]{10,}/g, '[redacted-token]')
+  if (cleaned.length > 180) cleaned = `${cleaned.slice(0, 180)}…`
+  return cleaned
+}
+
+/**
+ * Structured access-token resolution with safe stage diagnostics.
+ * Never returns or logs token/secret values.
  *
  * @param {{ CATALOGUE_DB?: D1Database, ETSY_API_KEY?: string, ETSY_SHARED_SECRET?: string }} env
- * @returns {Promise<string | null>}
+ * @returns {Promise<
+ *   | { ok: true, accessToken: string, refreshed: boolean, stage: string }
+ *   | { ok: false, stage: string, error: string, message: string, upstreamStatus?: number, upstreamMessage?: string | null, contentType?: string | null }
+ * >}
  */
-export async function getValidEtsyAccessToken(env) {
+export async function resolveEtsyAccessToken(env) {
   const db = env && env.CATALOGUE_DB
   if (!db) {
-    console.log('[etsy-oauth] getValidEtsyAccessToken: missing CATALOGUE_DB')
-    return null
+    console.log(
+      JSON.stringify({
+        stage: 'oauth-token-loaded',
+        errorCategory: 'storage_not_configured',
+      }),
+    )
+    return {
+      ok: false,
+      stage: 'oauth-token-loaded',
+      error: 'storage_not_configured',
+      message: 'CATALOGUE_DB D1 binding is not available.',
+    }
   }
 
   let row
@@ -303,30 +348,71 @@ export async function getValidEtsyAccessToken(env) {
       .first()
   } catch (error) {
     console.log(
-      '[etsy-oauth] getValidEtsyAccessToken: read_failed',
-      error instanceof Error ? error.name : 'unknown',
+      JSON.stringify({
+        stage: 'oauth-token-loaded',
+        errorCategory: 'd1_error',
+        detail: error instanceof Error ? error.name : 'unknown',
+      }),
     )
-    return null
+    return {
+      ok: false,
+      stage: 'oauth-token-loaded',
+      error: 'd1_error',
+      message: 'Failed to read OAuth tokens from D1.',
+    }
   }
 
   if (!row || !row.access_token || !row.refresh_token) {
-    console.log('[etsy-oauth] getValidEtsyAccessToken: no_tokens')
-    return null
+    console.log(
+      JSON.stringify({
+        stage: 'oauth-token-loaded',
+        errorCategory: 'no_tokens',
+      }),
+    )
+    return {
+      ok: false,
+      stage: 'oauth-token-loaded',
+      error: 'oauth_unavailable',
+      message: 'No Etsy OAuth tokens stored. Authorize the shop first.',
+    }
   }
+
+  console.log(
+    JSON.stringify({
+      stage: 'oauth-token-loaded',
+      errorCategory: null,
+      hasToken: true,
+      expiresAt: Number(row.expires_at) || null,
+    }),
+  )
 
   const now = Math.floor(Date.now() / 1000)
   const expiresAt = Number(row.expires_at) || 0
   if (expiresAt - now > TOKEN_SKEW_SECONDS) {
-    return row.access_token
+    return {
+      ok: true,
+      accessToken: row.access_token,
+      refreshed: false,
+      stage: 'oauth-token-loaded',
+    }
   }
+
+  console.log(
+    JSON.stringify({
+      stage: 'oauth-refresh-attempted',
+      errorCategory: null,
+      expiresAt,
+    }),
+  )
 
   const secrets = requireEtsySecrets(env)
   if (!secrets.ok) {
-    console.log(
-      '[etsy-oauth] getValidEtsyAccessToken: secrets',
-      secrets.error,
-    )
-    return null
+    return {
+      ok: false,
+      stage: 'oauth-refresh-attempted',
+      error: secrets.error,
+      message: secrets.message,
+    }
   }
 
   try {
@@ -345,15 +431,38 @@ export async function getValidEtsyAccessToken(env) {
       body,
     })
 
-    if (!tokenRes.ok) {
-      console.log(
-        '[etsy-oauth] getValidEtsyAccessToken: refresh_failed',
-        tokenRes.status,
-      )
-      return null
+    const contentType = tokenRes.headers.get('content-type')
+    const rawText = await tokenRes.text()
+    let payload = null
+    try {
+      payload = rawText ? JSON.parse(rawText) : null
+    } catch {
+      payload = null
     }
 
-    const payload = await tokenRes.json()
+    if (!tokenRes.ok) {
+      const upstreamMessage = sanitizeUpstreamMessage(payload, rawText)
+      console.log(
+        JSON.stringify({
+          stage: 'oauth-refresh-attempted',
+          upstreamStatus: tokenRes.status,
+          upstreamPath: '/v3/public/oauth/token',
+          contentType,
+          errorCategory: 'refresh_failed',
+          upstreamMessage,
+        }),
+      )
+      return {
+        ok: false,
+        stage: 'oauth-refresh-attempted',
+        error: 'oauth_refresh_failed',
+        message: 'Etsy token refresh failed.',
+        upstreamStatus: tokenRes.status,
+        upstreamMessage,
+        contentType,
+      }
+    }
+
     const accessToken = payload && payload.access_token
     const refreshToken = (payload && payload.refresh_token) || row.refresh_token
     const expiresIn = Number(payload && payload.expires_in) || 0
@@ -363,8 +472,18 @@ export async function getValidEtsyAccessToken(env) {
       payload && payload.scope != null ? payload.scope : row.scope
 
     if (!accessToken) {
-      console.log('[etsy-oauth] getValidEtsyAccessToken: incomplete_refresh')
-      return null
+      console.log(
+        JSON.stringify({
+          stage: 'oauth-refresh-attempted',
+          errorCategory: 'incomplete_refresh',
+        }),
+      )
+      return {
+        ok: false,
+        stage: 'oauth-refresh-attempted',
+        error: 'oauth_refresh_failed',
+        message: 'Etsy refresh response was incomplete.',
+      }
     }
 
     const saveResult = await saveEtsyTokens(
@@ -380,19 +499,57 @@ export async function getValidEtsyAccessToken(env) {
 
     if (!saveResult.ok) {
       console.log(
-        '[etsy-oauth] getValidEtsyAccessToken: save_after_refresh',
-        saveResult.error,
+        JSON.stringify({
+          stage: 'oauth-refresh-succeeded',
+          errorCategory: saveResult.error,
+        }),
       )
-      return null
+      return {
+        ok: false,
+        stage: 'oauth-refresh-succeeded',
+        error: saveResult.error,
+        message: saveResult.message,
+      }
     }
 
-    console.log('[etsy-oauth] getValidEtsyAccessToken: refreshed')
-    return accessToken
+    console.log(
+      JSON.stringify({
+        stage: 'oauth-refresh-succeeded',
+        errorCategory: null,
+      }),
+    )
+
+    return {
+      ok: true,
+      accessToken,
+      refreshed: true,
+      stage: 'oauth-refresh-succeeded',
+    }
   } catch (error) {
     console.log(
-      '[etsy-oauth] getValidEtsyAccessToken: refresh_error',
-      error instanceof Error ? error.name : 'unknown',
+      JSON.stringify({
+        stage: 'oauth-refresh-attempted',
+        errorCategory: 'refresh_error',
+        detail: error instanceof Error ? error.name : 'unknown',
+      }),
     )
-    return null
+    return {
+      ok: false,
+      stage: 'oauth-refresh-attempted',
+      error: 'oauth_refresh_failed',
+      message: 'Etsy token refresh threw an unexpected error.',
+    }
   }
+}
+
+/**
+ * Server-only: return a usable Etsy access token, refreshing via D1 when needed.
+ * Never expose this to public API responses.
+ *
+ * @param {{ CATALOGUE_DB?: D1Database, ETSY_API_KEY?: string, ETSY_SHARED_SECRET?: string }} env
+ * @returns {Promise<string | null>}
+ */
+export async function getValidEtsyAccessToken(env) {
+  const result = await resolveEtsyAccessToken(env)
+  return result.ok ? result.accessToken : null
 }

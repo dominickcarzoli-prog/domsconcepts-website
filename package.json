@@ -8,6 +8,7 @@
     "audit:images": "node scripts/audit-product-images.mjs",
     "prebuild": "node scripts/audit-product-images.mjs && node scripts/audit-bespoke-images.mjs",
     "build": "vite build",
+    "test": "node --test tests/**/*.test.js",
     "lint": "oxlint",
     "preview": "vite preview"
   },

@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useMemo, useState } from 'react'
+import AdminCataloguePage from './admin/AdminCataloguePage.jsx'
 import {
   BrowserRouter,
   Link,
@@ -50,6 +51,7 @@ import {
   ETSY_SHOP_URL,
   getHomepageFeaturedProducts,
   getProductById,
+  getProductDetailHref,
   getProductEtsyHref,
   getProductMaterialKey,
   getProductPrimaryAction,
@@ -61,8 +63,9 @@ import {
   isPublished,
   productIdRedirects,
   products,
-  shopProducts,
 } from './data/products'
+import { usePublicCatalogue } from './hooks/usePublicCatalogue'
+import { usePublicProductDetail } from './hooks/usePublicProductDetail'
 import {
   getNextSundayDeadlinePrague,
   getWorkshopDropEtsyHref,
@@ -176,7 +179,10 @@ function App() {
   return (
     <BrowserRouter>
       <ScrollToTop />
-      <SiteLayout />
+      <Routes>
+        <Route path="/admin/catalogue" element={<AdminCataloguePage />} />
+        <Route path="*" element={<SiteLayout />} />
+      </Routes>
     </BrowserRouter>
   )
 }
@@ -1091,7 +1097,12 @@ function WorkshopDropCountdown() {
 }
 
 function WorkshopDropSection() {
-  const product = getProductById(workshopDrop.productId)
+  const { products: catalogueProducts } = usePublicCatalogue()
+  const product =
+    catalogueProducts.find(
+      (item) =>
+        item.id === workshopDrop.productId || item.slug === workshopDrop.productId,
+    ) || getProductById(workshopDrop.productId)
   const publishedProduct = product && isPublished(product) ? product : null
   const imageSrc = publishedProduct
     ? getProductRealImages(publishedProduct)[0] || publishedProduct.mainImage
@@ -1249,7 +1260,8 @@ function useIsMobileViewport(maxWidthPx = 767) {
 
 function HomePage() {
   const isMobile = useIsMobileViewport(767)
-  const featuredProducts = getHomepageFeaturedProducts(shopProducts, 10).filter(
+  const { products: catalogueProducts } = usePublicCatalogue()
+  const featuredProducts = getHomepageFeaturedProducts(catalogueProducts, 10).filter(
     (p) => p.id !== workshopDrop.productId && p.slug !== workshopDrop.productId,
   )
   const visibleProducts = isMobile ? featuredProducts.slice(0, 3) : featuredProducts
@@ -1499,12 +1511,13 @@ function AvailablePiecesPage() {
   const materialParam = searchParams.get('material')
   const activeMaterial = isProductMaterialKey(materialParam) ? materialParam : null
   const [activeCollection, setActiveCollection] = useState('All')
-  const visibleCollections = ['All', ...getShopCollections()]
+  const { products: catalogueProducts } = usePublicCatalogue()
+  const visibleCollections = ['All', ...getShopCollections(catalogueProducts)]
   const filteredProducts = activeMaterial
-    ? shopProducts.filter((product) => getProductMaterialKey(product) === activeMaterial)
+    ? catalogueProducts.filter((product) => getProductMaterialKey(product) === activeMaterial)
     : activeCollection === 'All'
-      ? shopProducts
-      : shopProducts.filter((product) => product.collection === activeCollection)
+      ? catalogueProducts
+      : catalogueProducts.filter((product) => product.collection === activeCollection)
 
   const selectCollection = (collection) => {
     setActiveCollection(collection)
@@ -1562,7 +1575,7 @@ function ProductDetailPage() {
     localizeShippingNote,
   } = useCurrency()
   const redirectTarget = productId ? productIdRedirects[productId] : undefined
-  const product = productId ? getProductById(productId) : undefined
+  const { product, loading, notFound } = usePublicProductDetail(productId || '')
   const isDevUnpublishedPreview =
     Boolean(import.meta.env.DEV) && Boolean(product) && !isPublished(product)
   const rawGalleryImages = product ? getProductRealImages(product) : []
@@ -1591,7 +1604,17 @@ function ProductDetailPage() {
     return <Navigate to={`/available-pieces/${redirectTarget}`} replace />
   }
 
-  if (!product || (!isPublished(product) && !isDevUnpublishedPreview)) {
+  if (loading) {
+    return (
+      <PageShell
+        eyebrow="Available Pieces"
+        title="Loading piece…"
+        intro="Fetching the latest catalogue details."
+      />
+    )
+  }
+
+  if (!product || notFound || (!isPublished(product) && !isDevUnpublishedPreview)) {
     return (
       <PageShell
         eyebrow="Available Pieces"
@@ -1608,6 +1631,7 @@ function ProductDetailPage() {
   const showBoardCareUpsell = product.careAddOnAvailable
   const socialProof = getProductSocialProof(product)
   const productOgImage = primaryGalleryImage || product.image || product.mainImage
+  const detailSlug = product.slug || product.id
 
   return (
     <>
@@ -1615,7 +1639,7 @@ function ProductDetailPage() {
         title={`${product.name} | Dom's Concepts`}
         description={product.shortDescription || product.longDescription || product.description}
         ogImage={productOgImage}
-        canonicalPath={`/available-pieces/${product.id}`}
+        canonicalPath={`/available-pieces/${detailSlug}`}
       />
     <PageShell
       eyebrow={product.collection}
@@ -1723,11 +1747,20 @@ function ProductDetailPage() {
             <p className="mt-6 leading-8 text-stone-300">{product.longDescription}</p>
             {socialProof ? <ProductSocialProof review={socialProof} /> : null}
             <div className="mt-8 flex flex-col gap-3">
-              <ProductActionButton action={primaryAction} className={goldButtonClassName} />
-              <ProductActionButton
-                action={secondaryAction}
-                className={outlineButtonLightClassName}
-              />
+              {product.isAvailable ? (
+                <>
+                  <ProductActionButton action={primaryAction} className={goldButtonClassName} />
+                  <ProductActionButton
+                    action={secondaryAction}
+                    className={outlineButtonLightClassName}
+                  />
+                </>
+              ) : (
+                <ProductActionButton
+                  action={secondaryAction}
+                  className={outlineButtonLightClassName}
+                />
+              )}
               <EtsyPriceNote className="mt-1" />
               <SecondaryLink to="/available-pieces" className="mt-1 self-start text-stone-400">
                 Back to collection
@@ -2692,11 +2725,10 @@ function ProductActionButton({ action, className = goldButtonClassNameCompact })
 
 function ProductCard({ piece, variant = 'luxury' }) {
   const { isCzechia, shippingMessage } = useCurrency()
-  const action = getProductPrimaryAction(piece)
   const isLuxury = variant === 'luxury'
   const badgeLabel = productBadgeLabels[piece.badge] ?? piece.badge
-  const detailHref = `/available-pieces/${piece.id}`
-  // Always prefer inventory-ordered 01.jpg (canonical card/hero), not stale overrides.
+  const detailHref = getProductDetailHref(piece)
+  // Same helper as Available Pieces + detail: Etsy-first when catalogue mode is on.
   const cardImage = getProductRealImages(piece)[0] || piece.image || piece.mainImage
 
   return (
@@ -2768,7 +2800,6 @@ function ProductCard({ piece, variant = 'luxury' }) {
           >
             View piece →
           </Link>
-          <ProductActionButton action={action} />
         </div>
       </div>
     </article>

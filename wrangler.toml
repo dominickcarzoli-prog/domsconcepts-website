@@ -11,7 +11,25 @@ compatibility_date = "2026-07-20"
 [[d1_databases]]
 binding = "CATALOGUE_DB"
 database_name = "domsconcepts-catalogue"
+# Production + Cloudflare Pages preview deployments both use this remote DB
+# (no separate [env.preview] D1 override). Same binding name: CATALOGUE_DB.
 database_id = "a81fd4c2-c52b-4cc8-8b69-7d7f10076d2d"
-# Required for local Pages + D1 (`wrangler pages dev`).
+# Local-only Miniflare DB for `wrangler pages dev` / `d1 … --local`.
+# Setting this does NOT create a separate remote database. Wrangler may still
+# print "Executing on preview database …" when preview_database_id is set,
+# even for `migrations apply --remote` against database_id above — check the
+# UUID in that log line equals a81fd4c2-c52b-4cc8-8b69-7d7f10076d2d.
 preview_database_id = "CATALOGUE_DB"
 migrations_dir = "migrations"
+
+# ---------------------------------------------------------------------------
+# Etsy catalogue schedule
+# Handler: functions/_scheduled.js → syncEtsyCatalogue(env)
+# Requested cron: */30 * * * *
+#
+# Cloudflare's current platform docs do NOT support Cron Triggers for this
+# Pages + functions/ project structure. Do not uncomment a [triggers] block
+# here unless this site is migrated to a Worker-based deployment target.
+# ---------------------------------------------------------------------------
+# [triggers]
+# crons = [ "*/30 * * * *" ]
