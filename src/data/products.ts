@@ -77,11 +77,20 @@ export type Product = {
   whyThisPiece?: string
   whyEndGrain?: string
   careInstructions?: string
+  construction?: string
+  finish?: string
+  intendedUse?: string
+  battery?: string
+  includedHardware?: string
+  options?: string
+  capacity?: string
   /** Present on Etsy-backed catalogue products */
   source?: 'etsy' | 'hardcoded'
   listingId?: number
   useLocalImages?: boolean
   websiteStatus?: string
+  /** English description retained for structure parsing when locale copy differs */
+  englishDescription?: string
 }
 
 export const ETSY_SHOP_URL = 'https://www.etsy.com/shop/DomsConcepts'
@@ -358,7 +367,7 @@ export function getProductPrimaryAction(product: Product): ProductButtonAction {
 
   if (product.isSold) {
     return {
-      label: 'Request something similar',
+      label: 'Request Similar Piece',
       href: getProductEnquiryHref(product),
       external: false,
     }
@@ -381,7 +390,7 @@ export function getProductPrimaryAction(product: Product): ProductButtonAction {
 
 export function getProductSecondaryAction(product: Product): ProductButtonAction {
   return {
-    label: 'Request something similar',
+    label: 'Request Similar Piece',
     href: getProductEnquiryHref(product),
     external: false,
   }
@@ -420,6 +429,13 @@ type ProductInput = {
   whyThisPiece?: string
   whyEndGrain?: string
   careInstructions?: string
+  construction?: string
+  finish?: string
+  intendedUse?: string
+  battery?: string
+  includedHardware?: string
+  options?: string
+  capacity?: string
   publicationStatus?: PublicationStatus
 }
 
@@ -597,7 +613,7 @@ const rawProducts: Product[] = [
     status: 'Low in stock, only 1 left',
     publicationStatus: 'published',
     woodType: 'European oak with lux blue epoxy resin',
-    materials: 'Wood and epoxy resin',
+    materials: 'European oak and epoxy resin',
     // Canonical card/hero: styled kitchen 01.jpg (public folder). Inventory supplies full gallery.
     mainImage: '/images/products/epoxy/oak-lux-blue-epoxy/01.jpg',
     description:
@@ -628,7 +644,7 @@ const rawProducts: Product[] = [
     status: 'Low in stock, only 1 left',
     publicationStatus: 'published',
     woodType: 'European walnut with Aztec gold epoxy resin',
-    materials: 'Wood and epoxy resin',
+    materials: 'European walnut and epoxy resin',
     description:
       'This is a European walnut and Aztec gold epoxy resin serving tray. Perfect as a gift for family or friends. It has a durable, food-safe finish and is finished with a three-step finishing procedure for a long-lasting surface.',
     dimensions: '39.5 × 30 × 2.5 cm',
@@ -656,8 +672,8 @@ const rawProducts: Product[] = [
     price: 'CZK 3,290.92',
     status: 'Available',
     publicationStatus: 'published',
-    woodType: 'Oak and epoxy',
-    materials: 'Wood and epoxy',
+    woodType: 'Oak and epoxy resin',
+    materials: 'Oak and epoxy resin',
     badge: 'Available',
     buttonLabel: 'Buy on Etsy',
     galleryCount: 8,
@@ -693,11 +709,12 @@ const rawProducts: Product[] = [
     status: 'Low in stock, only 5 left',
     publicationStatus: 'published',
     woodType: 'Board care blend',
-    materials: 'Mineral oil, beeswax',
+    materials: 'Natural beeswax and food-grade mineral oil',
     description:
       'Made from 100% food-safe materials. Food-grade mineral oil and natural beeswax.',
     dimensions: 'Details coming soon',
     galleryCount: 6,
+    intendedUse: 'Conditioning and protecting unfinished or oil-finished wooden kitchenware',
     careInstructions:
       'Apply liberally to any wood surface, let it soak in, then buff off with a clean rag. The surface should be refreshed and protected.',
     features: [
@@ -759,13 +776,13 @@ const rawProducts: Product[] = [
     status: 'Available',
     publicationStatus: 'published',
     woodType: 'American black walnut with black epoxy resin',
-    materials: 'Wood and epoxy resin',
+    materials: 'Black walnut and epoxy resin',
     badge: 'Available',
     buttonLabel: 'Buy on Etsy',
     galleryCount: 7,
     description:
       'A one-of-a-kind live edge charcuterie board crafted from American black walnut, featuring a dramatic black epoxy river that follows the natural contour of the wood. Finished for food-safe serving, it is ideal for cheese, cured meats, fruit, and entertaining.',
-    dimensions: 'Details coming soon',
+    dimensions: '39 × 30 × 2 cm',
     features: [
       'Handmade from premium American black walnut',
       'Natural live edge profile preserved',
@@ -775,15 +792,16 @@ const rawProducts: Product[] = [
       'Suitable for serving and display',
     ],
     perfectFor: [
-      'Charcuterie and cheese boards',
-      'Entertaining and gifting',
-      'Customers looking for a unique live edge piece',
-      'Home décor with natural wood character',
+      'Charcuterie and cheese service',
+      'Appetizer presentation',
+      'Table styling',
+      'Wedding and housewarming gifts',
+      'Decorative serving displays',
     ],
     whyThisPiece:
       'Live edge walnut paired with a flowing epoxy river creates a striking serving piece that highlights the natural beauty of the timber — no two boards are ever the same.',
     careInstructions:
-      'Hand wash only. Do not soak or place in dishwasher. Dry immediately and refresh with board oil or wax as needed.',
+      'Intended for serving, presentation and decorative use. Do not cut directly on the epoxy surface. Hand wash only.',
     shippingNote: DEFAULT_SHIPPING_NOTE,
   }),
   createProduct({
@@ -862,7 +880,7 @@ const rawProducts: Product[] = [
     status: 'Available',
     publicationStatus: 'published',
     woodType: 'Walnut',
-    materials: 'Wood and hardware',
+    materials: 'Black walnut, maple, purpleheart and metal bottle opener',
     description:
       'A wall-mounted walnut bottle opener with solid hardware — a practical workshop accessory and a warm hardwood accent for kitchens, bars, or garages.',
     dimensions: 'Details coming soon',
@@ -882,7 +900,7 @@ const rawProducts: Product[] = [
     status: 'Low in stock, only 2 left',
     publicationStatus: 'published',
     woodType: 'Walnut and maple',
-    materials: 'Wood',
+    materials: 'Black walnut, maple, purpleheart and metal bottle opener',
     description:
       'Wall-mounted walnut and maple magnetic bottle opener. Perfect for wall décor or as a gift for friends and family. Possibility to custom laser engrave to make it truly unique. Send a message and custom engraving can be arranged.',
     dimensions: '26 × 11 × 2 cm',
@@ -917,10 +935,10 @@ const rawProducts: Product[] = [
     status: 'Low in stock, only 1 left',
     publicationStatus: 'published',
     woodType: 'Black walnut, maple, and mahogany',
-    materials: 'Wood',
+    materials: 'Black walnut, maple and mahogany',
     description:
       'Why settle for one function when you can have two? This handcrafted piece is both a stylish book or tablet stand and a serving board with handle. Perfect for kitchens, dining rooms, or cozy reading nooks.',
-    dimensions: '475 × 170 × 25 mm (18.7" × 6.7" × 0.98")',
+    dimensions: '475 × 170 × 25 mm',
     features: [
       'Premium mix of black walnut, maple, and mahogany',
       'Sturdy design with a smooth, food-safe finish',
@@ -928,7 +946,13 @@ const rawProducts: Product[] = [
       'Flip it down and use it as a serving board for charcuterie, cheese, or bread',
       'Elegant handle design with hanging hole for easy storage',
     ],
-    perfectFor: ['Foodies', 'Home chefs', 'Book lovers', 'Thoughtful gifting'],
+    perfectFor: [
+      'Cookbooks',
+      'Tablets',
+      'Recipe display',
+      'Kitchen counters',
+      'Gifts for home cooks and book lovers',
+    ],
     shippingNote: DEFAULT_SHIPPING_NOTE,
   }),
   createProduct({
@@ -1024,7 +1048,7 @@ const rawProducts: Product[] = [
     status: 'Low in stock, only 5 left',
     publicationStatus: 'published',
     woodType: 'Beeswax conditioning blend',
-    materials: 'Mineral oil, beeswax, carnauba wax',
+    materials: 'Natural beeswax, food-grade mineral oil and carnauba wax',
     description:
       'Made from 100% food-safe materials. Food-grade mineral oil, natural beeswax, and carnauba wax.',
     dimensions: 'Details coming soon',
@@ -1082,16 +1106,16 @@ const rawProducts: Product[] = [
     status: 'Low in stock, only 1 left',
     publicationStatus: 'published',
     woodType: 'Oak',
-    materials: 'Wood',
+    materials: 'Solid oak and clock mechanism',
     description:
       'Bring a touch of nature and modern design into your home with this unique oak clock.',
-    dimensions: '29 cm',
+    dimensions: '29 cm diameter',
+    battery: '1 × AA battery included',
     features: [
       'Solid oak wood showcasing natural grain and texture',
       'Elegant stormy grey epoxy detail adding depth and contrast',
       'Silent quartz movement — no ticking, just peace and style',
       'Perfect as a gift or statement piece for a living room, office, or kitchen',
-      '1× AA battery included',
     ],
     shippingNote: DEFAULT_SHIPPING_NOTE,
   }),

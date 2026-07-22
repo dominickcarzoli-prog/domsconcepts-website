@@ -1,11 +1,18 @@
 import { useCurrency } from './useCurrency'
 
 /**
- * Display a product price with currency conversion.
+ * Display a product price with currency conversion at render time.
+ * Prefer raw `amount` + `sourceCurrency` when available; otherwise parse `price` labels.
  * Shows a subtle skeleton until currency + rates are ready (avoids wrong-currency flash).
  */
-export function FormattedPrice({ price, className = '', as: Component = 'span' }) {
-  const { formatProductPrice, pricesReady } = useCurrency()
+export function FormattedPrice({
+  price,
+  amount = null,
+  sourceCurrency = null,
+  className = '',
+  as: Component = 'span',
+}) {
+  const { formatProductPrice, pricesReady, currency } = useCurrency()
 
   if (!pricesReady) {
     return (
@@ -16,5 +23,13 @@ export function FormattedPrice({ price, className = '', as: Component = 'span' }
     )
   }
 
-  return <Component className={className}>{formatProductPrice(price)}</Component>
+  return (
+    <Component
+      className={className}
+      data-active-currency={currency}
+      data-source-currency={sourceCurrency || undefined}
+    >
+      {formatProductPrice(price, { amount, sourceCurrency })}
+    </Component>
+  )
 }

@@ -139,10 +139,36 @@ function LoginScreen({ onLogin }) {
   )
 }
 
+function englishSourceForProduct(product) {
+  return {
+    title: (product.customTitle || product.title || '').trim(),
+    description: (product.customDescription || product.description || '').trim(),
+  }
+}
+
+function TranslationStatusBadge({ locale, complete }) {
+  const prefix = locale === 'de' ? 'GERMAN' : 'CZECH'
+  return (
+    <StatusPill tone={complete ? 'good' : 'warn'}>
+      {complete ? `${prefix} COMPLETE` : `${prefix} MISSING`}
+    </StatusPill>
+  )
+}
+
 function ProductEditor({ product, onSave, onClose, saving }) {
+  const source = englishSourceForProduct(product)
+  const [langTab, setLangTab] = useState('review')
   const [draft, setDraft] = useState({
     customTitle: product.customTitle || '',
     customDescription: product.customDescription || '',
+    customTitleDe: product.customTitleDe || '',
+    customDescriptionDe: product.customDescriptionDe || '',
+    seoTitleDe: product.seoTitleDe || '',
+    seoDescriptionDe: product.seoDescriptionDe || '',
+    customTitleCs: product.customTitleCs || '',
+    customDescriptionCs: product.customDescriptionCs || '',
+    seoTitleCs: product.seoTitleCs || '',
+    seoDescriptionCs: product.seoDescriptionCs || '',
     slug: product.slug || '',
     category: product.category || '',
     featured: product.featured,
@@ -151,10 +177,25 @@ function ProductEditor({ product, onSave, onClose, saving }) {
     useLocalImages: product.useLocalImages,
   })
 
+  const germanComplete = Boolean(
+    draft.customTitleDe.trim() && draft.customDescriptionDe.trim(),
+  )
+  const czechComplete = Boolean(
+    draft.customTitleCs.trim() && draft.customDescriptionCs.trim(),
+  )
+
   const handleSave = () => {
     onSave(product.listingId, {
       custom_title: draft.customTitle.trim() || null,
       custom_description: draft.customDescription.trim() || null,
+      custom_title_de: draft.customTitleDe.trim() || null,
+      custom_description_de: draft.customDescriptionDe.trim() || null,
+      seo_title_de: draft.seoTitleDe.trim() || null,
+      seo_description_de: draft.seoDescriptionDe.trim() || null,
+      custom_title_cs: draft.customTitleCs.trim() || null,
+      custom_description_cs: draft.customDescriptionCs.trim() || null,
+      seo_title_cs: draft.seoTitleCs.trim() || null,
+      seo_description_cs: draft.seoDescriptionCs.trim() || null,
       slug: draft.slug.trim() || null,
       website_category: draft.category || null,
       website_featured: draft.featured,
@@ -164,31 +205,274 @@ function ProductEditor({ product, onSave, onClose, saving }) {
     })
   }
 
+  const copyEnglish = (locale) => {
+    if (locale === 'de') {
+      setDraft((d) => ({
+        ...d,
+        customTitleDe: source.title,
+        customDescriptionDe: source.description,
+      }))
+      return
+    }
+    setDraft((d) => ({
+      ...d,
+      customTitleCs: source.title,
+      customDescriptionCs: source.description,
+    }))
+  }
+
+  const clearLocale = (locale) => {
+    if (locale === 'de') {
+      setDraft((d) => ({
+        ...d,
+        customTitleDe: '',
+        customDescriptionDe: '',
+        seoTitleDe: '',
+        seoDescriptionDe: '',
+      }))
+      return
+    }
+    setDraft((d) => ({
+      ...d,
+      customTitleCs: '',
+      customDescriptionCs: '',
+      seoTitleCs: '',
+      seoDescriptionCs: '',
+    }))
+  }
+
   return (
     <div className="mt-4 space-y-3 rounded-xl border border-white/10 bg-black/25 p-4">
+      <p className="rounded-lg border border-amber-200/20 bg-amber-950/20 px-3 py-2 text-xs leading-5 text-amber-100/90">
+        Translations are stored on the website and are never overwritten by Etsy sync.
+      </p>
+
+      <div className="flex flex-wrap items-center gap-2">
+        {[
+          { id: 'review', label: 'Review' },
+          { id: 'en', label: 'English' },
+          { id: 'de', label: 'Deutsch' },
+          { id: 'cs', label: 'Čeština' },
+        ].map((tab) => (
+          <button
+            key={tab.id}
+            type="button"
+            onClick={() => setLangTab(tab.id)}
+            className={[
+              'rounded-full border px-3 py-1.5 text-[11px] uppercase tracking-[0.16em] transition',
+              langTab === tab.id
+                ? 'border-amber-200/40 bg-amber-950/40 text-amber-100'
+                : 'border-white/10 text-stone-400 hover:text-stone-200',
+            ].join(' ')}
+          >
+            {tab.label}
+          </button>
+        ))}
+        <TranslationStatusBadge locale="de" complete={germanComplete} />
+        <TranslationStatusBadge locale="cs" complete={czechComplete} />
+      </div>
+
+      <div className="flex flex-wrap gap-2">
+        <button
+          type="button"
+          className="btn-outline !px-3 !py-1.5 !text-xs"
+          onClick={() => copyEnglish('de')}
+        >
+          Copy English → DE
+        </button>
+        <button
+          type="button"
+          className="btn-outline !px-3 !py-1.5 !text-xs"
+          onClick={() => copyEnglish('cs')}
+        >
+          Copy English → CS
+        </button>
+        <button
+          type="button"
+          className="btn-outline !px-3 !py-1.5 !text-xs"
+          onClick={() => clearLocale('de')}
+        >
+          Clear German
+        </button>
+        <button
+          type="button"
+          className="btn-outline !px-3 !py-1.5 !text-xs"
+          onClick={() => clearLocale('cs')}
+        >
+          Clear Czech
+        </button>
+      </div>
+
+      {langTab === 'review' ? (
+        <div className="grid gap-3 lg:grid-cols-3">
+          <div className="space-y-2 rounded-lg border border-white/10 bg-black/20 p-3">
+            <p className="text-[10px] uppercase tracking-[0.18em] text-stone-500">
+              English source
+            </p>
+            <p className="text-sm font-medium text-stone-100">{source.title || '—'}</p>
+            <p className="whitespace-pre-wrap text-xs leading-5 text-stone-400">
+              {source.description || '—'}
+            </p>
+          </div>
+          <div className="space-y-2 rounded-lg border border-white/10 bg-black/20 p-3">
+            <p className="text-[10px] uppercase tracking-[0.18em] text-stone-500">German</p>
+            <input
+              value={draft.customTitleDe}
+              onChange={(e) => setDraft((d) => ({ ...d, customTitleDe: e.target.value }))}
+              className="w-full rounded-lg border border-white/10 bg-black/30 px-3 py-2 text-sm text-stone-100"
+              placeholder="German title"
+            />
+            <textarea
+              rows={8}
+              value={draft.customDescriptionDe}
+              onChange={(e) => setDraft((d) => ({ ...d, customDescriptionDe: e.target.value }))}
+              className="w-full rounded-lg border border-white/10 bg-black/30 px-3 py-2 text-sm text-stone-100"
+              placeholder="German description"
+            />
+          </div>
+          <div className="space-y-2 rounded-lg border border-white/10 bg-black/20 p-3">
+            <p className="text-[10px] uppercase tracking-[0.18em] text-stone-500">Czech</p>
+            <input
+              value={draft.customTitleCs}
+              onChange={(e) => setDraft((d) => ({ ...d, customTitleCs: e.target.value }))}
+              className="w-full rounded-lg border border-white/10 bg-black/30 px-3 py-2 text-sm text-stone-100"
+              placeholder="Czech title"
+            />
+            <textarea
+              rows={8}
+              value={draft.customDescriptionCs}
+              onChange={(e) => setDraft((d) => ({ ...d, customDescriptionCs: e.target.value }))}
+              className="w-full rounded-lg border border-white/10 bg-black/30 px-3 py-2 text-sm text-stone-100"
+              placeholder="Czech description"
+            />
+          </div>
+        </div>
+      ) : null}
+
       <div className="grid gap-3 sm:grid-cols-2">
-        <label className="block sm:col-span-2">
-          <span className="text-[10px] uppercase tracking-[0.18em] text-stone-500">
-            Website title
-          </span>
-          <input
-            value={draft.customTitle}
-            onChange={(e) => setDraft((d) => ({ ...d, customTitle: e.target.value }))}
-            className="mt-1 w-full rounded-lg border border-white/10 bg-black/30 px-3 py-2 text-sm text-stone-100"
-            placeholder={product.title}
-          />
-        </label>
-        <label className="block sm:col-span-2">
-          <span className="text-[10px] uppercase tracking-[0.18em] text-stone-500">
-            Website description
-          </span>
-          <textarea
-            rows={3}
-            value={draft.customDescription}
-            onChange={(e) => setDraft((d) => ({ ...d, customDescription: e.target.value }))}
-            className="mt-1 w-full rounded-lg border border-white/10 bg-black/30 px-3 py-2 text-sm text-stone-100"
-          />
-        </label>
+        {langTab === 'en' ? (
+          <>
+            <label className="block sm:col-span-2">
+              <span className="text-[10px] uppercase tracking-[0.18em] text-stone-500">
+                Website title
+              </span>
+              <input
+                value={draft.customTitle}
+                onChange={(e) => setDraft((d) => ({ ...d, customTitle: e.target.value }))}
+                className="mt-1 w-full rounded-lg border border-white/10 bg-black/30 px-3 py-2 text-sm text-stone-100"
+                placeholder={product.title}
+              />
+            </label>
+            <label className="block sm:col-span-2">
+              <span className="text-[10px] uppercase tracking-[0.18em] text-stone-500">
+                Website description
+              </span>
+              <textarea
+                rows={3}
+                value={draft.customDescription}
+                onChange={(e) => setDraft((d) => ({ ...d, customDescription: e.target.value }))}
+                className="mt-1 w-full rounded-lg border border-white/10 bg-black/30 px-3 py-2 text-sm text-stone-100"
+              />
+            </label>
+          </>
+        ) : null}
+
+        {langTab === 'de' ? (
+          <>
+            <label className="block sm:col-span-2">
+              <span className="text-[10px] uppercase tracking-[0.18em] text-stone-500">
+                German website title
+              </span>
+              <input
+                value={draft.customTitleDe}
+                onChange={(e) => setDraft((d) => ({ ...d, customTitleDe: e.target.value }))}
+                className="mt-1 w-full rounded-lg border border-white/10 bg-black/30 px-3 py-2 text-sm text-stone-100"
+                placeholder={product.customTitle || product.title}
+              />
+            </label>
+            <label className="block sm:col-span-2">
+              <span className="text-[10px] uppercase tracking-[0.18em] text-stone-500">
+                German website description
+              </span>
+              <textarea
+                rows={4}
+                value={draft.customDescriptionDe}
+                onChange={(e) => setDraft((d) => ({ ...d, customDescriptionDe: e.target.value }))}
+                className="mt-1 w-full rounded-lg border border-white/10 bg-black/30 px-3 py-2 text-sm text-stone-100"
+              />
+            </label>
+            <label className="block sm:col-span-2">
+              <span className="text-[10px] uppercase tracking-[0.18em] text-stone-500">
+                German SEO title
+              </span>
+              <input
+                value={draft.seoTitleDe}
+                onChange={(e) => setDraft((d) => ({ ...d, seoTitleDe: e.target.value }))}
+                className="mt-1 w-full rounded-lg border border-white/10 bg-black/30 px-3 py-2 text-sm text-stone-100"
+              />
+            </label>
+            <label className="block sm:col-span-2">
+              <span className="text-[10px] uppercase tracking-[0.18em] text-stone-500">
+                German SEO description
+              </span>
+              <textarea
+                rows={2}
+                value={draft.seoDescriptionDe}
+                onChange={(e) => setDraft((d) => ({ ...d, seoDescriptionDe: e.target.value }))}
+                className="mt-1 w-full rounded-lg border border-white/10 bg-black/30 px-3 py-2 text-sm text-stone-100"
+              />
+            </label>
+          </>
+        ) : null}
+
+        {langTab === 'cs' ? (
+          <>
+            <label className="block sm:col-span-2">
+              <span className="text-[10px] uppercase tracking-[0.18em] text-stone-500">
+                Czech website title
+              </span>
+              <input
+                value={draft.customTitleCs}
+                onChange={(e) => setDraft((d) => ({ ...d, customTitleCs: e.target.value }))}
+                className="mt-1 w-full rounded-lg border border-white/10 bg-black/30 px-3 py-2 text-sm text-stone-100"
+                placeholder={product.customTitle || product.title}
+              />
+            </label>
+            <label className="block sm:col-span-2">
+              <span className="text-[10px] uppercase tracking-[0.18em] text-stone-500">
+                Czech website description
+              </span>
+              <textarea
+                rows={4}
+                value={draft.customDescriptionCs}
+                onChange={(e) => setDraft((d) => ({ ...d, customDescriptionCs: e.target.value }))}
+                className="mt-1 w-full rounded-lg border border-white/10 bg-black/30 px-3 py-2 text-sm text-stone-100"
+              />
+            </label>
+            <label className="block sm:col-span-2">
+              <span className="text-[10px] uppercase tracking-[0.18em] text-stone-500">
+                Czech SEO title
+              </span>
+              <input
+                value={draft.seoTitleCs}
+                onChange={(e) => setDraft((d) => ({ ...d, seoTitleCs: e.target.value }))}
+                className="mt-1 w-full rounded-lg border border-white/10 bg-black/30 px-3 py-2 text-sm text-stone-100"
+              />
+            </label>
+            <label className="block sm:col-span-2">
+              <span className="text-[10px] uppercase tracking-[0.18em] text-stone-500">
+                Czech SEO description
+              </span>
+              <textarea
+                rows={2}
+                value={draft.seoDescriptionCs}
+                onChange={(e) => setDraft((d) => ({ ...d, seoDescriptionCs: e.target.value }))}
+                className="mt-1 w-full rounded-lg border border-white/10 bg-black/30 px-3 py-2 text-sm text-stone-100"
+              />
+            </label>
+          </>
+        ) : null}
+
         <label className="block">
           <span className="text-[10px] uppercase tracking-[0.18em] text-stone-500">Slug</span>
           <input
@@ -214,6 +498,7 @@ function ProductEditor({ product, onSave, onClose, saving }) {
           </select>
         </label>
       </div>
+
       <div className="flex flex-wrap gap-4 text-sm text-stone-300">
         <label className="inline-flex items-center gap-2">
           <input
@@ -248,6 +533,7 @@ function ProductEditor({ product, onSave, onClose, saving }) {
           Use local website images instead of Etsy images
         </label>
       </div>
+
       <div className="flex flex-wrap gap-2">
         <button type="button" className="btn-gold" disabled={saving} onClick={handleSave}>
           {saving ? 'Saving…' : 'Save'}
@@ -284,13 +570,6 @@ function AdminProductImage({ product }) {
   }, [product.listingId, src, candidates.length, candidateIndex, exhausted])
 
   const handleError = () => {
-    if (import.meta.env.DEV) {
-      console.debug('[admin-image] onError', {
-        listingId: product.listingId,
-        hostname: imageHostname(src),
-        candidateIndex,
-      })
-    }
     if (candidateIndex + 1 < candidates.length) {
       setCandidateIndex((index) => index + 1)
       return
@@ -387,6 +666,8 @@ function ProductRow({
             <StatusPill tone={product.useLocalImages ? 'warn' : 'good'}>
               {product.useLocalImages ? 'LOCAL OVERRIDE' : 'ETSY IMAGES'}
             </StatusPill>
+            <TranslationStatusBadge locale="de" complete={product.germanComplete} />
+            <TranslationStatusBadge locale="cs" complete={product.czechComplete} />
           </div>
 
           <div className="mt-4 flex flex-wrap gap-2">

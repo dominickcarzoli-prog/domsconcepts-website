@@ -1,0 +1,13 @@
+[
+  {
+    "listing_id": "123456789",
+    "custom_title_de": "Beispieltitel auf Deutsch",
+    "custom_description_de": "Deutsche Beschreibung mit Maßen und Materialien unverändert.",
+    "custom_title_cs": "Ukázkový název v češtině",
+    "custom_description_cs": "Český popis se zachovanými rozměry a materiály.",
+    "seo_title_de": null,
+    "seo_description_de": null,
+    "seo_title_cs": null,
+    "seo_description_cs": null
+  }
+]

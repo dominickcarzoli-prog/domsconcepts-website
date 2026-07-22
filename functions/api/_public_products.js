@@ -9,6 +9,8 @@ import { normalizedPriceValue } from './etsy/_catalogue.js'
 export const PUBLIC_EXCLUDED_ETSY_STATES = ['draft', 'inactive', 'expired']
 
 export const PUBLIC_PRODUCT_COLUMNS = `listing_id, slug, title, custom_title, description, custom_description,
+  custom_title_de, custom_description_de, seo_title_de, seo_description_de,
+  custom_title_cs, custom_description_cs, seo_title_cs, seo_description_cs,
   etsy_state, website_status, quantity,
   price_amount, price_divisor, price_currency,
   website_category, website_featured, website_use_local_images,
@@ -143,22 +145,29 @@ export function parseLocalImagesJson(json) {
 export function parseEtsyImageUrls(json, primary) {
   const urls = []
 
+  const push = (value) => {
+    let candidate = value
+    if (candidate && typeof candidate === 'object') {
+      const record = /** @type {Record<string, unknown>} */ (candidate)
+      candidate =
+        record.url ?? record.src ?? record.href ?? record.primaryImageUrl ?? null
+    }
+    const norm = normalizeImageUrl(candidate)
+    if (norm && !urls.includes(norm)) urls.push(norm)
+  }
+
   if (json) {
     try {
       const parsed = JSON.parse(String(json))
       if (Array.isArray(parsed)) {
-        for (const u of parsed) {
-          const norm = normalizeImageUrl(u)
-          if (norm && !urls.includes(norm)) urls.push(norm)
-        }
+        for (const u of parsed) push(u)
       }
     } catch {
       // ignore
     }
   }
 
-  const primaryNorm = normalizeImageUrl(primary)
-  if (primaryNorm && !urls.includes(primaryNorm)) urls.push(primaryNorm)
+  push(primary)
 
   return urls
 }
@@ -198,8 +207,11 @@ export function resolveProductImages(
 
 /**
  * @param {Record<string, unknown>} row
+ * @param {{ locale?: 'en' | 'de' | 'cs' }} [options]
  */
-export function mapPublicProductRow(row) {
+export function mapPublicProductRow(row, options = {}) {
+  const locale =
+    options.locale === 'de' || options.locale === 'cs' ? options.locale : 'en'
   const localImages = parseLocalImagesJson(row.local_images_json)
   const { imageUrls, displayImageUrl, useLocalImages } = resolveProductImages(
     localImages,
@@ -212,13 +224,56 @@ export function mapPublicProductRow(row) {
   const websiteStatus = String(row.website_status || '')
   const quantity = Number(row.quantity) || 0
 
+  const englishTitle =
+    (row.custom_title && String(row.custom_title).trim()) || String(row.title)
+  const englishDescription =
+    (row.custom_description && String(row.custom_description).trim()) ||
+    (row.description != null ? String(row.description) : '')
+
+  const germanTitle =
+    (row.custom_title_de && String(row.custom_title_de).trim()) || ''
+  const germanDescription =
+    (row.custom_description_de && String(row.custom_description_de).trim()) || ''
+  const czechTitle =
+    (row.custom_title_cs && String(row.custom_title_cs).trim()) || ''
+  const czechDescription =
+    (row.custom_description_cs && String(row.custom_description_cs).trim()) || ''
+
+  let title = englishTitle
+  let description = englishDescription
+  if (locale === 'de') {
+    title = germanTitle || englishTitle
+    description = germanDescription || englishDescription
+  } else if (locale === 'cs') {
+    title = czechTitle || englishTitle
+    description = czechDescription || englishDescription
+  }
+
+  const seoTitleDe = (row.seo_title_de && String(row.seo_title_de).trim()) || null
+  const seoDescriptionDe =
+    (row.seo_description_de && String(row.seo_description_de).trim()) || null
+  const seoTitleCs = (row.seo_title_cs && String(row.seo_title_cs).trim()) || null
+  const seoDescriptionCs =
+    (row.seo_description_cs && String(row.seo_description_cs).trim()) || null
+
+  let seoTitle = title
+  let seoDescription = description.slice(0, 160)
+  if (locale === 'de') {
+    seoTitle = seoTitleDe || title
+    seoDescription = seoDescriptionDe || description.slice(0, 160)
+  } else if (locale === 'cs') {
+    seoTitle = seoTitleCs || title
+    seoDescription = seoDescriptionCs || description.slice(0, 160)
+  }
+
   return {
     listingId: Number(row.listing_id),
     slug,
-    title: (row.custom_title && String(row.custom_title).trim()) || String(row.title),
-    description:
-      (row.custom_description && String(row.custom_description).trim()) ||
-      (row.description != null ? String(row.description) : ''),
+    title,
+    description,
+    englishDescription,
+    seoTitle,
+    seoDescription,
     price: normalizedPriceValue(row.price_amount, row.price_divisor),
     currency: row.price_currency || null,
     quantity,
@@ -230,7 +285,21 @@ export function mapPublicProductRow(row) {
     primaryImageUrl: displayImageUrl,
     etsyUrl: row.etsy_url,
     isSold: websiteStatus === 'sold' || Number(row.quantity) === 0,
+    locale,
+    hasGermanTranslation: Boolean(germanTitle && germanDescription),
+    hasCzechTranslation: Boolean(czechTitle && czechDescription),
   }
+}
+
+/**
+ * Pick first non-empty trimmed string.
+ * @param {...unknown} values
+ */
+export function firstNonEmpty(...values) {
+  for (const value of values) {
+    if (typeof value === 'string' && value.trim()) return value.trim()
+  }
+  return ''
 }
 
 /**

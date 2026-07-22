@@ -5,17 +5,21 @@ import {
   STORAGE_KEY,
   isSupportedCurrency,
 } from './currencies'
+import { countryFromNavigatorLanguage } from './countryToCurrency'
 import {
-  countryFromNavigatorLanguage,
-  countryToCurrency,
-} from './countryToCurrency'
-import { formatProductPrice as formatProductPriceLabel } from './formatPrice'
+  convertPrice as convertPriceAmount,
+  formatProductPrice as formatProductPriceLabel,
+} from './formatPrice'
 import {
   getShippingMessage,
   getShippingMessageDetail,
   isCzechiaCountry,
   localizeShippingNote,
 } from './shippingMessages'
+import {
+  readStoredCurrency,
+  resolveVisitorCurrency,
+} from './resolveVisitorCurrency'
 import { CurrencyContext } from './CurrencyContext'
 
 const REGION_TIMEOUT_MS = 1500
@@ -47,16 +51,9 @@ async function fetchJson(url) {
   return res.json()
 }
 
-function readStoredCurrency() {
-  try {
-    const stored = localStorage.getItem(STORAGE_KEY)
-    if (stored && isSupportedCurrency(stored)) {
-      return stored.toUpperCase()
-    }
-  } catch {
-    // ignore
-  }
-  return null
+function browserLocales() {
+  if (typeof navigator === 'undefined') return []
+  return [navigator.language, ...(navigator.languages || [])].filter(Boolean)
 }
 
 /** DEV-only: `?country=DE|US|GB|CZ` → currency. No-op in production builds. */
@@ -90,11 +87,11 @@ function withTimeout(promise, ms) {
 }
 
 /**
- * Resolve visitor country (independent of selected currency):
+ * Resolve visitor country (independent of selected currency / site language):
  * 1. DEV ?country= (localhost only)
  * 2. Cloudflare /api/visitor-region
- * 3. navigator.language country hint
- * 4. null (treat as international — no free shipping)
+ * 3. navigator.language country region hint
+ * 4. null (unknown — currency falls back via locale / EUR)
  */
 async function detectVisitorCountry() {
   const devCountry = readDevCountryOverride()
@@ -123,26 +120,32 @@ async function detectVisitorCountry() {
 }
 
 /**
- * Resolve visitor currency from storage or already-detected country.
+ * Resolve visitor currency from storage or already-detected country / locales.
  * Country is always resolved separately — a DE visitor who picks CZK
  * (or CZ visitor who picks EUR) must not change shipping messaging.
+ * Site language / route locale never participate.
  */
 function resolveCurrency({ skipStorage = false, country, countrySource } = {}) {
-  if (!skipStorage) {
-    const stored = readStoredCurrency()
-    if (stored) {
-      return { currency: stored, source: 'manual' }
+  const storage =
+    typeof localStorage !== 'undefined' ? localStorage : null
+  const stored = skipStorage ? null : readStoredCurrency(storage)
+  const detected = resolveVisitorCurrency({
+    storedCurrency: stored,
+    country,
+    browserLocales: browserLocales(),
+  })
+
+  // Preserve richer country-detection labels for the selector / debug UI.
+  if (detected.source === 'country') {
+    if (
+      countrySource === 'region' ||
+      countrySource === 'dev-query' ||
+      countrySource === 'language'
+    ) {
+      return { ...detected, source: countrySource }
     }
   }
-
-  if (country) {
-    return {
-      currency: countryToCurrency(country),
-      source: countrySource === 'unknown' ? 'default' : countrySource,
-    }
-  }
-
-  return { currency: 'USD', source: 'default' }
+  return detected
 }
 
 /**
@@ -174,33 +177,98 @@ function logDevCurrencyDebug({
   locale,
   visitorCountry,
   countrySource,
+  storedCurrency,
 }) {
-  const example = formatProductPriceLabel('CZK 2,911.20', {
+  const rawEur = 115
+  const sourceCurrency = 'EUR'
+  const converted = convertPriceAmount(rawEur, sourceCurrency, currency, rates)
+  const exampleCzk = formatProductPriceLabel('CZK 2,911.20', {
     currency,
     rates,
     locale,
   })
-  console.debug('[currency]', {
+  const exampleEur = formatProductPriceLabel('EUR 115', {
     currency,
+    rates,
+    locale,
+    amount: rawEur,
+    sourceCurrency,
+  })
+  console.debug('[currency]', {
+    storedCurrency,
+    detectedCountry: visitorCountry,
+    browserLocale: locale,
+    activeCurrency: currency,
     source,
-    visitorCountry,
     countrySource,
+    rawAmount: rawEur,
+    sourceCurrency,
+    convertedAmount: converted,
     isCzechia: isCzechiaCountry(visitorCountry),
     ratesLoaded: Boolean(rates),
     ratesSource,
-    exampleCzk2911: example,
+    exampleCzk2911: exampleCzk,
+    exampleEur115: exampleEur,
+    localStorageKey: STORAGE_KEY,
     priceComponent: 'formatProductPrice',
   })
 }
 
+/** Temporary DEV-only on-page debug — stripped from production builds. */
+function CurrencyDevDebug({
+  country,
+  browserLocale,
+  storedCurrency,
+  resolvedCurrency,
+  source,
+}) {
+  if (!import.meta.env.DEV) return null
+  return (
+    <aside
+      data-currency-debug="true"
+      style={{
+        position: 'fixed',
+        left: 8,
+        bottom: 8,
+        zIndex: 99999,
+        maxWidth: 300,
+        padding: '8px 10px',
+        borderRadius: 8,
+        background: 'rgba(20, 17, 14, 0.92)',
+        color: '#e7e5e4',
+        fontFamily: 'ui-monospace, SFMono-Regular, Menlo, monospace',
+        fontSize: 11,
+        lineHeight: 1.45,
+        pointerEvents: 'none',
+        boxShadow: '0 8px 24px rgba(0,0,0,0.35)',
+      }}
+    >
+      <div style={{ opacity: 0.65, marginBottom: 4 }}>currency debug (dev)</div>
+      <div>storedCurrency: {storedCurrency ?? 'null'}</div>
+      <div>detectedCountry: {country ?? 'null'}</div>
+      <div>browserLocale: {browserLocale || 'n/a'}</div>
+      <div>
+        activeCurrency: {resolvedCurrency} ({source})
+      </div>
+      <div style={{ opacity: 0.55 }}>key: {STORAGE_KEY}</div>
+    </aside>
+  )
+}
+
 export function CurrencyProvider({ children }) {
-  const storedInitial = typeof window !== 'undefined' ? readStoredCurrency() : null
-  const [currency, setCurrencyState] = useState(storedInitial || 'USD')
+  const storage = typeof window !== 'undefined' ? localStorage : null
+  const storedInitial = typeof window !== 'undefined' ? readStoredCurrency(storage) : null
+  const [currency, setCurrencyState] = useState(storedInitial || 'EUR')
   const [visitorCountry, setVisitorCountry] = useState(null)
   const [rates, setRates] = useState(null)
   const [ready, setReady] = useState(false)
   const [pricesReady, setPricesReady] = useState(false)
   const [source, setSource] = useState(storedInitial ? 'manual' : 'pending')
+  const [debugSnapshot, setDebugSnapshot] = useState(() => ({
+    storedCurrency: storedInitial,
+    browserLocale:
+      typeof navigator !== 'undefined' ? navigator.language || '' : '',
+  }))
   const ratesRef = useRef(null)
   const ratesSourceRef = useRef(null)
   const aliveRef = useRef(true)
@@ -220,6 +288,9 @@ export function CurrencyProvider({ children }) {
       detectVisitorCountry(),
       fetchRates(),
     ])
+    const storageNow =
+      typeof localStorage !== 'undefined' ? localStorage : null
+    const storedNow = skipStorage ? null : readStoredCurrency(storageNow)
     const detected = resolveCurrency({
       skipStorage,
       country: countryResult.country,
@@ -235,9 +306,13 @@ export function CurrencyProvider({ children }) {
     setSource(detected.source)
     setRates(ratesResult.rates)
     setReady(true)
-    // Detection finished (region timed out → language/USD). Show prices now;
+    // Detection finished (region timed out → locale/EUR). Show prices now;
     // formatProductPrice falls back to CZK if rates are still null.
     setPricesReady(true)
+    setDebugSnapshot({
+      storedCurrency: storedNow,
+      browserLocale: locale,
+    })
 
     if (import.meta.env.DEV) {
       logDevCurrencyDebug({
@@ -248,6 +323,7 @@ export function CurrencyProvider({ children }) {
         locale,
         visitorCountry: countryResult.country,
         countrySource: countryResult.countrySource,
+        storedCurrency: storedNow,
       })
     }
 
@@ -270,6 +346,7 @@ export function CurrencyProvider({ children }) {
       setCurrencyState(next)
       setSource('manual')
       setPricesReady(true)
+      setDebugSnapshot((prev) => ({ ...prev, storedCurrency: next }))
 
       if (import.meta.env.DEV) {
         logDevCurrencyDebug({
@@ -280,6 +357,7 @@ export function CurrencyProvider({ children }) {
           locale,
           visitorCountry,
           countrySource: 'unchanged',
+          storedCurrency: next,
         })
       }
     },
@@ -294,17 +372,25 @@ export function CurrencyProvider({ children }) {
     }
     setSource('pending')
     setPricesReady(false)
+    setDebugSnapshot((prev) => ({ ...prev, storedCurrency: null }))
     await applyDetection({ skipStorage: true })
   }, [applyDetection])
 
   const formatProductPrice = useCallback(
-    (priceCzk) =>
-      formatProductPriceLabel(priceCzk, {
+    (priceInput, extra = {}) =>
+      formatProductPriceLabel(priceInput, {
         currency,
         rates,
         locale,
+        ...extra,
       }),
     [currency, rates, locale],
+  )
+
+  const convertPrice = useCallback(
+    (amount, fromCurrency, toCurrency = currency) =>
+      convertPriceAmount(amount, fromCurrency, toCurrency, rates),
+    [currency, rates],
   )
 
   const isCzechia = isCzechiaCountry(visitorCountry)
@@ -318,6 +404,7 @@ export function CurrencyProvider({ children }) {
       useAutomaticCurrency,
       formatProductPrice,
       formatPrice: formatProductPrice,
+      convertPrice,
       rates,
       ready,
       pricesReady,
@@ -335,6 +422,7 @@ export function CurrencyProvider({ children }) {
       setCurrency,
       useAutomaticCurrency,
       formatProductPrice,
+      convertPrice,
       rates,
       ready,
       pricesReady,
@@ -347,6 +435,17 @@ export function CurrencyProvider({ children }) {
   )
 
   return (
-    <CurrencyContext.Provider value={value}>{children}</CurrencyContext.Provider>
+    <CurrencyContext.Provider value={value}>
+      {children}
+      {import.meta.env.DEV ? (
+        <CurrencyDevDebug
+          country={visitorCountry}
+          browserLocale={debugSnapshot.browserLocale}
+          storedCurrency={debugSnapshot.storedCurrency}
+          resolvedCurrency={currency}
+          source={source}
+        />
+      ) : null}
+    </CurrencyContext.Provider>
   )
 }

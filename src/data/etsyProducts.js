@@ -10,6 +10,8 @@
  *   VITE_USE_ETSY_CATALOGUE = true
  */
 
+import { coerceImageUrl } from './normalizeProductGallery.js'
+
 /** @type {boolean} */
 export const USE_ETSY_CATALOGUE = Boolean(
   typeof import.meta !== 'undefined' &&
@@ -44,19 +46,24 @@ function mapEtsyCategory(category) {
 export function normalizeEtsyApiProduct(apiProduct) {
   const listingId = String(apiProduct.listingId)
   const slug = String(apiProduct.slug || listingId)
-  const imageUrls = Array.isArray(apiProduct.imageUrls) ? apiProduct.imageUrls : []
+  const imageUrls = (Array.isArray(apiProduct.imageUrls) ? apiProduct.imageUrls : [])
+    .map((entry) => coerceImageUrl(entry))
+    .filter(Boolean)
   const primary =
-    (typeof apiProduct.primaryImageUrl === 'string' && apiProduct.primaryImageUrl) ||
-    imageUrls[0] ||
-    ''
+    coerceImageUrl(apiProduct.primaryImageUrl) || imageUrls[0] || ''
   const images = imageUrls.length ? imageUrls : primary ? [primary] : []
   const websiteStatus = String(apiProduct.websiteStatus || '')
   const isSold = websiteStatus === 'sold' || Number(apiProduct.quantity) === 0
-  const priceNum = apiProduct.price
+  const priceNum =
+    apiProduct.price != null && Number.isFinite(Number(apiProduct.price))
+      ? Number(apiProduct.price)
+      : null
   const currency = String(apiProduct.currency || 'CZK').toUpperCase()
+  // Display label kept for fallbacks / non-React consumers; FormattedPrice
+  // prefers priceAmount + priceCurrency so conversion does not re-parse locale strings.
   const priceLabel =
     priceNum != null
-      ? `${currency} ${Number(priceNum).toLocaleString(undefined, { minimumFractionDigits: 0, maximumFractionDigits: 2 })}`
+      ? `${currency} ${priceNum.toLocaleString('en-US', { minimumFractionDigits: 0, maximumFractionDigits: 2 })}`
       : 'Price on request'
 
   return {
@@ -68,12 +75,20 @@ export function normalizeEtsyApiProduct(apiProduct) {
     ),
     collection: 'Available Pieces',
     description: String(apiProduct.description || ''),
+    englishDescription: String(
+      apiProduct.englishDescription || apiProduct.description || '',
+    ),
     shortDescription: String(apiProduct.description || '').slice(0, 160),
     longDescription: String(apiProduct.description || ''),
     dimensions: '',
     woodType: '',
+    materials: '',
     price: priceLabel,
     priceFrom: priceLabel,
+    /** @type {number | null} Raw listing amount (source currency) — format at render. */
+    priceAmount: priceNum,
+    /** @type {string} ISO 4217 source currency from Etsy / D1. */
+    priceCurrency: currency,
     status: isSold ? 'sold' : 'available',
     badge: isSold ? 'Sold' : 'Available',
     availability: isSold ? 'Sold' : 'Available',
@@ -101,12 +116,15 @@ export function normalizeEtsyApiProduct(apiProduct) {
 
 /**
  * @param {Array<Record<string, unknown>>} fallbackProducts
+ * @param {{ locale?: 'en' | 'de' }} [options]
  */
-export async function fetchEtsyCatalogueProducts(fallbackProducts) {
+export async function fetchEtsyCatalogueProducts(fallbackProducts, options = {}) {
   if (!USE_ETSY_CATALOGUE) return fallbackProducts
 
+  const locale = options.locale === 'de' || options.locale === 'cs' ? options.locale : 'en'
+
   try {
-    const res = await fetch('/api/products', {
+    const res = await fetch(`/api/products?locale=${encodeURIComponent(locale)}`, {
       headers: { Accept: 'application/json' },
       cache: 'no-store',
     })
@@ -124,19 +142,25 @@ export async function fetchEtsyCatalogueProducts(fallbackProducts) {
 /**
  * @param {string} slug
  * @param {Array<Record<string, unknown>>} fallbackProducts
+ * @param {{ locale?: 'en' | 'de' }} [options]
  */
-export async function fetchEtsyProductBySlug(slug, fallbackProducts) {
+export async function fetchEtsyProductBySlug(slug, fallbackProducts, options = {}) {
   if (!USE_ETSY_CATALOGUE) {
     return (
       fallbackProducts.find((p) => p.slug === slug || p.id === slug) || null
     )
   }
 
+  const locale = options.locale === 'de' || options.locale === 'cs' ? options.locale : 'en'
+
   try {
-    const res = await fetch(`/api/products/${encodeURIComponent(slug)}`, {
-      headers: { Accept: 'application/json' },
-      cache: 'no-store',
-    })
+    const res = await fetch(
+      `/api/products/${encodeURIComponent(slug)}?locale=${encodeURIComponent(locale)}`,
+      {
+        headers: { Accept: 'application/json' },
+        cache: 'no-store',
+      },
+    )
     if (res.status === 404) return null
     if (!res.ok) {
       return (
@@ -149,7 +173,10 @@ export async function fetchEtsyProductBySlug(slug, fallbackProducts) {
         fallbackProducts.find((p) => p.slug === slug || p.id === slug) || null
       )
     }
-    return normalizeEtsyApiProduct(data.product)
+    return mergeHardcodedProductFields(
+      normalizeEtsyApiProduct(data.product),
+      fallbackProducts.find((p) => p.slug === slug || p.id === slug),
+    )
   } catch {
     return (
       fallbackProducts.find((p) => p.slug === slug || p.id === slug) || null
@@ -158,15 +185,51 @@ export async function fetchEtsyProductBySlug(slug, fallbackProducts) {
 }
 
 /**
- * Resolve the product list for the public site (flag + fallback).
- * Import hardcoded products at the call site to avoid bundling in tests.
- *
- * @example
- * import { products } from './products.ts'
- * const items = await resolvePublicProducts(products)
- *
- * @param {Array<Record<string, unknown>>} fallbackProducts
+ * Carry stable structured fields from hardcoded catalogue entries onto Etsy API products.
+ * Does not override title, description, price, images, or Etsy URL from the API.
+ * @param {Record<string, unknown>} etsyProduct
+ * @param {Record<string, unknown> | undefined} hardcoded
  */
-export async function resolvePublicProducts(fallbackProducts) {
-  return fetchEtsyCatalogueProducts(fallbackProducts)
+function mergeHardcodedProductFields(etsyProduct, hardcoded) {
+  if (!hardcoded) return etsyProduct
+  const materials =
+    typeof hardcoded.materials === 'string' && hardcoded.materials.trim()
+      ? hardcoded.materials.trim()
+      : etsyProduct.materials
+  const woodType =
+    typeof hardcoded.woodType === 'string' && hardcoded.woodType.trim()
+      ? hardcoded.woodType.trim()
+      : etsyProduct.woodType
+  const dimensions =
+    typeof hardcoded.dimensions === 'string' &&
+    hardcoded.dimensions.trim() &&
+    !/^details coming soon$/i.test(hardcoded.dimensions.trim())
+      ? hardcoded.dimensions.trim()
+      : etsyProduct.dimensions
+  return {
+    ...etsyProduct,
+    materials,
+    woodType,
+    dimensions,
+    construction: hardcoded.construction || etsyProduct.construction,
+    finish: hardcoded.finish || etsyProduct.finish,
+    features:
+      Array.isArray(hardcoded.features) && hardcoded.features.length
+        ? hardcoded.features
+        : etsyProduct.features,
+    perfectFor:
+      Array.isArray(hardcoded.perfectFor) && hardcoded.perfectFor.length
+        ? hardcoded.perfectFor
+        : etsyProduct.perfectFor,
+    whyThisPiece: hardcoded.whyThisPiece || etsyProduct.whyThisPiece,
+    whyEndGrain: hardcoded.whyEndGrain || etsyProduct.whyEndGrain,
+  }
+}
+
+/**
+ * @param {Array<Record<string, unknown>>} fallbackProducts
+ * @param {{ locale?: 'en' | 'de' }} [options]
+ */
+export async function resolvePublicProducts(fallbackProducts, options = {}) {
+  return fetchEtsyCatalogueProducts(fallbackProducts, options)
 }

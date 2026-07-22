@@ -232,6 +232,27 @@ describe('normalizeEtsyApiProduct', () => {
     assert.equal(product.buttonLabel, 'Sold')
     assert.equal(product.isAvailable, false)
   })
+
+  it('keeps raw EUR amount + currency for render-time conversion', () => {
+    const product = normalizeEtsyApiProduct({
+      listingId: 1,
+      slug: 'eur-board',
+      title: 'Board',
+      description: 'Desc',
+      price: 115,
+      currency: 'EUR',
+      quantity: 1,
+      websiteStatus: 'available',
+      category: 'Cutting Boards',
+      featured: false,
+      imageUrls: ['https://i.etsystatic.com/x.jpg'],
+      primaryImageUrl: 'https://i.etsystatic.com/x.jpg',
+      etsyUrl: 'https://www.etsy.com/listing/1',
+    })
+    assert.equal(product.priceAmount, 115)
+    assert.equal(product.priceCurrency, 'EUR')
+    assert.match(product.price, /^EUR /)
+  })
 })
 
 describe('USE_ETSY_CATALOGUE flag', () => {

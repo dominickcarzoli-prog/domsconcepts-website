@@ -1,6 +1,6 @@
 /**
  * ISO 3166-1 alpha-2 country → display currency.
- * Eurozone and common non-euro mappings; everything else → USD.
+ * Eurozone and common non-euro mappings; unknown → EUR.
  */
 const EUROZONE = new Set([
   'AD', // Andorra
@@ -33,7 +33,7 @@ const EUROZONE = new Set([
 const COUNTRY_CURRENCY = {
   CZ: 'CZK',
   US: 'USD',
-  GB: 'GBP',
+  GB: 'GBP', // GBP is a supported display currency
   CA: 'CAD',
   AU: 'AUD',
   NZ: 'NZD',
@@ -51,12 +51,12 @@ const COUNTRY_CURRENCY = {
  * @returns {string} ISO 4217 currency code
  */
 export function countryToCurrency(countryCode) {
-  if (!countryCode || typeof countryCode !== 'string') return 'USD'
+  if (!countryCode || typeof countryCode !== 'string') return 'EUR'
   const cc = countryCode.trim().toUpperCase()
-  if (cc === 'XX' || cc === 'T1') return 'USD' // Cloudflare unknown / Tor
+  if (cc === 'XX' || cc === 'T1') return 'EUR' // Cloudflare unknown / Tor
   if (COUNTRY_CURRENCY[cc]) return COUNTRY_CURRENCY[cc]
   if (EUROZONE.has(cc)) return 'EUR'
-  return 'USD'
+  return 'EUR'
 }
 
 /**

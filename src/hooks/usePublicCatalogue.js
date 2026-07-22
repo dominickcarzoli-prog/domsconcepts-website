@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
 import { resolvePublicProducts, USE_ETSY_CATALOGUE } from '../data/etsyProducts'
 import { getShopProducts, products, sortProducts } from '../data/products'
+import { useLocale } from '../i18n/LocaleProvider.jsx'
 
 const FALLBACK_PRODUCTS = getShopProducts(products)
 
@@ -9,6 +10,7 @@ const FALLBACK_PRODUCTS = getShopProducts(products)
  * Never returns an empty list — falls back to hardcoded shop products.
  */
 export function usePublicCatalogue() {
+  const { locale } = useLocale()
   const [catalogueProducts, setCatalogueProducts] = useState(FALLBACK_PRODUCTS)
   const [ready, setReady] = useState(!USE_ETSY_CATALOGUE)
   const [source, setSource] = useState(USE_ETSY_CATALOGUE ? 'loading' : 'fallback')
@@ -22,8 +24,10 @@ export function usePublicCatalogue() {
     }
 
     let cancelled = false
+    setReady(false)
+    setSource('loading')
 
-    resolvePublicProducts(FALLBACK_PRODUCTS).then((resolved) => {
+    resolvePublicProducts(FALLBACK_PRODUCTS, { locale }).then((resolved) => {
       if (cancelled) return
 
       const usedEtsy =
@@ -41,7 +45,7 @@ export function usePublicCatalogue() {
     return () => {
       cancelled = true
     }
-  }, [])
+  }, [locale])
 
   return { products: catalogueProducts, ready, source }
 }

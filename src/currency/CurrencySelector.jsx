@@ -1,6 +1,7 @@
 import { useEffect, useId, useRef, useState } from 'react'
 import { useCurrency } from './useCurrency'
 import { getCurrencyMeta } from './currencies'
+import { useLocale } from '../i18n/LocaleProvider.jsx'
 
 /**
  * Compact currency picker — desktop header button + mobile menu list.
@@ -8,6 +9,7 @@ import { getCurrencyMeta } from './currencies'
  * @param {{ variant?: 'desktop' | 'mobile' }} props
  */
 export function CurrencySelector({ variant = 'desktop' }) {
+  const { t } = useLocale()
   const { currency, setCurrency, useAutomaticCurrency, currencies, source } =
     useCurrency()
   const [open, setOpen] = useState(false)
@@ -46,7 +48,7 @@ export function CurrencySelector({ variant = 'desktop' }) {
     return (
       <div className="mt-2 border-t border-white/10 pt-4">
         <p className="px-1 text-[10px] uppercase tracking-[0.24em] text-stone-500">
-          Currency
+          {t('brand.currency')}
         </p>
         <div className="mt-3 grid grid-cols-2 gap-2">
           <button
@@ -59,7 +61,7 @@ export function CurrencySelector({ variant = 'desktop' }) {
                 : 'border-white/10 bg-white/5 text-stone-300 hover:border-white/20 hover:text-stone-100',
             ].join(' ')}
           >
-            <span className="font-medium tracking-wide">Automatic</span>
+            <span className="font-medium tracking-wide">{t('common.automatic')}</span>
           </button>
           {currencies.map((item) => {
             const active = source === 'manual' && item.code === currency
@@ -90,7 +92,7 @@ export function CurrencySelector({ variant = 'desktop' }) {
     <div ref={rootRef} className="relative">
       <button
         type="button"
-        aria-label="Select currency"
+        aria-label={t('brand.currency')}
         aria-haspopup="listbox"
         aria-expanded={open}
         aria-controls={listId}
@@ -109,7 +111,7 @@ export function CurrencySelector({ variant = 'desktop' }) {
         <ul
           id={listId}
           role="listbox"
-          aria-label="Select currency"
+          aria-label={t('brand.currency')}
           className="absolute right-0 top-full z-[60] mt-2 max-h-72 w-44 overflow-y-auto rounded-xl border border-white/12 bg-[#14110e]/98 py-1.5 shadow-[0_12px_40px_rgba(0,0,0,0.55)] backdrop-blur-md"
         >
           <li role="option" aria-selected={isAutomatic}>
@@ -123,7 +125,7 @@ export function CurrencySelector({ variant = 'desktop' }) {
                   : 'text-stone-300 hover:bg-white/5 hover:text-stone-100',
               ].join(' ')}
             >
-              <span>Automatic</span>
+              <span>{t('common.automatic')}</span>
               <span className="text-stone-500">Auto</span>
             </button>
           </li>
@@ -158,9 +160,10 @@ export function CurrencySelector({ variant = 'desktop' }) {
 
 /** Understated checkout disclaimer for product detail / CTAs. */
 export function EtsyPriceNote({ className = '' }) {
+  const { t } = useLocale()
   return (
     <p className={['text-xs leading-6 text-stone-500', className].join(' ')}>
-      Final price and currency are confirmed on Etsy.
+      {t('shipping.etsyPriceNote')}
     </p>
   )
 }

@@ -15,6 +15,12 @@ const CACHE_HEADERS = {
   'Cache-Control': 'public, max-age=60, stale-while-revalidate=300',
 }
 
+function parseLocale(url) {
+  const localeParam = new URL(url).searchParams.get('locale')
+  if (localeParam === 'de' || localeParam === 'cs') return localeParam
+  return 'en'
+}
+
 export async function onRequestGet(context) {
   const db = context.env && context.env.CATALOGUE_DB
   if (!db) {
@@ -23,6 +29,8 @@ export async function onRequestGet(context) {
       { status: 503 },
     )
   }
+
+  const locale = parseLocale(context.request.url)
 
   try {
     const { results } = await db
@@ -36,10 +44,10 @@ export async function onRequestGet(context) {
       )
       .all()
 
-    const products = (results || []).map(mapPublicProductRow)
+    const products = (results || []).map((row) => mapPublicProductRow(row, { locale }))
 
     return jsonResponse(
-      { ok: true, count: products.length, products },
+      { ok: true, count: products.length, products, locale },
       { headers: CACHE_HEADERS },
     )
   } catch (error) {

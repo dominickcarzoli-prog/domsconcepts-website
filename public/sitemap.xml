@@ -1,0 +1,130 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9"
+        xmlns:xhtml="http://www.w3.org/1999/xhtml">
+  <url>
+    <loc>https://domsconcepts.com/</loc>
+    <xhtml:link rel="alternate" hreflang="en" href="https://domsconcepts.com/" />
+    <xhtml:link rel="alternate" hreflang="de" href="https://domsconcepts.com/de" />
+    <xhtml:link rel="alternate" hreflang="cs" href="https://domsconcepts.com/cs" />
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://domsconcepts.com/" />
+  </url>
+  <url>
+    <loc>https://domsconcepts.com/de</loc>
+    <xhtml:link rel="alternate" hreflang="en" href="https://domsconcepts.com/" />
+    <xhtml:link rel="alternate" hreflang="de" href="https://domsconcepts.com/de" />
+    <xhtml:link rel="alternate" hreflang="cs" href="https://domsconcepts.com/cs" />
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://domsconcepts.com/" />
+  </url>
+  <url>
+    <loc>https://domsconcepts.com/cs</loc>
+    <xhtml:link rel="alternate" hreflang="en" href="https://domsconcepts.com/" />
+    <xhtml:link rel="alternate" hreflang="de" href="https://domsconcepts.com/de" />
+    <xhtml:link rel="alternate" hreflang="cs" href="https://domsconcepts.com/cs" />
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://domsconcepts.com/" />
+  </url>
+  <url>
+    <loc>https://domsconcepts.com/available-pieces</loc>
+    <xhtml:link rel="alternate" hreflang="en" href="https://domsconcepts.com/available-pieces" />
+    <xhtml:link rel="alternate" hreflang="de" href="https://domsconcepts.com/de/available-pieces" />
+    <xhtml:link rel="alternate" hreflang="cs" href="https://domsconcepts.com/cs/available-pieces" />
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://domsconcepts.com/available-pieces" />
+  </url>
+  <url>
+    <loc>https://domsconcepts.com/de/available-pieces</loc>
+    <xhtml:link rel="alternate" hreflang="en" href="https://domsconcepts.com/available-pieces" />
+    <xhtml:link rel="alternate" hreflang="de" href="https://domsconcepts.com/de/available-pieces" />
+    <xhtml:link rel="alternate" hreflang="cs" href="https://domsconcepts.com/cs/available-pieces" />
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://domsconcepts.com/available-pieces" />
+  </url>
+  <url>
+    <loc>https://domsconcepts.com/cs/available-pieces</loc>
+    <xhtml:link rel="alternate" hreflang="en" href="https://domsconcepts.com/available-pieces" />
+    <xhtml:link rel="alternate" hreflang="de" href="https://domsconcepts.com/de/available-pieces" />
+    <xhtml:link rel="alternate" hreflang="cs" href="https://domsconcepts.com/cs/available-pieces" />
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://domsconcepts.com/available-pieces" />
+  </url>
+  <url>
+    <loc>https://domsconcepts.com/gallery</loc>
+    <xhtml:link rel="alternate" hreflang="en" href="https://domsconcepts.com/gallery" />
+    <xhtml:link rel="alternate" hreflang="de" href="https://domsconcepts.com/de/gallery" />
+    <xhtml:link rel="alternate" hreflang="cs" href="https://domsconcepts.com/cs/gallery" />
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://domsconcepts.com/gallery" />
+  </url>
+  <url>
+    <loc>https://domsconcepts.com/de/gallery</loc>
+    <xhtml:link rel="alternate" hreflang="en" href="https://domsconcepts.com/gallery" />
+    <xhtml:link rel="alternate" hreflang="de" href="https://domsconcepts.com/de/gallery" />
+    <xhtml:link rel="alternate" hreflang="cs" href="https://domsconcepts.com/cs/gallery" />
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://domsconcepts.com/gallery" />
+  </url>
+  <url>
+    <loc>https://domsconcepts.com/cs/gallery</loc>
+    <xhtml:link rel="alternate" hreflang="en" href="https://domsconcepts.com/gallery" />
+    <xhtml:link rel="alternate" hreflang="de" href="https://domsconcepts.com/de/gallery" />
+    <xhtml:link rel="alternate" hreflang="cs" href="https://domsconcepts.com/cs/gallery" />
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://domsconcepts.com/gallery" />
+  </url>
+  <url>
+    <loc>https://domsconcepts.com/custom-orders</loc>
+    <xhtml:link rel="alternate" hreflang="en" href="https://domsconcepts.com/custom-orders" />
+    <xhtml:link rel="alternate" hreflang="de" href="https://domsconcepts.com/de/custom-orders" />
+    <xhtml:link rel="alternate" hreflang="cs" href="https://domsconcepts.com/cs/custom-orders" />
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://domsconcepts.com/custom-orders" />
+  </url>
+  <url>
+    <loc>https://domsconcepts.com/de/custom-orders</loc>
+    <xhtml:link rel="alternate" hreflang="en" href="https://domsconcepts.com/custom-orders" />
+    <xhtml:link rel="alternate" hreflang="de" href="https://domsconcepts.com/de/custom-orders" />
+    <xhtml:link rel="alternate" hreflang="cs" href="https://domsconcepts.com/cs/custom-orders" />
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://domsconcepts.com/custom-orders" />
+  </url>
+  <url>
+    <loc>https://domsconcepts.com/cs/custom-orders</loc>
+    <xhtml:link rel="alternate" hreflang="en" href="https://domsconcepts.com/custom-orders" />
+    <xhtml:link rel="alternate" hreflang="de" href="https://domsconcepts.com/de/custom-orders" />
+    <xhtml:link rel="alternate" hreflang="cs" href="https://domsconcepts.com/cs/custom-orders" />
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://domsconcepts.com/custom-orders" />
+  </url>
+  <url>
+    <loc>https://domsconcepts.com/about</loc>
+    <xhtml:link rel="alternate" hreflang="en" href="https://domsconcepts.com/about" />
+    <xhtml:link rel="alternate" hreflang="de" href="https://domsconcepts.com/de/about" />
+    <xhtml:link rel="alternate" hreflang="cs" href="https://domsconcepts.com/cs/about" />
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://domsconcepts.com/about" />
+  </url>
+  <url>
+    <loc>https://domsconcepts.com/de/about</loc>
+    <xhtml:link rel="alternate" hreflang="en" href="https://domsconcepts.com/about" />
+    <xhtml:link rel="alternate" hreflang="de" href="https://domsconcepts.com/de/about" />
+    <xhtml:link rel="alternate" hreflang="cs" href="https://domsconcepts.com/cs/about" />
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://domsconcepts.com/about" />
+  </url>
+  <url>
+    <loc>https://domsconcepts.com/cs/about</loc>
+    <xhtml:link rel="alternate" hreflang="en" href="https://domsconcepts.com/about" />
+    <xhtml:link rel="alternate" hreflang="de" href="https://domsconcepts.com/de/about" />
+    <xhtml:link rel="alternate" hreflang="cs" href="https://domsconcepts.com/cs/about" />
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://domsconcepts.com/about" />
+  </url>
+  <url>
+    <loc>https://domsconcepts.com/contact</loc>
+    <xhtml:link rel="alternate" hreflang="en" href="https://domsconcepts.com/contact" />
+    <xhtml:link rel="alternate" hreflang="de" href="https://domsconcepts.com/de/contact" />
+    <xhtml:link rel="alternate" hreflang="cs" href="https://domsconcepts.com/cs/contact" />
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://domsconcepts.com/contact" />
+  </url>
+  <url>
+    <loc>https://domsconcepts.com/de/contact</loc>
+    <xhtml:link rel="alternate" hreflang="en" href="https://domsconcepts.com/contact" />
+    <xhtml:link rel="alternate" hreflang="de" href="https://domsconcepts.com/de/contact" />
+    <xhtml:link rel="alternate" hreflang="cs" href="https://domsconcepts.com/cs/contact" />
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://domsconcepts.com/contact" />
+  </url>
+  <url>
+    <loc>https://domsconcepts.com/cs/contact</loc>
+    <xhtml:link rel="alternate" hreflang="en" href="https://domsconcepts.com/contact" />
+    <xhtml:link rel="alternate" hreflang="de" href="https://domsconcepts.com/de/contact" />
+    <xhtml:link rel="alternate" hreflang="cs" href="https://domsconcepts.com/cs/contact" />
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://domsconcepts.com/contact" />
+  </url>
+</urlset>

@@ -25,32 +25,66 @@ const SECTION_DEFS = [
   {
     key: 'overview',
     kind: 'text',
-    patterns: [/^overview\s*:?$/i, /^about\s+(this\s+)?(piece|board|product)\s*:?$/i],
+    patterns: [
+      /^overview\s*:?$/i,
+      /^about\s+(this\s+)?(piece|board|product)\s*:?$/i,
+      /^überblick\s*:?$/i,
+      /^přehled\s*:?$/i,
+    ],
   },
   {
     key: 'features',
     kind: 'list',
-    patterns: [/^features\s*:?$/i, /^key\s+features\s*:?$/i, /^details\s*:?$/i],
+    patterns: [
+      /^features\s*:?$/i,
+      /^key\s+features\s*:?$/i,
+      /^details\s*:?$/i,
+      /^merkmale\s*:?$/i,
+      /^eigenschaften\s*:?$/i,
+      /^vlastnosti\s*:?$/i,
+    ],
   },
   {
     key: 'perfectFor',
     kind: 'list',
-    patterns: [/^perfect\s+for\s*:?$/i],
+    patterns: [
+      /^perfect\s+for\s*:?$/i,
+      /^ideal\s+for\s*:?$/i,
+      /^ideal\s+für\s*:?$/i,
+      /^ideální\s+pro\s*:?$/i,
+    ],
   },
   {
     key: 'whyEndGrain',
     kind: 'text',
-    patterns: [/^why\s+end\s+grain\s*\??\s*:?$/i],
+    patterns: [
+      /^why\s+end\s+grain\s*\??\s*:?$/i,
+      /^warum\s+hirnholz\s*\??\s*:?$/i,
+      /^proč\s+čelní\s+dřevo\s*\??\s*:?$/i,
+    ],
   },
   {
     key: 'whyThisPiece',
     kind: 'text',
-    patterns: [/^why\s+this\s+piece\s*\??\s*:?$/i],
+    patterns: [
+      /^why\s+this\s+piece\s*\??\s*:?$/i,
+      /^warum\s+dieses\s+stück\s*\??\s*:?$/i,
+      /^proč\s+(právě\s+)?tento\s+kus\s*\??\s*:?$/i,
+    ],
   },
   {
     key: 'dimensions',
     kind: 'text',
-    patterns: [/^dimensions?\s*:?$/i, /^size\s*:?$/i, /^measurements?\s*:?$/i],
+    patterns: [
+      /^dimensions?\s*:?$/i,
+      /^size\s*:?$/i,
+      /^measurements?\s*:?$/i,
+      /^approximate\s+size\s*:?$/i,
+      /^maße\s*:?$/i,
+      /^(ungefähre\s+)?größe\s*:?$/i,
+      /^rozměry\s*:?$/i,
+      /^(přibližná\s+)?velikost\s*:?$/i,
+    ],
   },
   {
     key: 'careInstructions',
@@ -61,27 +95,51 @@ const SECTION_DEFS = [
       /^care\s*:?$/i,
       /^maintenance\s*:?$/i,
       /^how\s+to\s+care\s*:?$/i,
+      /^pflegehinweise\s*:?$/i,
+      /^pflege\s*:?$/i,
+      /^pokyny\s+k\s+údržbě\s*:?$/i,
+      /^péče\s*:?$/i,
     ],
   },
   {
     key: 'materials',
     kind: 'text',
-    patterns: [/^materials?\s*:?$/i, /^wood\s+type\s*:?$/i, /^wood\s*:?$/i],
+    patterns: [
+      /^materials?\s*:?$/i,
+      /^wood\s+type\s*:?$/i,
+      /^wood\s*:?$/i,
+      /^materialien\s*:?$/i,
+      /^material\s*:?$/i,
+      /^materiály\s*:?$/i,
+      /^materiál\s*:?$/i,
+    ],
   },
   {
     key: 'importantNotes',
     kind: 'list',
-    patterns: [/^important(\s+notes?)?\s*:?$/i, /^please\s+note\s*:?$/i, /^notes?\s*:?$/i],
+    patterns: [
+      /^important(\s+notes?)?\s*:?$/i,
+      /^please\s+note\s*:?$/i,
+      /^notes?\s*:?$/i,
+      /^wichtige\s+hinweise\s*:?$/i,
+      /^důležité\s+poznámky\s*:?$/i,
+    ],
   },
   {
     key: 'handmade',
     kind: 'text',
-    patterns: [/^handmade\s*:?$/i],
+    patterns: [/^handmade\s*:?$/i, /^handgefertigt\s*:?$/i, /^ručně\s+vyrobeno\s*:?$/i],
   },
   {
     key: 'shipping',
     kind: 'text',
-    patterns: [/^shipping\s*:?$/i, /^returns?\s*\/?\s*shipping\s*:?$/i, /^delivery\s*:?$/i],
+    patterns: [
+      /^shipping\s*:?$/i,
+      /^returns?\s*\/?\s*shipping\s*:?$/i,
+      /^delivery\s*:?$/i,
+      /^versand\s*:?$/i,
+      /^doprava\s*:?$/i,
+    ],
   },
 ]
 
@@ -325,11 +383,24 @@ export function extractMaterialsFromTitle(title) {
   if (/oak\s+butcher|butcher\s+block.*oak|solid\s+oak|oak\s+end\s+grain|\boak\b/i.test(t)) {
     return 'Solid oak'
   }
+  if (/epoxy/i.test(t) && /black\s+walnut|american\s+black\s+walnut/i.test(t)) {
+    return 'Black walnut and epoxy resin'
+  }
+  if (/epoxy/i.test(t) && /european\s+walnut/i.test(t)) {
+    return 'European walnut and epoxy resin'
+  }
+  if (/epoxy/i.test(t) && /\bwalnut\b/i.test(t)) {
+    return 'Black walnut and epoxy resin'
+  }
+  if (/epoxy/i.test(t) && /european\s+oak/i.test(t)) {
+    return 'European oak and epoxy resin'
+  }
+  if (/epoxy/i.test(t) && /\boak\b/i.test(t)) {
+    return 'Oak and epoxy resin'
+  }
   if (/european\s+oak/i.test(t)) return 'European oak'
   if (/black\s+walnut|\bwalnut\b/i.test(t)) return 'Black walnut'
   if (/\bmaple\b/i.test(t)) return 'Hard maple'
-  if (/epoxy/i.test(t) && /oak/i.test(t)) return 'Oak and epoxy'
-  if (/epoxy/i.test(t) && /walnut/i.test(t)) return 'Walnut and epoxy'
   return null
 }
 
@@ -420,7 +491,7 @@ export function parseEtsyDescription(rawDescription, options = {}) {
         result.whyThisPiece = text
         break
       case 'dimensions':
-        result.dimensions = text
+        result.dimensions = sanitizeDimensionsText(text).dimensions || text
         break
       case 'careInstructions':
         result.careInstructions = text
@@ -554,27 +625,157 @@ export function parsedDescriptionPlainText(parsed) {
  * @param {ParsedEtsyDescription} parsed
  */
 const GENERIC_MATERIALS =
-  /^(selected\s+materials|selected\s+hardwoods|wood|materials)$/i
+  /^(selected(\s+materials|\s+hardwoods)?|hand[- ]?selected\s+hardwoods|carefully\s+selected\s+hardwoods|sorgfältig\s+ausgewählte\s+harthölzer|pečlivě\s+vybraná\s+tvrdá\s+dřeva|wood(\s+and\s+epoxy(\s+resin)?)?|wood\s*[·•]\s*.+|materials|holz|dřevo)$/i
 
-export function resolveMaterialsLabel(product, parsed) {
-  const fromProduct = product?.materials?.trim()
-  if (fromProduct && !GENERIC_MATERIALS.test(fromProduct)) {
-    return scrubAsterisks(fromProduct)
+/**
+ * Strip marketing / battery / options noise from a dimensions field.
+ * Returns measurement-only text plus optional extracted extras.
+ * @param {string | null | undefined} raw
+ * @returns {{
+ *   dimensions: string,
+ *   battery: string,
+ *   options: string,
+ *   capacity: string,
+ * }}
+ */
+export function sanitizeDimensionsText(raw) {
+  let text = scrubAsterisks(stripHtmlToText(raw))
+  if (!text || /^details coming soon$/i.test(text)) {
+    return { dimensions: '', battery: '', options: '', capacity: '' }
   }
 
-  const fromParsed = parsed?.materials?.trim()
-  if (fromParsed && !GENERIC_MATERIALS.test(fromParsed)) {
-    return scrubAsterisks(fromParsed)
+  text = text.replace(/[\p{Extended_Pictographic}\uFE0F\u200D]/gu, ' ').replace(/\s+/g, ' ').trim()
+
+  let battery = ''
+  const batteryPatterns = [
+    /(?:^|[.;•\n]|,\s*)\s*((?:1\s*[×x]\s*)?AA\s*batter(?:y|ies)[^.;\n]*)/i,
+    /(?:^|[.;•\n]|,\s*)\s*(batter(?:y|ies)\s*(?:included|incl\.?)[^.;\n]*)/i,
+    /(?:^|[.;•\n]|,\s*)\s*((?:1\s*[×x]\s*)?AA(?:-Batterie| baterie)[^.;\n]*)/i,
+  ]
+  for (const re of batteryPatterns) {
+    const match = text.match(re)
+    if (match) {
+      battery = scrubAsterisks(match[1]).replace(/^[,;.\s]+/, '').trim()
+      text = text.replace(match[0], ' ').replace(/\s+/g, ' ').trim()
+      break
+    }
   }
 
-  const fromTitle = extractMaterialsFromTitle(product?.name || product?.title)
-  if (fromTitle) return fromTitle
-
-  const wood = product?.woodType?.trim()
-  if (wood && !GENERIC_MATERIALS.test(wood) && wood.length > 1) {
-    return scrubAsterisks(wood)
+  let options = ''
+  const optionsPatterns = [
+    /(?:^|[.;•\n])\s*((?:custom\s+sizing|custom\s+sizes?|personalisation|personalization|engraving)[^.;\n]*)/i,
+    /(?:^|[.;•\n])\s*((?:maßanfertigung|gravur|personalisierung)[^.;\n]*)/i,
+    /(?:^|[.;•\n])\s*((?:zakázkové?\s+rozměry|gravírování|personalizace)[^.;\n]*)/i,
+  ]
+  for (const re of optionsPatterns) {
+    const match = text.match(re)
+    if (match) {
+      options = scrubAsterisks(match[1]).replace(/^[,;.\s]+/, '').trim()
+      text = text.replace(match[0], ' ').replace(/\s+/g, ' ').trim()
+      break
+    }
   }
-  return 'Hand-selected hardwoods'
+
+  let capacity = ''
+  const capacityMatch = text.match(
+    /(?:^|[.;•\n])\s*((?:capacity|holds?|fasst|kapacita)\s*[:\-–]?\s*[^.;\n]+)/i,
+  )
+  if (capacityMatch) {
+    capacity = scrubAsterisks(capacityMatch[1]).replace(/^[,;.\s]+/, '').trim()
+    text = text.replace(capacityMatch[0], ' ').replace(/\s+/g, ' ').trim()
+  }
+
+  // Drop gift / marketing sentences that are not measurements.
+  const segments = text
+    .split(/(?<=[.!?])\s+|;\s+|•\s+|\n+/)
+    .map((part) => part.trim())
+    .filter(Boolean)
+
+  const measurementLike = (part) =>
+    /\d/.test(part) &&
+    /(cm|mm|m\b|inch|in\b|"|′|″|×|x\s*\d|diameter|durchmesser|průměr|ø|⌀)/i.test(part)
+
+  const marketingLike = (part) =>
+    /\b(gift|foodies?|home\s*chefs?|book\s*lovers?|thoughtful|perfect\s+for|ideal\s+for|wedding|housewarming|geschenk|dárek|milovník)/i.test(
+      part,
+    ) && !measurementLike(part)
+
+  const kept = segments.filter((part) => !marketingLike(part))
+  const measured = kept.filter(measurementLike)
+  let dimensions = (measured.length ? measured : kept).join('; ').trim()
+
+  // Soft cleanup of leftover separators / empty junk.
+  dimensions = dimensions
+    .replace(/\s*[.;]\s*[.;]\s*/g, '; ')
+    .replace(/^[,;.\s–—-]+/, '')
+    .replace(/[,;.\s–—-]+$/, '')
+    .replace(/\s{2,}/g, ' ')
+    .trim()
+
+  if (dimensions && !measurementLike(dimensions) && marketingLike(dimensions)) {
+    dimensions = ''
+  }
+
+  return { dimensions, battery, options, capacity }
+}
+
+/**
+ * Prefer specific species + epoxy phrasing over vague workshop copy.
+ * @param {string} value
+ */
+export function normalizeMaterialsDisplay(value) {
+  const text = scrubAsterisks(String(value || '').trim())
+  if (!text) return text
+  if (/american\s+black\s+walnut.*epoxy/i.test(text) || /black\s+walnut.*epoxy/i.test(text)) {
+    return 'Black walnut and epoxy resin'
+  }
+  if (/european\s+walnut.*epoxy/i.test(text)) {
+    return 'European walnut and epoxy resin'
+  }
+  if (/european\s+oak.*epoxy/i.test(text)) {
+    return 'European oak and epoxy resin'
+  }
+  if (/^oak\s+and\s+epoxy(\s+resin)?$/i.test(text) || /\boak\b.*\bepoxy\b/i.test(text)) {
+    if (/lego/i.test(text)) return 'Oak and epoxy resin'
+    if (!/walnut|maple|european/i.test(text)) return 'Oak and epoxy resin'
+  }
+  if (/maple.*epoxy|epoxy.*maple/i.test(text)) {
+    return 'Maple and epoxy resin'
+  }
+  return text
+}
+
+/**
+ * True when a materials string is too generic to show over specific woodType data.
+ * @param {string | null | undefined} value
+ */
+export function isGenericMaterialsLabel(value) {
+  const text = String(value || '').trim()
+  if (!text) return true
+  return GENERIC_MATERIALS.test(text)
+}
+
+export function resolveMaterialsLabel(product, parsed, options = {}) {
+  const fallback =
+    typeof options.fallback === 'string' && options.fallback.trim()
+      ? options.fallback.trim()
+      : 'Hand-selected hardwoods'
+
+  const candidates = [
+    product?.materials,
+    product?.woodType,
+    parsed?.materials,
+    extractMaterialsFromTitle(product?.name || product?.title),
+    extractMaterialsFromTitle(product?.slug || product?.id),
+  ]
+
+  for (const candidate of candidates) {
+    const trimmed = typeof candidate === 'string' ? candidate.trim() : ''
+    if (!trimmed || isGenericMaterialsLabel(trimmed)) continue
+    return normalizeMaterialsDisplay(trimmed)
+  }
+
+  return fallback
 }
 
 /**

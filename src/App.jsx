@@ -1,7 +1,24 @@
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import AdminCataloguePage from './admin/AdminCataloguePage.jsx'
-import { ProductDetailInfo } from './components/ProductDescription.js'
+import {
+  ProductDetailInfoGrid,
+  ProductDetailPurchaseInfo,
+} from './components/ProductDescription.js'
+import { ProductImageLightbox } from './components/ProductImageLightbox.js'
+import { PublicRouteErrorBoundary } from './components/PublicRouteErrorBoundary.js'
 import { parseEtsyDescription } from './data/parseEtsyDescription.js'
+import {
+  hasValidProductImageUrl,
+  normalizeProductGallery,
+} from './data/normalizeProductGallery.js'
+import { LanguageSelector } from './i18n/LanguageSelector.jsx'
+import {
+  FirstVisitLocaleRedirect,
+  LocaleProvider,
+  useLocale,
+} from './i18n/LocaleProvider.jsx'
+import { parseLocaleFromPathname } from './i18n/localePaths.js'
+import { translateActionLabel, translateBadgeLabel, translateCategoryLabel, translateGalleryCategoryLabel } from './i18n/translate.js'
 import {
   BrowserRouter,
   Link,
@@ -16,38 +33,34 @@ import {
 import {
   boardCarePricing,
   boardCareProducts,
-  budgetRanges,
-  careGuidePoints,
-  customOrderSteps,
-  customProductTypes,
-  engravingOptions,
-  faqItems,
+  budgetRangeChoices,
+  customProductTypeOptions,
   getBoardCareAddonLabel,
   getBoardCareButtonAction,
   homepageCarouselSlides,
   legalPages,
   aboutMakerPortraitPath,
   makerAboutImagePath,
-  navItems,
   pageSeo,
   partnerItems,
   premiumReviews,
   resolveBoardCareAddon,
-  shippingOptions,
-  featuredSignaturePieces,
-  woodPreferences,
   workshopAboutImagePath,
 } from './siteData'
 import { useCurrency } from './currency/useCurrency'
 import { CurrencySelector, EtsyPriceNote } from './currency/CurrencySelector.jsx'
 import { FormattedPrice } from './currency/FormattedPrice.jsx'
-import { getProductSocialProof, reviewTrustPoints, reviews } from './data/reviews'
-import { instagramVideos } from './data/instagramVideos'
+import { getProductSocialProof, reviews } from './data/reviews'
+import { getInstagramVideos } from './data/instagramVideos.js'
 import {
-  bespokeCategories,
   getBespokeCreationBySlug,
   getVisibleGalleryProjects,
 } from './data/bespokeCreations'
+import {
+  GALLERY_CATEGORY_IDS,
+  normalizeGalleryCategoryId,
+} from './data/pastProjects.js'
+import { getFeaturedSignaturePieces } from './data/signaturePieces.js'
 import {
   CUSTOM_ORDER_FORM_ANCHOR,
   ETSY_SHOP_URL,
@@ -124,20 +137,28 @@ function upsertMeta(selector, attributes) {
   })
 }
 
-function upsertLink(rel, href) {
-  let element = document.querySelector(`link[rel="${rel}"]`)
+function upsertLink(rel, href, attributes = {}) {
+  const selector = attributes.hreflang
+    ? `link[rel="${rel}"][hreflang="${attributes.hreflang}"]`
+    : `link[rel="${rel}"]:not([hreflang])`
+  let element = document.querySelector(selector)
 
   if (!element) {
     element = document.createElement('link')
-    element.rel = rel
     document.head.appendChild(element)
   }
 
-  element.href = href
+  element.setAttribute('rel', rel)
+  element.setAttribute('href', href)
+  for (const [key, value] of Object.entries(attributes)) {
+    if (value == null) element.removeAttribute(key)
+    else element.setAttribute(key, value)
+  }
 }
 
 function PageMeta({ title, description, ogImage = DEFAULT_OG_IMAGE, canonicalPath }) {
   const location = useLocation()
+  const { locale, localize } = useLocale()
 
   useEffect(() => {
     document.title = title
@@ -145,14 +166,34 @@ function PageMeta({ title, description, ogImage = DEFAULT_OG_IMAGE, canonicalPat
     upsertMeta('meta[name="description"]', { name: 'description', content: description })
 
     const path = canonicalPath ?? location.pathname
-    const canonicalUrl = `${SITE_URL}${path === '/' ? '' : path}`
+    const { pathnameWithoutLocale } = parseLocaleFromPathname(path)
+    const localizedCanonical = localize(pathnameWithoutLocale)
+    const canonicalUrl = `${SITE_URL}${localizedCanonical === '/' ? '' : localizedCanonical}`
     const imageUrl = ogImage.startsWith('http') ? ogImage : `${SITE_URL}${ogImage}`
 
+    const enPath = pathnameWithoutLocale === '/' ? '' : pathnameWithoutLocale
+    const dePath =
+      pathnameWithoutLocale === '/' ? '/de' : `/de${pathnameWithoutLocale}`
+    const csPath =
+      pathnameWithoutLocale === '/' ? '/cs' : `/cs${pathnameWithoutLocale}`
+    const enUrl = `${SITE_URL}${enPath}`
+    const deUrl = `${SITE_URL}${dePath}`
+    const csUrl = `${SITE_URL}${csPath}`
+
     upsertLink('canonical', canonicalUrl)
+    upsertLink('alternate', enUrl, { hreflang: 'en' })
+    upsertLink('alternate', deUrl, { hreflang: 'de' })
+    upsertLink('alternate', csUrl, { hreflang: 'cs' })
+    upsertLink('alternate', enUrl, { hreflang: 'x-default' })
+
     upsertMeta('meta[property="og:type"]', { property: 'og:type', content: 'website' })
     upsertMeta('meta[property="og:site_name"]', {
       property: 'og:site_name',
       content: "Dom's Concepts",
+    })
+    upsertMeta('meta[property="og:locale"]', {
+      property: 'og:locale',
+      content: locale === 'de' ? 'de_DE' : locale === 'cs' ? 'cs_CZ' : 'en_US',
     })
     upsertMeta('meta[property="og:title"]', { property: 'og:title', content: title })
     upsertMeta('meta[property="og:description"]', {
@@ -171,7 +212,7 @@ function PageMeta({ title, description, ogImage = DEFAULT_OG_IMAGE, canonicalPat
       content: description,
     })
     upsertMeta('meta[name="twitter:image"]', { name: 'twitter:image', content: imageUrl })
-  }, [canonicalPath, description, location.pathname, ogImage, title])
+  }, [canonicalPath, description, locale, localize, location.pathname, ogImage, title])
 
   return null
 }
@@ -182,9 +223,24 @@ function App() {
       <ScrollToTop />
       <Routes>
         <Route path="/admin/catalogue" element={<AdminCataloguePage />} />
-        <Route path="*" element={<SiteLayout />} />
+        <Route path="/cs" element={<LocalizedSite locale="cs" hasLocalePrefix />} />
+        <Route path="/cs/*" element={<LocalizedSite locale="cs" hasLocalePrefix />} />
+        <Route path="/de" element={<LocalizedSite locale="de" hasLocalePrefix />} />
+        <Route path="/de/*" element={<LocalizedSite locale="de" hasLocalePrefix />} />
+        <Route path="/en" element={<LocalizedSite locale="en" hasLocalePrefix />} />
+        <Route path="/en/*" element={<LocalizedSite locale="en" hasLocalePrefix />} />
+        <Route path="/*" element={<LocalizedSite locale="en" />} />
       </Routes>
     </BrowserRouter>
+  )
+}
+
+function LocalizedSite({ locale, hasLocalePrefix = false }) {
+  return (
+    <LocaleProvider locale={locale} hasLocalePrefix={hasLocalePrefix}>
+      <FirstVisitLocaleRedirect />
+      <SiteLayout />
+    </LocaleProvider>
   )
 }
 
@@ -201,6 +257,24 @@ function ScrollToTop() {
 function SiteLayout() {
   const [menuOpen, setMenuOpen] = useState(false)
   const location = useLocation()
+  const { t, localize } = useLocale()
+
+  const localizedNavItems = [
+    { label: t('nav.home'), path: '/' },
+    { label: t('nav.shop'), path: '/available-pieces' },
+    { label: t('nav.gallery'), path: '/gallery' },
+    { label: t('nav.customOrders'), path: '/custom-orders' },
+    { label: t('nav.about'), path: '/about' },
+    { label: t('nav.contact'), path: '/contact' },
+  ]
+
+  const localizedFooterLinks = [
+    { label: t('footer.shop'), path: '/available-pieces' },
+    { label: t('footer.customOrders'), path: '/custom-orders' },
+    { label: t('footer.about'), path: '/about' },
+    { label: t('footer.reviews'), path: '/reviews' },
+    { label: t('footer.contact'), path: '/contact' },
+  ]
 
   useEffect(() => {
     setMenuOpen(false)
@@ -210,14 +284,14 @@ function SiteLayout() {
     <div className="min-h-screen overflow-x-hidden bg-[#0d0b09] text-stone-100">
       <div className="fixed inset-x-0 top-0 z-50 border-b border-white/10 bg-[#0d0b09]/92 backdrop-blur-md">
         <div className="mx-auto flex max-w-7xl items-center justify-between gap-4 px-4 py-4 sm:px-6 lg:px-8">
-          <Link to="/" className="flex min-w-0 items-center gap-2.5 sm:gap-3.5 lg:gap-4">
+          <Link to={localize('/')} className="flex min-w-0 items-center gap-2.5 sm:gap-3.5 lg:gap-4">
             <BrandMark />
             <div className="min-w-0 pt-0.5">
               <p className="truncate font-display text-[1.05rem] leading-none tracking-[0.01em] text-stone-100 sm:text-[1.15rem] lg:text-[1.28rem]">
                 Dom&apos;s Concepts
               </p>
               <p className="mt-1 truncate text-[10px] uppercase tracking-[0.24em] text-stone-400 sm:text-[11px]">
-                Handmade in Prague
+                {t('brand.handmadeInPrague')}
               </p>
             </div>
           </Link>
@@ -227,15 +301,16 @@ function SiteLayout() {
             className="rounded-full border border-white/15 bg-white/5 px-4 py-2 text-sm font-medium text-stone-100 transition hover:border-amber-200/40 lg:hidden"
             onClick={() => setMenuOpen((open) => !open)}
           >
-            Menu
+            {t('brand.menu')}
           </button>
 
           <div className="hidden items-center gap-5 lg:flex">
             <nav className="flex items-center gap-6">
-              {navItems.map((item) => (
+              {localizedNavItems.map((item) => (
                 <NavItem key={item.path} item={item} />
               ))}
             </nav>
+            <LanguageSelector variant="desktop" />
             <CurrencySelector variant="desktop" />
           </div>
         </div>
@@ -243,9 +318,10 @@ function SiteLayout() {
         {menuOpen ? (
           <nav className="border-t border-white/10 px-4 py-4 lg:hidden">
             <div className="flex flex-col gap-3">
-              {navItems.map((item) => (
+              {localizedNavItems.map((item) => (
                 <NavItem key={item.path} item={item} mobile />
               ))}
+              <LanguageSelector variant="mobile" />
               <CurrencySelector variant="mobile" />
             </div>
           </nav>
@@ -253,27 +329,29 @@ function SiteLayout() {
       </div>
 
       <main className="pt-24">
-        <Routes>
-          <Route index element={<HomePage />} />
-          <Route path="available-pieces" element={<AvailablePiecesPage />} />
-          <Route path="available-pieces/:productId" element={<ProductDetailPage />} />
-          <Route path="gallery" element={<GalleryPage />} />
-          <Route path="bespoke-creations/:projectSlug" element={<BespokeCreationDetailPage />} />
-          <Route path="custom-orders" element={<CustomOrdersPage />} />
-          <Route path="care-guide" element={<CareGuidePage />} />
-          <Route path="partners" element={<PartnersPage />} />
-          <Route path="about" element={<AboutPage />} />
-          <Route path="contact" element={<ContactPage />} />
-          <Route path="faq" element={<FaqPage />} />
-          <Route path="reviews" element={<ReviewsPage />} />
-          {legalPages.map((page) => (
-            <Route
-              key={page.slug}
-              path={page.path.replace(/^\//, '')}
-              element={<LegalDocumentPage slug={page.slug} />}
-            />
-          ))}
-        </Routes>
+        <PublicRouteErrorBoundary>
+          <Routes>
+            <Route index element={<HomePage />} />
+            <Route path="available-pieces" element={<AvailablePiecesPage />} />
+            <Route path="available-pieces/:productId" element={<ProductDetailPage />} />
+            <Route path="gallery" element={<GalleryPage />} />
+            <Route path="bespoke-creations/:projectSlug" element={<BespokeCreationDetailPage />} />
+            <Route path="custom-orders" element={<CustomOrdersPage />} />
+            <Route path="care-guide" element={<CareGuidePage />} />
+            <Route path="partners" element={<PartnersPage />} />
+            <Route path="about" element={<AboutPage />} />
+            <Route path="contact" element={<ContactPage />} />
+            <Route path="faq" element={<FaqPage />} />
+            <Route path="reviews" element={<ReviewsPage />} />
+            {legalPages.map((page) => (
+              <Route
+                key={page.slug}
+                path={page.path.replace(/^\//, '')}
+                element={<LegalDocumentPage slug={page.slug} />}
+              />
+            ))}
+          </Routes>
+        </PublicRouteErrorBoundary>
       </main>
 
       <footer className="border-t border-white/10 bg-[#0a0807]">
@@ -282,7 +360,7 @@ function SiteLayout() {
             <div className="space-y-4">
               <p className="font-display text-2xl text-stone-100">Dom&apos;s Concepts</p>
               <p className="text-sm uppercase tracking-[0.28em] text-stone-500">
-                Handmade in Prague
+                {t('brand.handmadeInPrague')}
               </p>
               <a
                 className="inline-block text-stone-300 transition hover:text-amber-200"
@@ -293,10 +371,14 @@ function SiteLayout() {
             </div>
 
             <div className="space-y-4 text-sm text-stone-400">
-              <p className="font-medium text-stone-200">Links</p>
+              <p className="font-medium text-stone-200">{t('brand.links')}</p>
               <div className="grid gap-3">
-                {footerLinks.map((item) => (
-                  <Link key={item.path} to={item.path} className="transition hover:text-[var(--color-accent)]">
+                {localizedFooterLinks.map((item) => (
+                  <Link
+                    key={item.path}
+                    to={localize(item.path)}
+                    className="transition hover:text-[var(--color-accent)]"
+                  >
                     {item.label}
                   </Link>
                 ))}
@@ -304,7 +386,7 @@ function SiteLayout() {
             </div>
 
             <div className="space-y-4 text-sm text-stone-400">
-              <p className="font-medium text-stone-200">Connect</p>
+              <p className="font-medium text-stone-200">{t('brand.connect')}</p>
               <a href={instagramUrl} target="_blank" rel="noopener noreferrer" className="block transition hover:text-[var(--color-accent)]">
                 Instagram: {instagramHandle}
               </a>
@@ -316,10 +398,14 @@ function SiteLayout() {
           </div>
 
           <div className="mt-12 border-t border-white/10 pt-8">
-            <p className="text-sm text-stone-200">Legal</p>
+            <p className="text-sm text-stone-200">{t('brand.legal')}</p>
             <div className="mt-4 flex flex-wrap gap-x-5 gap-y-2 text-sm text-stone-500">
               {legalPages.map((page) => (
-                <Link key={page.slug} to={page.path} className="transition hover:text-[var(--color-accent)]">
+                <Link
+                  key={page.slug}
+                  to={localize(page.path)}
+                  className="transition hover:text-[var(--color-accent)]"
+                >
                   {page.title}
                 </Link>
               ))}
@@ -368,9 +454,10 @@ function BrandMark() {
 }
 
 function NavItem({ item, mobile = false }) {
+  const { localize } = useLocale()
   return (
     <NavLink
-      to={item.path}
+      to={localize(item.path)}
       className={({ isActive }) =>
         [
           mobile ? 'rounded-2xl px-4 py-3' : 'px-0 py-2',
@@ -405,8 +492,9 @@ function PageShell({ eyebrow, title, intro, children, variant = 'default' }) {
       >
         <div
           className={[
-            'max-w-3xl',
-            isProduct ? 'product-detail-header mb-6 space-y-3 sm:mb-8 sm:space-y-3' : 'mb-10 space-y-4 sm:space-y-5',
+            isProduct
+              ? 'product-detail-header mb-4 space-y-1.5 sm:mb-5 sm:space-y-2'
+              : 'mb-10 max-w-3xl space-y-4 sm:space-y-5',
           ].join(' ')}
         >
           <p className="text-[11px] uppercase tracking-[0.32em] text-amber-200/80">{eyebrow}</p>
@@ -438,6 +526,7 @@ function PageShell({ eyebrow, title, intro, children, variant = 'default' }) {
 }
 
 function HeroCarousel() {
+  const { t } = useLocale()
   // Hero carousel disabled for v1 — using static premium hero image.
   const HERO_CAROUSEL_ENABLED = false
 
@@ -488,7 +577,7 @@ function HeroCarousel() {
   return (
     <section
       className="dark-section relative w-full min-h-[34rem] overflow-hidden sm:min-h-[40rem] lg:min-h-[46rem]"
-      aria-label="Dom's Concepts signature woodwork"
+      aria-label={t('home.hero.ariaLabel')}
       {...carouselInteractionProps}
     >
       <div className="absolute inset-0 bg-[#14100e]">
@@ -527,25 +616,24 @@ function HeroCarousel() {
       <div className="relative z-10 mx-auto flex min-h-[34rem] max-w-7xl flex-col justify-end px-4 py-8 sm:min-h-[40rem] sm:px-6 sm:py-12 lg:min-h-[46rem] lg:px-8 lg:py-24">
         <div className="max-w-3xl space-y-4 sm:space-y-6 lg:space-y-7">
           <p className="text-[11px] uppercase tracking-[0.38em] text-amber-200/80">
-            Dom&apos;s Concepts · Prague workshop
+            {t('home.hero.eyebrow')}
           </p>
           <h1 className="font-display text-[2.45rem] leading-[1.03] text-white sm:text-[3.15rem] lg:text-[4rem]">
-            Handmade hardwood pieces, built to be used and seen.
+            {t('home.hero.title')}
           </h1>
           <p className="max-w-2xl text-base leading-7 text-stone-200 sm:text-lg sm:leading-8">
-            From cutting boards and serving pieces to one-of-one custom woodwork, Dom&apos;s
-            Concepts creates small-batch hardwood pieces from a Prague workshop.
+            {t('home.hero.subtitle')}
           </p>
           <div className="flex w-full flex-col gap-2.5 sm:w-auto sm:flex-row sm:gap-3">
             <a href="#signature-work" className={`${goldButtonClassName} w-full sm:w-auto`}>
-              Explore Signature Work
+              {t('home.hero.ctaSignature')}
             </a>
             <a href="#available-now" className={`${outlineButtonLightClassName} w-full sm:w-auto`}>
-              Shop Available Pieces
+              {t('home.hero.ctaShop')}
             </a>
           </div>
           <p className="text-xs leading-5 tracking-[0.04em] text-stone-300/90 sm:text-sm sm:leading-6">
-            Handmade in Prague · Custom orders available · Etsy checkout for available pieces
+            {t('home.hero.trustLine')}
           </p>
         </div>
 
@@ -556,7 +644,7 @@ function HeroCarousel() {
                 <button
                   key={slide.id}
                   type="button"
-                  aria-label={`Show ${slide.label}`}
+                  aria-label={t('home.hero.showSlide', { label: slide.label })}
                   aria-current={index === activeIndex ? 'true' : undefined}
                   onClick={() => goToSlide(index)}
                   className={[
@@ -571,7 +659,7 @@ function HeroCarousel() {
             <div className="flex items-center gap-2">
               <button
                 type="button"
-                aria-label="Previous slide"
+                aria-label={t('home.hero.prevSlide')}
                 onClick={() => goToSlide(activeIndex - 1)}
                 className="inline-flex h-10 w-10 items-center justify-center rounded-full border border-white/20 bg-black/35 text-white transition hover:border-amber-200/40 hover:bg-black/55"
               >
@@ -579,7 +667,7 @@ function HeroCarousel() {
               </button>
               <button
                 type="button"
-                aria-label="Next slide"
+                aria-label={t('home.hero.nextSlide')}
                 onClick={() => goToSlide(activeIndex + 1)}
                 className="inline-flex h-10 w-10 items-center justify-center rounded-full border border-white/20 bg-black/35 text-white transition hover:border-amber-200/40 hover:bg-black/55"
               >
@@ -626,10 +714,9 @@ function HeroCarouselImage({ src, alt, fallbackSrc, positionClassName = 'object-
   )
 }
 
-const SIGNATURE_FEATURED = featuredSignaturePieces
-
 function SignatureWorkGrid() {
-  const pieces = SIGNATURE_FEATURED
+  const { locale } = useLocale()
+  const pieces = getFeaturedSignaturePieces(locale)
 
   return (
     <div className="signature-work-grid mx-auto mt-10 max-w-6xl">
@@ -680,11 +767,14 @@ function SignaturePieceImage({
 }
 
 function SignaturePieceCard({ piece, priority = false }) {
-  const galleryTo = piece.galleryHash ? `/gallery#${piece.galleryHash}` : '/gallery'
+  const { t, localize } = useLocale()
+  const galleryPath = piece.galleryHash ? `/gallery#${piece.galleryHash}` : '/gallery'
+  const galleryTo = localize(galleryPath.includes('#') ? galleryPath.split('#')[0] : galleryPath)
+  const galleryHash = piece.galleryHash ? `#${piece.galleryHash}` : ''
 
   return (
     <Link
-      to={galleryTo}
+      to={`${galleryTo}${galleryHash}`}
       aria-label={`View ${piece.name} in Past Projects`}
       className="signature-piece-card group flex h-full min-h-0 flex-col overflow-hidden rounded-2xl border border-[rgba(212,170,86,0.22)] bg-white/[0.04] shadow-[0_20px_48px_-34px_rgba(0,0,0,0.72)] outline-none transition duration-[400ms] ease-out motion-safe:hover:-translate-y-1.5 hover:border-amber-200/45 hover:shadow-[0_28px_56px_-28px_rgba(40,24,12,0.82)] focus-visible:border-amber-200/60 focus-visible:ring-2 focus-visible:ring-amber-200/50 focus-visible:ring-offset-2 focus-visible:ring-offset-[#0c0a09]"
     >
@@ -712,7 +802,7 @@ function SignaturePieceCard({ piece, priority = false }) {
         </div>
         <p className="flex-1 text-sm leading-7 text-stone-300 sm:text-base">{piece.description}</p>
         <span className="mt-auto text-xs uppercase tracking-[0.2em] text-amber-200/75 transition group-hover:text-amber-100">
-          View in Past Projects →
+          {t('home.signatureWork.viewInPastProjects')}
         </span>
       </div>
     </Link>
@@ -797,7 +887,14 @@ function PastProjectModalImage({ project, alt }) {
 }
 
 function BespokeCreationCard({ project, hidePlaceholder = false, onSelect }) {
-  const categoryLabel = project.category ?? project.categories?.[0] ?? ''
+  const { t } = useLocale()
+  const categoryId =
+    project.categoryIds?.[0] ||
+    normalizeGalleryCategoryId(project.category ?? project.categories?.[0])
+  const categoryLabel =
+    categoryId && categoryId !== 'all'
+      ? translateGalleryCategoryLabel(categoryId, t, { singular: true })
+      : ''
 
   return (
     <article className="bespoke-card group flex h-full flex-col hover:-translate-y-[3px]">
@@ -819,7 +916,7 @@ function BespokeCreationCard({ project, hidePlaceholder = false, onSelect }) {
 
       <div className="flex flex-1 flex-col gap-3 p-5 sm:p-6">
         <p className="text-[10px] uppercase tracking-[0.2em] text-amber-200/75">
-          Completed Project
+          {t('galleryPage.completedProject')}
         </p>
         <button
           type="button"
@@ -840,6 +937,7 @@ function BespokeCreationCard({ project, hidePlaceholder = false, onSelect }) {
 }
 
 function PastProjectLightbox({ project, projects, currentIndex, onClose, onNavigate }) {
+  const { t } = useLocale()
   const hasPrevious = currentIndex > 0
   const hasNext = currentIndex < projects.length - 1
 
@@ -874,7 +972,13 @@ function PastProjectLightbox({ project, projects, currentIndex, onClose, onNavig
     return null
   }
 
-  const categoryLabel = project.category ?? project.categories?.[0] ?? ''
+  const categoryId =
+    project.categoryIds?.[0] ||
+    normalizeGalleryCategoryId(project.category ?? project.categories?.[0])
+  const categoryLabel =
+    categoryId && categoryId !== 'all'
+      ? translateGalleryCategoryLabel(categoryId, t, { singular: true })
+      : ''
 
   return (
     <div
@@ -925,7 +1029,7 @@ function PastProjectLightbox({ project, projects, currentIndex, onClose, onNavig
 
         <div className="space-y-2 border-t border-white/10 px-5 py-4 sm:px-6 sm:py-4">
           <p className="text-[10px] uppercase tracking-[0.2em] text-amber-200/75">
-            Completed Project
+            {t('galleryPage.completedProject')}
           </p>
           <h2 className="font-display text-2xl text-stone-100 sm:text-3xl">{project.name}</h2>
           <p className="text-sm leading-7 text-stone-300 sm:text-base">{project.material}</p>
@@ -939,21 +1043,20 @@ function PastProjectLightbox({ project, projects, currentIndex, onClose, onNavig
 }
 
 function PastProjectsCredibilityRow() {
+  const { messages } = useLocale()
+  const items = messages.galleryPage?.credibility || []
   return (
     <div className="flex flex-wrap items-center gap-x-4 gap-y-2 text-xs uppercase tracking-[0.22em] text-stone-500">
-      <span>Handmade in Prague</span>
-      <span className="hidden text-amber-200/30 sm:inline" aria-hidden="true">
-        |
-      </span>
-      <span>Built since 2016</span>
-      <span className="hidden text-amber-200/30 sm:inline" aria-hidden="true">
-        |
-      </span>
-      <span>Furniture and serving pieces</span>
-      <span className="hidden text-amber-200/30 sm:inline" aria-hidden="true">
-        |
-      </span>
-      <span>One-of-one projects</span>
+      {items.map((item, index) => (
+        <span key={item} className="inline-flex items-center gap-x-4">
+          {index > 0 ? (
+            <span className="hidden text-amber-200/30 sm:inline" aria-hidden="true">
+              |
+            </span>
+          ) : null}
+          <span>{item}</span>
+        </span>
+      ))}
     </div>
   )
 }
@@ -965,13 +1068,19 @@ function PastProjectsGrid({
   hidePlaceholder = true,
   enableLightbox = false,
 }) {
-  const [activeCategory, setActiveCategory] = useState('All')
+  const { t } = useLocale()
+  const [activeCategoryId, setActiveCategoryId] = useState('all')
   const [selectedProject, setSelectedProject] = useState(null)
 
   const filteredProjects =
-    !showFilters || activeCategory === 'All'
+    !showFilters || activeCategoryId === 'all'
       ? projects
-      : projects.filter((project) => project.categories.includes(activeCategory))
+      : projects.filter((project) =>
+          (project.categoryIds || []).includes(activeCategoryId) ||
+          (project.categories || []).some(
+            (label) => normalizeGalleryCategoryId(label) === activeCategoryId,
+          ),
+        )
 
   const handleSelect = useCallback(
     (project) => {
@@ -1009,14 +1118,14 @@ function PastProjectsGrid({
       {showFilters ? (
         <div className="-mx-4 mt-8 overflow-x-auto px-4 sm:mx-0 sm:overflow-visible sm:px-0">
           <div className="flex w-max gap-2 sm:w-auto sm:flex-wrap">
-            {bespokeCategories.map((category) => {
-              const isActive = activeCategory === category
+            {GALLERY_CATEGORY_IDS.map((categoryId) => {
+              const isActive = activeCategoryId === categoryId
 
               return (
                 <button
-                  key={category}
+                  key={categoryId}
                   type="button"
-                  onClick={() => setActiveCategory(category)}
+                  onClick={() => setActiveCategoryId(categoryId)}
                   className={[
                     'shrink-0',
                     isActive
@@ -1024,7 +1133,7 @@ function PastProjectsGrid({
                       : 'rounded-full border border-[rgba(212,170,86,0.22)] bg-[rgba(24,18,14,0.72)] px-3 py-1.5 text-xs font-medium text-stone-200 transition hover:border-amber-200/40 hover:text-stone-100',
                   ].join(' ')}
                 >
-                  {category}
+                  {translateGalleryCategoryLabel(categoryId, t)}
                 </button>
               )
             })}
@@ -1090,6 +1199,7 @@ function formatCountdownParts(totalMs) {
 }
 
 function WorkshopDropCountdown() {
+  const { t } = useLocale()
   const [parts, setParts] = useState(() =>
     formatCountdownParts(getNextSundayDeadlinePrague().getTime() - Date.now()),
   )
@@ -1105,10 +1215,10 @@ function WorkshopDropCountdown() {
   }, [])
 
   const units = [
-    { key: 'days', label: 'Days', value: parts.days },
-    { key: 'hours', label: 'Hours', value: parts.hours },
-    { key: 'minutes', label: 'Minutes', value: parts.minutes },
-    { key: 'seconds', label: 'Seconds', value: parts.seconds },
+    { key: 'days', label: t('home.workshopDrop.days'), value: parts.days },
+    { key: 'hours', label: t('home.workshopDrop.hours'), value: parts.hours },
+    { key: 'minutes', label: t('home.workshopDrop.minutes'), value: parts.minutes },
+    { key: 'seconds', label: t('home.workshopDrop.seconds'), value: parts.seconds },
   ]
 
   return (
@@ -1133,6 +1243,7 @@ function WorkshopDropCountdown() {
 }
 
 function WorkshopDropSection() {
+  const { t } = useLocale()
   const { products: catalogueProducts } = usePublicCatalogue()
   const product =
     catalogueProducts.find(
@@ -1185,16 +1296,16 @@ function WorkshopDropSection() {
             <div className="flex flex-col justify-center gap-6 p-6 sm:p-8 lg:p-10">
               <div className="space-y-4">
                 <p className="text-[11px] uppercase tracking-[0.38em] text-amber-200/80">
-                  {workshopDrop.eyebrow}
+                  {t('home.workshopDrop.eyebrow')}
                 </p>
                 <h2 className="font-display text-3xl text-white sm:text-4xl">
-                  {workshopDrop.supportingCopy}
+                  {t('home.workshopDrop.supporting')}
                 </h2>
                 <div className="flex flex-wrap items-center gap-3">
                   <span className="inline-flex rounded-md border border-amber-200/35 bg-amber-950/45 px-3 py-1.5 text-[11px] uppercase tracking-[0.18em] text-amber-100">
-                    {workshopDrop.discountLabel}
+                    {t('home.workshopDrop.discount')}
                   </span>
-                  <span className="text-sm text-stone-300">{workshopDrop.giftMessage}</span>
+                  <span className="text-sm text-stone-300">{t('home.workshopDrop.gift')}</span>
                 </div>
                 <p className="text-base leading-7 text-stone-300">{publishedProduct.name}</p>
               </div>
@@ -1207,7 +1318,7 @@ function WorkshopDropSection() {
                 rel="noopener noreferrer"
                 className={[goldButtonClassName, 'workshop-drop-cta w-full sm:w-auto'].join(' ')}
               >
-                {workshopDrop.ctaLabel}
+                {t('home.workshopDrop.cta')}
               </a>
             </div>
           </div>
@@ -1218,22 +1329,25 @@ function WorkshopDropSection() {
 }
 
 function BespokeCreationDetailPage() {
+  const { t, locale } = useLocale()
   const { projectSlug } = useParams()
-  const project = getBespokeCreationBySlug(projectSlug)
+  const project = getBespokeCreationBySlug(projectSlug, locale)
 
   if (!project) {
     return (
       <PageShell
-        eyebrow="PAST PROJECTS"
-        title="Project not found"
-        intro="This completed project may have moved or the link may be incomplete."
+        eyebrow={t('galleryPage.pastProjects')}
+        title={t('galleryPage.projectNotFound')}
+        intro={t('galleryPage.projectNotFoundIntro')}
       >
-        <PrimaryLink to="/gallery">Back to Past Projects</PrimaryLink>
+        <PrimaryLink to="/gallery">{t('galleryPage.backToPastProjects')}</PrimaryLink>
       </PageShell>
     )
   }
 
-  const categoryLabel = project.categories.join(' · ')
+  const categoryLabel = (project.categoryIds || [])
+    .map((id) => translateGalleryCategoryLabel(id, t, { singular: true }))
+    .join(' · ')
 
   return (
     <>
@@ -1244,12 +1358,12 @@ function BespokeCreationDetailPage() {
         canonicalPath={`/bespoke-creations/${project.slug}`}
       />
       <PageShell
-        eyebrow="PAST PROJECTS"
+        eyebrow={t('galleryPage.pastProjects')}
         title={project.name}
         intro={project.material}
       >
         <div className="mb-8">
-          <SecondaryLink to="/gallery">Back to Past Projects</SecondaryLink>
+          <SecondaryLink to="/gallery">{t('galleryPage.backToPastProjects')}</SecondaryLink>
         </div>
         <div className="grid gap-8 lg:grid-cols-[1.1fr_0.9fr] lg:items-start">
           <div className="aspect-[4/3] w-full overflow-hidden rounded-2xl border border-white/10 bg-[#1c1511]">
@@ -1257,7 +1371,7 @@ function BespokeCreationDetailPage() {
           </div>
           <Card luxury>
             <p className="text-[10px] uppercase tracking-[0.2em] text-amber-200/75">
-              Completed Project
+              {t('galleryPage.completedProject')}
             </p>
             <h2 className="mt-4 font-display text-3xl text-white">{project.name}</h2>
             <p className="mt-4 text-base leading-8 text-stone-300">{project.material}</p>
@@ -1295,6 +1409,7 @@ function useIsMobileViewport(maxWidthPx = 767) {
 }
 
 function HomePage() {
+  const { t } = useLocale()
   const isMobile = useIsMobileViewport(767)
   const { products: catalogueProducts } = usePublicCatalogue()
   const featuredProducts = getHomepageFeaturedProducts(catalogueProducts, 10).filter(
@@ -1304,7 +1419,7 @@ function HomePage() {
 
   return (
     <>
-      <PageMeta title={pageSeo.home.title} description={pageSeo.home.description} />
+      <PageMeta title={t('home.seoTitle')} description={t('home.seoDescription')} />
 
       <HeroCarousel />
 
@@ -1313,18 +1428,17 @@ function HomePage() {
           <div className="mb-10 flex flex-col gap-6 lg:flex-row lg:items-end lg:justify-between">
             <div className="max-w-3xl space-y-4">
               <p className="text-[11px] uppercase tracking-[0.38em] text-amber-200/80">
-                AVAILABLE THIS WEEK
+                {t('home.availableThisWeek.eyebrow')}
               </p>
               <h2 className="font-display text-4xl text-stone-100 sm:text-[2.75rem]">
-                Available This Week
+                {t('home.availableThisWeek.title')}
               </h2>
               <p className="text-base leading-8 text-stone-300">
-                Ready-to-ship pieces, workshop accessories and small-batch work currently available
-                from Dom&apos;s Concepts.
+                {t('home.availableThisWeek.intro')}
               </p>
             </div>
             <SecondaryLink to="/available-pieces" className="text-stone-200 hover:text-amber-200">
-              View all available pieces
+              {t('home.availableThisWeek.viewAll')}
             </SecondaryLink>
           </div>
           <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 md:grid-cols-3 xl:grid-cols-4">
@@ -1335,7 +1449,7 @@ function HomePage() {
           {isMobile && featuredProducts.length > 3 ? (
             <div className="mt-8">
               <SecondaryLink to="/available-pieces" className="text-amber-200/90 hover:text-amber-100">
-                View all available pieces
+                {t('home.availableThisWeek.viewAll')}
               </SecondaryLink>
             </div>
           ) : null}
@@ -1348,15 +1462,13 @@ function HomePage() {
         <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
           <div className="max-w-3xl space-y-5">
             <p className="text-[11px] uppercase tracking-[0.38em] text-amber-200/80">
-              SIGNATURE WORK
+              {t('home.signatureWork.eyebrow')}
             </p>
             <h2 className="font-display text-4xl text-white sm:text-5xl">
-              Boards, tables, and workshop favourites.
+              {t('home.signatureWork.title')}
             </h2>
             <p className="text-base leading-8 text-stone-300 sm:text-lg">
-              From statement furniture and one-of-one knife displays to serving pieces and custom
-              gifts, each project is designed around the material, its purpose and the space it
-              belongs in.
+              {t('home.signatureWork.intro')}
             </p>
           </div>
           <SignatureWorkGrid />
@@ -1365,7 +1477,7 @@ function HomePage() {
               to="/gallery"
               className="text-sm tracking-wide text-stone-300 transition hover:text-amber-200"
             >
-              Explore every completed project →
+              {t('home.signatureWork.exploreAll')}
             </Link>
           </div>
         </div>
@@ -1376,9 +1488,9 @@ function HomePage() {
       <section id="reviews" className="dark-section w-full py-14 sm:py-20">
         <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
           <SectionHeading
-            eyebrow="CUSTOMER STORIES"
-            title="Craftsmanship customers remember."
-            intro="Real feedback from customers who have ordered boards, gifts and workshop care products from Dom's Concepts."
+            eyebrow={t('home.customerStories.eyebrow')}
+            title={t('home.customerStories.title')}
+            intro={t('home.customerStories.intro')}
             compact
           />
           <div className="mt-8 grid grid-cols-1 gap-5 md:grid-cols-2 lg:grid-cols-3">
@@ -1393,7 +1505,7 @@ function HomePage() {
               rel="noopener noreferrer"
               className={outlineButtonLightClassName}
             >
-              Read more reviews on Etsy
+              {t('home.customerStories.readMore')}
             </a>
           </div>
         </div>
@@ -1408,46 +1520,31 @@ function HomePage() {
             />
             <div className="space-y-5 lg:order-2">
               <p className="text-[11px] uppercase tracking-[0.38em] text-amber-200/80">
-                MEET THE MAKER
+                {t('home.meetTheMaker.eyebrow')}
               </p>
               <h2 className="font-display text-3xl text-white sm:text-4xl">
-                Built by hand. Shaped by precision.
+                {t('home.meetTheMaker.title')}
               </h2>
               <div className="space-y-4 text-base leading-8 text-stone-300">
-                <p>Hi, I&apos;m Dominick.</p>
-                <p>
-                  I started Dom&apos;s Concepts in 2016 as a creative counterpoint to my
-                  professional background in IT and technical problem-solving.
-                </p>
-                <p>
-                  The two worlds have more in common than they might seem. Both depend on
-                  precision, patience, careful planning and finding the right solution when
-                  the obvious one does not work.
-                </p>
-                <p>
-                  In the workshop, that means selecting hardwood for its grain and character,
-                  refining every detail by hand and creating pieces designed to be used for
-                  years.
-                </p>
-                <p>
-                  From cutting boards and serving pieces to desks, dining tables and
-                  one-of-one commissions, every Dom&apos;s Concepts project is built
-                  individually in Prague.
-                </p>
+                <p>{t('home.meetTheMaker.p1')}</p>
+                <p>{t('home.meetTheMaker.p2')}</p>
+                <p>{t('home.meetTheMaker.p3')}</p>
+                <p>{t('home.meetTheMaker.p4')}</p>
+                <p>{t('home.meetTheMaker.p5')}</p>
               </div>
               <p className="font-display text-xl text-stone-100">
-                Technical thinking. Honest materials. Handmade results.
+                {t('home.meetTheMaker.tagline')}
               </p>
               <div className="flex flex-col gap-3 sm:flex-row">
                 <PrimaryLink to="/gallery">
-                  Explore Past Projects
+                  {t('home.meetTheMaker.ctaGallery')}
                 </PrimaryLink>
                 <SecondaryLink
                   to={CUSTOM_ORDER_FORM_ANCHOR}
                   variant="button"
                   className="text-center"
                 >
-                  Request a Custom Piece
+                  {t('home.meetTheMaker.ctaCustom')}
                 </SecondaryLink>
               </div>
             </div>
@@ -1459,10 +1556,10 @@ function HomePage() {
         <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
           <div className="mb-6 max-w-2xl space-y-3">
             <p className="text-[11px] uppercase tracking-[0.32em] text-amber-200/70">
-              Workshop partners
+              {t('home.partners.eyebrow')}
             </p>
             <h2 className="font-display text-2xl text-stone-100 sm:text-3xl">
-              Trusted collaborators
+              {t('home.partners.title')}
             </h2>
           </div>
           <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
@@ -1472,7 +1569,7 @@ function HomePage() {
           </div>
           <div className="mt-6">
             <SecondaryLink to="/partners" className="text-stone-300 hover:text-amber-200">
-              View all partners
+              {t('home.partners.viewAll')}
             </SecondaryLink>
           </div>
         </div>
@@ -1482,6 +1579,7 @@ function HomePage() {
 }
 
 function MakerAboutImage({ className = '', priority = false }) {
+  const { t } = useLocale()
   const [imageSrc, setImageSrc] = useState(makerAboutImagePath)
 
   return (
@@ -1493,7 +1591,7 @@ function MakerAboutImage({ className = '', priority = false }) {
     >
       <img
         src={imageSrc}
-        alt="Dominick in the Dom's Concepts workshop in Prague"
+        alt={t('home.meetTheMaker.portraitAlt')}
         loading={priority ? 'eager' : 'lazy'}
         onError={() => {
           if (imageSrc !== workshopAboutImagePath) {
@@ -1508,6 +1606,7 @@ function MakerAboutImage({ className = '', priority = false }) {
 }
 
 function WorkshopAboutImage({ className = '', priority = false }) {
+  const { t } = useLocale()
   const [hasError, setHasError] = useState(false)
 
   if (hasError) {
@@ -1532,7 +1631,7 @@ function WorkshopAboutImage({ className = '', priority = false }) {
     >
       <img
         src={workshopAboutImagePath}
-        alt="Dom's Concepts woodworking workshop in Prague"
+        alt={t('about.workshopImageAlt')}
         loading={priority ? 'eager' : 'lazy'}
         onError={() => setHasError(true)}
         className="h-full w-full object-cover object-center"
@@ -1543,6 +1642,7 @@ function WorkshopAboutImage({ className = '', priority = false }) {
 }
 
 function AvailablePiecesPage() {
+  const { t } = useLocale()
   const [searchParams, setSearchParams] = useSearchParams()
   const materialParam = searchParams.get('material')
   const activeMaterial = isProductMaterialKey(materialParam) ? materialParam : null
@@ -1565,13 +1665,13 @@ function AvailablePiecesPage() {
   return (
     <>
       <PageMeta
-        title={pageSeo.availablePieces.title}
-        description={pageSeo.availablePieces.description}
+        title={t('seo.availablePiecesTitle')}
+        description={t('seo.availablePiecesDescription')}
       />
       <PageShell
-        eyebrow="Shop the Collection"
-        title="Available Pieces"
-        intro="Browse current workshop pieces. Available items link to Etsy for checkout. Custom and sold pieces can be requested directly."
+        eyebrow={t('availablePiecesPage.eyebrow')}
+        title={t('availablePiecesPage.title')}
+        intro={t('availablePiecesPage.intro')}
       >
         <div className="mb-8 flex flex-wrap gap-2">
           {visibleCollections.map((collection) => {
@@ -1588,7 +1688,7 @@ function AvailablePiecesPage() {
                     : 'rounded-full border border-[rgba(212,170,86,0.22)] bg-[rgba(24,18,14,0.72)] px-3 py-1.5 text-xs font-medium text-stone-200 transition hover:border-amber-200/40 hover:text-stone-100',
                 ].join(' ')}
               >
-                {collection}
+                {collection === 'All' ? t('galleryPage.filterAll') : translateCategoryLabel(collection, t)}
               </button>
             )
           })}
@@ -1605,26 +1705,48 @@ function AvailablePiecesPage() {
 
 function ProductDetailPage() {
   const { productId } = useParams()
+  const location = useLocation()
+  const { t, localize, locale, messages } = useLocale()
   const {
     isCzechia,
-    shippingMessageDetail,
     localizeShippingNote,
   } = useCurrency()
   const redirectTarget = productId ? productIdRedirects[productId] : undefined
-  const { product, loading, notFound } = usePublicProductDetail(productId || '')
+  const { product, loading, notFound, error: loadError } = usePublicProductDetail(
+    productId || '',
+  )
   const isDevUnpublishedPreview =
     Boolean(import.meta.env.DEV) && Boolean(product) && !isPublished(product)
-  const rawGalleryImages = product ? getProductRealImages(product) : []
-  const galleryImages = Array.isArray(rawGalleryImages) ? rawGalleryImages.filter(Boolean) : []
-  const primaryGalleryImage = galleryImages[0] || ''
+  const rawImages = product ? getProductRealImages(product) : []
+  const galleryImages = normalizeProductGallery(Array.isArray(rawImages) ? rawImages : [], {
+    productName: product?.name || product?.title || 'Product',
+    productId: product?.id || productId || 'product',
+  })
+  const primaryGalleryImage = galleryImages[0]?.url || ''
   const [activeIndex, setActiveIndex] = useState(0)
+  // Lightbox stores a stable index into galleryImages — never a URL, DOM node, or product object.
+  const [activeImageIndex, setActiveImageIndex] = useState(null)
 
+  // Navigation reset: pathname / locale / slug change must not leak lightbox or gallery state.
   useEffect(() => {
     setActiveIndex(0)
-  }, [product?.id, primaryGalleryImage])
+    setActiveImageIndex(null)
+  }, [location.pathname, product?.id, productId, locale])
 
-  const activeImage = galleryImages[activeIndex] || primaryGalleryImage
+  const safeActiveIndex =
+    galleryImages.length === 0
+      ? 0
+      : Math.min(Math.max(activeIndex, 0), galleryImages.length - 1)
+  const activeImage = galleryImages[safeActiveIndex]?.url || primaryGalleryImage
   const canNavigateGallery = galleryImages.length > 1
+
+  const openLightboxAt = (index) => {
+    if (!Number.isInteger(index) || index < 0 || index >= galleryImages.length) return
+    const image = galleryImages[index]
+    if (!image || !hasValidProductImageUrl(image.url)) return
+    setActiveIndex(index)
+    setActiveImageIndex(index)
+  }
 
   const showPreviousImage = () => {
     if (!canNavigateGallery) return
@@ -1636,28 +1758,47 @@ function ProductDetailPage() {
     setActiveIndex((current) => (current + 1) % galleryImages.length)
   }
 
+  const navigateLightbox = (index) => {
+    if (!Number.isInteger(index) || index < 0 || index >= galleryImages.length) return
+    if (!hasValidProductImageUrl(galleryImages[index]?.url)) return
+    setActiveIndex(index)
+    setActiveImageIndex(index)
+  }
+
   if (redirectTarget) {
-    return <Navigate to={`/available-pieces/${redirectTarget}`} replace />
+    return <Navigate to={localize(`/available-pieces/${redirectTarget}`)} replace />
   }
 
   if (loading) {
     return (
       <PageShell
-        eyebrow="Available Pieces"
-        title="Loading piece…"
-        intro="Fetching the latest catalogue details."
+        eyebrow={t('product.availablePieces')}
+        title={t('product.loadingPiece')}
+        intro={t('product.fetchingDetails')}
       />
+    )
+  }
+
+  if (loadError && !product) {
+    return (
+      <PageShell
+        eyebrow={t('product.availablePieces')}
+        title={t('errors.catalogueUnavailable')}
+        intro={t('errors.catalogueUnavailableIntro')}
+      >
+        <PrimaryLink to="/available-pieces">{t('common.backToAvailablePieces')}</PrimaryLink>
+      </PageShell>
     )
   }
 
   if (!product || notFound || (!isPublished(product) && !isDevUnpublishedPreview)) {
     return (
       <PageShell
-        eyebrow="Available Pieces"
-        title="Product not found"
-        intro="This piece may have moved or the link may be incomplete. You can still browse the current collection below."
+        eyebrow={t('product.availablePieces')}
+        title={t('product.productNotFound')}
+        intro={t('product.productNotFoundIntro')}
       >
-        <PrimaryLink to="/available-pieces">Back to Available Pieces</PrimaryLink>
+        <PrimaryLink to="/available-pieces">{t('common.backToAvailablePieces')}</PrimaryLink>
       </PageShell>
     )
   }
@@ -1673,8 +1814,47 @@ function ProductDetailPage() {
   const parsedDescription = parseEtsyDescription(descriptionSource, {
     title: product.name || product.title,
   })
-  const availabilityLabel =
-    productBadgeLabels[product.badge] ?? product.availability ?? product.badge ?? 'Available'
+  const availabilityLabel = translateBadgeLabel(
+    product.badge || product.availability || 'Available',
+    t,
+  )
+  const productLabels = {
+    overview: t('product.overview'),
+    features: t('product.features'),
+    perfectFor: t('product.perfectFor'),
+    whyEndGrain: t('product.whyEndGrain'),
+    whyThisPiece: t('product.whyThisPiece'),
+    specifications: t('product.specifications'),
+    materials: t('product.materials'),
+    dimensions: t('product.dimensions'),
+    finish: t('product.finish'),
+    construction: t('product.construction'),
+    woodSpecies: t('product.woodSpecies'),
+    includedHardware: t('product.includedHardware'),
+    intendedUse: t('product.intendedUse'),
+    battery: t('product.battery'),
+    ingredients: t('product.ingredients'),
+    options: t('product.options'),
+    capacity: t('product.capacity'),
+    howToUse: t('product.howToUse'),
+    intendedUseEpoxyServing: t('product.intendedUseEpoxyServing'),
+    finishEpoxyServing: t('product.finishEpoxyServing'),
+    careInstructions: t('product.careInstructions'),
+    productDetails: t('product.productDetails'),
+    importantNotes: t('product.importantNotes'),
+    price: t('product.price'),
+    availability: t('product.availability'),
+    photos: t('product.photos'),
+    photoSingular: t('product.photoSingular'),
+    photoPlural: t('product.photoPlural'),
+    handSelectedHardwoods: t('product.handSelectedHardwoods'),
+    priceOnRequest: t('product.priceOnRequest'),
+    perfectForEpoxyServingBoard: messages.product?.perfectForEpoxyServingBoard || [],
+    perfectForBottleOpener: messages.product?.perfectForBottleOpener || [],
+    perfectForBookHolder: messages.product?.perfectForBookHolder || [],
+    typeContent: messages.product?.typeContent || {},
+    careBullets: messages.product?.careBullets || {},
+  }
 
   return (
     <>
@@ -1691,7 +1871,7 @@ function ProductDetailPage() {
       />
     <PageShell
       variant="product"
-      eyebrow="Available Pieces"
+      eyebrow={t('product.availablePieces')}
       title={product.name}
     >
       {isDevUnpublishedPreview ? (
@@ -1700,151 +1880,171 @@ function ProductDetailPage() {
           production returns 404.
         </div>
       ) : null}
-      <div className="product-detail-layout grid gap-8 overflow-x-hidden lg:grid-cols-[minmax(0,1.05fr)_minmax(0,0.95fr)] lg:gap-10">
-        <div className="min-w-0 space-y-4">
-          {galleryImages.length > 0 ? (
-            <div className="product-gallery-hero relative">
-              <PhotoFrame
-                src={activeImage}
-                alt={product.name}
-                className="product-gallery-main"
-                overlay="none"
-                priority
-                showLabels={false}
-                imageFit="contain"
+      <div className="product-detail-layout">
+        <div className="product-detail-hero">
+          <div className="product-detail-gallery min-w-0">
+            {galleryImages.length > 0 ? (
+              <div className="product-gallery-hero relative">
+                <PhotoFrame
+                  src={activeImage}
+                  alt={product.name}
+                  className="product-gallery-main"
+                  overlay="none"
+                  priority
+                  showLabels={false}
+                  imageFit="contain"
+                  onClick={() => openLightboxAt(safeActiveIndex)}
+                />
+                {canNavigateGallery ? (
+                  <>
+                    <button
+                      type="button"
+                      onClick={showPreviousImage}
+                      className="product-gallery-nav product-gallery-nav--prev"
+                      aria-label={t('product.previousPhoto')}
+                    >
+                      ‹
+                    </button>
+                    <button
+                      type="button"
+                      onClick={showNextImage}
+                      className="product-gallery-nav product-gallery-nav--next"
+                      aria-label={t('product.nextPhoto')}
+                    >
+                      ›
+                    </button>
+                  </>
+                ) : null}
+              </div>
+            ) : (
+              <ProductDetailImageFallback productName={product.name} />
+            )}
+          </div>
+
+          <div className="product-detail-purchase min-w-0">
+            <Card className="product-detail-summary">
+              <div className="flex flex-wrap items-center gap-3">
+                <span
+                  className={[
+                    'rounded-full border px-3 py-1.5 text-sm',
+                    productBadgeClassesLuxury[product.badge] ||
+                      productBadgeClassesLuxury.Available,
+                  ].join(' ')}
+                >
+                  {availabilityLabel}
+                </span>
+                {product.freeShipping ? (
+                  isCzechia ? (
+                    <span className="rounded-full border border-emerald-400/25 bg-emerald-950/40 px-3 py-1.5 text-sm text-emerald-200">
+                      {t('shipping.freeCz')}
+                    </span>
+                  ) : (
+                    <span className="rounded-full border border-white/10 bg-black/25 px-3 py-1.5 text-sm text-stone-300">
+                      {t('shipping.calculatedDetail')}
+                    </span>
+                  )
+                ) : null}
+              </div>
+
+              <ProductDetailPurchaseInfo
+                product={product}
+                labels={productLabels}
+                locale={locale}
+                priceValue={
+                  <FormattedPrice
+                    price={product.priceFrom || product.price}
+                    amount={product.priceAmount}
+                    sourceCurrency={product.priceCurrency}
+                    className="text-stone-100"
+                  />
+                }
               />
-              {canNavigateGallery ? (
-                <>
-                  <button
-                    type="button"
-                    onClick={showPreviousImage}
-                    className="product-gallery-nav product-gallery-nav--prev"
-                    aria-label="Previous product photo"
-                  >
-                    ‹
-                  </button>
-                  <button
-                    type="button"
-                    onClick={showNextImage}
-                    className="product-gallery-nav product-gallery-nav--next"
-                    aria-label="Next product photo"
-                  >
-                    ›
-                  </button>
-                </>
-              ) : null}
-            </div>
-          ) : (
-            <ProductDetailImageFallback productName={product.name} />
-          )}
+
+              <div className="product-detail-purchase-actions mt-6 flex flex-col gap-3">
+                {product.isAvailable ? (
+                  <>
+                    <ProductActionButton action={primaryAction} className={goldButtonClassName} />
+                    <ProductActionButton
+                      action={secondaryAction}
+                      className={outlineButtonLightClassName}
+                    />
+                  </>
+                ) : (
+                  <ProductActionButton
+                    action={secondaryAction}
+                    className={outlineButtonLightClassName}
+                  />
+                )}
+                <EtsyPriceNote className="product-detail-etsy-note mt-0.5" />
+                <SecondaryLink to="/available-pieces" className="mt-1 self-start text-stone-400">
+                  {t('common.backToCollection')}
+                </SecondaryLink>
+              </div>
+              {showBoardCareUpsell ? <BoardCareUpsell product={product} /> : null}
+            </Card>
+          </div>
+
           {galleryImages.length > 1 ? (
-            <div className="product-thumbnails" role="list" aria-label="Product photos">
+            <div
+              className="product-detail-thumbs product-thumbnails"
+              role="list"
+              aria-label={t('product.photos')}
+            >
               {galleryImages.map((image, index) => (
                 <GalleryThumbnail
-                  key={`${product.id}-${image}`}
-                  image={image}
-                  alt={`${product.name} photo ${index + 1}`}
-                  isActive={activeIndex === index}
-                  onSelect={() => setActiveIndex(index)}
+                  key={`${product.id}-${image.id}`}
+                  image={image.url}
+                  alt={image.alt}
+                  isActive={safeActiveIndex === index}
+                  onSelect={() => openLightboxAt(index)}
                 />
               ))}
             </div>
           ) : null}
         </div>
 
-        <div className="product-detail-copy min-w-0 space-y-6">
-          <Card className="product-detail-summary">
-            <div className="flex flex-wrap items-center gap-3">
-              <span
-                className={[
-                  'rounded-full border px-3 py-1.5 text-sm',
-                  productBadgeClassesLuxury[product.badge],
-                ].join(' ')}
-              >
-                {availabilityLabel}
-              </span>
-              {product.freeShipping ? (
-                isCzechia ? (
-                  <span className="rounded-full border border-emerald-400/25 bg-emerald-950/40 px-3 py-1.5 text-sm text-emerald-200">
-                    {shippingMessageDetail}
-                  </span>
-                ) : (
-                  <span className="rounded-full border border-white/10 bg-black/25 px-3 py-1.5 text-sm text-stone-300">
-                    {shippingMessageDetail}
-                  </span>
-                )
-              ) : null}
-            </div>
+        <div className="product-detail-info-section min-w-0">
+          <ProductDetailInfoGrid
+            product={product}
+            labels={productLabels}
+            locale={locale}
+          />
 
-            {/* Single description path: ProductDetailInfo → ProductDescription only */}
-            <ProductDetailInfo
-              product={product}
-              galleryImageCount={galleryImages.length}
-              availabilityLabel={availabilityLabel}
-              priceValue={
-                <FormattedPrice
-                  price={product.priceFrom || product.price}
-                  className="text-stone-100"
-                />
-              }
-            />
-
-            {socialProof ? <ProductSocialProof review={socialProof} /> : null}
-            <div className="mt-8 flex flex-col gap-3">
-              {product.isAvailable ? (
-                <>
-                  <ProductActionButton action={primaryAction} className={goldButtonClassName} />
-                  <ProductActionButton
-                    action={secondaryAction}
-                    className={outlineButtonLightClassName}
-                  />
-                </>
-              ) : (
-                <ProductActionButton
-                  action={secondaryAction}
-                  className={outlineButtonLightClassName}
-                />
-              )}
-              <EtsyPriceNote className="mt-1" />
-              <SecondaryLink to="/available-pieces" className="mt-1 self-start text-stone-400">
-                Back to collection
-              </SecondaryLink>
-            </div>
-            {showBoardCareUpsell ? <BoardCareUpsell product={product} /> : null}
-          </Card>
           {product.shippingNote ? (
-            <Card>
-              <h2 className="font-display text-2xl text-white sm:text-3xl">Returns / Shipping</h2>
+            <Card className="mt-6">
+              <h2 className="font-display text-2xl text-white sm:text-3xl">
+                {t('product.returnsShipping')}
+              </h2>
               <p className="product-description__body mt-5">
                 {localizeShippingNote(product.shippingNote)}
               </p>
             </Card>
           ) : null}
-          {product.etsyUrl ? (
-            <Card>
-              <p className="text-sm leading-7 text-stone-300">
-                This piece is also listed externally.
-              </p>
-              <a
-                href={product.etsyUrl}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="mt-4 inline-flex rounded-full border border-amber-200/35 bg-stone-900 px-5 py-3 text-sm font-medium text-amber-50 transition hover:border-amber-200 hover:bg-stone-800"
-              >
-                View on Etsy
-              </a>
-            </Card>
-          ) : null}
+
+          {socialProof ? <ProductSocialProof review={socialProof} /> : null}
+
+          <div className="mt-8">
+            <SecondaryLink to="/available-pieces" className="text-stone-400">
+              {t('common.backToCollection')}
+            </SecondaryLink>
+          </div>
         </div>
       </div>
     </PageShell>
+      <ProductImageLightbox
+        images={galleryImages}
+        activeImageIndex={activeImageIndex}
+        onClose={() => setActiveImageIndex(null)}
+        onNavigate={navigateLightbox}
+      />
     </>
   )
 }
 
 function GalleryPage() {
+  const { t, locale } = useLocale()
   const location = useLocation()
-  const visibleProjects = getVisibleGalleryProjects()
+  const visibleProjects = getVisibleGalleryProjects(locale)
 
   useEffect(() => {
     const hash = location.hash.replace(/^#/, '')
@@ -1874,16 +2074,13 @@ function GalleryPage() {
   return (
     <>
       <PageMeta
-        title={pageSeo.gallery?.title ?? "Past Projects | Dom's Concepts"}
-        description={
-          pageSeo.gallery?.description ??
-          'A look back at furniture, serving pieces and one-of-one creations handmade by Dom\'s Concepts in Prague since 2016.'
-        }
+        title={t('seo.galleryTitle')}
+        description={t('seo.galleryDescription')}
       />
       <PageShell
-        eyebrow="PAST PROJECTS"
-        title="A look back at pieces built over the years."
-        intro="Furniture, serving pieces and one-of-one creations handmade by Dom's Concepts since 2016."
+        eyebrow={t('gallery.eyebrow')}
+        title={t('gallery.title')}
+        intro={t('gallery.intro')}
       >
         <PastProjectsCredibilityRow />
 
@@ -1902,6 +2099,7 @@ function GalleryPage() {
 }
 
 function CustomOrdersPage() {
+  const { t, messages } = useLocale()
   const [searchParams] = useSearchParams()
   const selectedProductId = searchParams.get('product') || ''
   const selectedProduct = products.find((item) => item.id === selectedProductId)
@@ -1911,24 +2109,23 @@ function CustomOrdersPage() {
   return (
     <>
       <PageMeta
-        title={pageSeo.customOrders.title}
-        description={pageSeo.customOrders.description}
+        title={t('seo.customOrdersTitle')}
+        description={t('seo.customOrdersDescription')}
       />
       <PageShell
-        eyebrow="Custom commissions"
-        title="Want a piece made just for you?"
-        intro="Send an idea, size, wood type or reference photo and I'll help turn it into a custom handmade piece."
+        eyebrow={t('customOrders.eyebrow')}
+        title={t('customOrders.title')}
+        intro={t('customOrders.intro')}
       >
         <div className="grid gap-8 lg:grid-cols-[0.9fr_1.1fr]">
           <Card>
-            <p className="section-eyebrow">How it works</p>
-            <h2 className="mt-4 font-display text-3xl text-stone-100">Custom orders, quoted personally</h2>
-            <p className="mt-4 leading-8 text-stone-300">
-              Share the product type, wood direction, size, and whether you want engraving
-              or logo work. Every order is reviewed personally before a quote is confirmed.
-            </p>
+            <p className="section-eyebrow">{t('customOrdersPage.howItWorks')}</p>
+            <h2 className="mt-4 font-display text-3xl text-stone-100">
+              {t('customOrdersPage.quotedPersonally')}
+            </h2>
+            <p className="mt-4 leading-8 text-stone-300">{t('customOrdersPage.body')}</p>
             <div className="mt-6 space-y-4">
-              {customOrderSteps.map((step, index) => (
+              {(messages.customOrdersPage?.steps || []).map((step, index) => (
                 <div
                   key={step}
                   className="flex items-start gap-4 rounded-2xl border border-white/10 bg-black/20 p-4"
@@ -1947,13 +2144,13 @@ function CustomOrdersPage() {
                 rel="noopener noreferrer"
                 className={outlineButtonLightClassName}
               >
-                Message on Instagram
+                {t('forms.messageOnInstagram')}
               </a>
             </div>
           </Card>
           <div id="custom-quote-form">
             <OrderForm
-              title="Request Custom Quote"
+              title={t('forms.requestCustomQuote')}
               presetProduct={selectedPiece}
               presetCareAddon={presetCareAddon}
               defaultMessage={
@@ -1974,24 +2171,24 @@ function CustomOrdersPage() {
 }
 
 function CareGuidePage() {
+  const { t, messages } = useLocale()
   return (
     <>
-      <PageMeta title={pageSeo.careGuide.title} description={pageSeo.careGuide.description} />
+      <PageMeta title={t('seo.careGuideTitle')} description={t('seo.careGuideDescription')} />
       <PageShell
-      eyebrow="Care Guide"
-      title="Simple care that keeps solid wood performing beautifully."
-      intro="Every piece is made to be used, but hardwood lasts best when it is cleaned, dried, and nourished properly."
+      eyebrow={t('careGuide.eyebrow')}
+      title={t('careGuide.title')}
+      intro={t('careGuide.intro')}
     >
       <div className="grid gap-6">
         <Card className="bg-white/[0.03]">
           <div className="flex flex-col gap-5 lg:flex-row lg:items-center lg:justify-between">
             <div className="max-w-3xl">
               <p className="text-xs uppercase tracking-[0.35em] text-amber-200/80">
-                QR-Code Friendly Care Guide
+                {t('careGuidePage.qrEyebrow')}
               </p>
               <p className="mt-3 text-lg leading-8 text-stone-300">
-                This page is designed to be easy to scan from a printed board
-                care card, with clear sections and direct product care guidance.
+                {t('careGuidePage.qrBody')}
               </p>
             </div>
             <a
@@ -2000,16 +2197,16 @@ function CareGuidePage() {
               rel="noopener noreferrer"
               className="inline-flex items-center justify-center rounded-full border border-amber-200/35 bg-stone-900 px-6 py-3 text-sm font-medium text-amber-50 transition hover:border-amber-200 hover:bg-stone-800"
             >
-              Reorder Wood Butter
+              {t('careGuidePage.reorderButter')}
             </a>
           </div>
         </Card>
 
         <div className="grid gap-8 lg:grid-cols-[0.9fr_1.1fr]">
         <Card>
-          <h2 className="font-serif text-3xl text-white">Board care essentials</h2>
+          <h2 className="font-serif text-3xl text-white">{t('careGuidePage.essentials')}</h2>
           <div className="mt-6 space-y-4">
-            {careGuidePoints.map((point) => (
+            {(messages.careGuidePage?.points || []).map((point) => (
               <div
                 key={point.title}
                 className="rounded-2xl border border-white/10 bg-black/20 p-5 text-stone-200"
@@ -2021,13 +2218,8 @@ function CareGuidePage() {
           </div>
         </Card>
         <Card>
-          <h2 className="font-serif text-3xl text-white">Dom&apos;s Concepts board care</h2>
-          <p className="mt-5 leading-8 text-stone-300">
-            Refresh hardwood boards and serving pieces with workshop-made wood butter
-            for routine conditioning, or wood wax when you want a stronger protective
-            finish. Both are available as standalone products or as a 30% board-order
-            add-on.
-          </p>
+          <h2 className="font-serif text-3xl text-white">{t('careGuidePage.brandTitle')}</h2>
+          <p className="mt-5 leading-8 text-stone-300">{t('careGuidePage.brandBody')}</p>
           <div className="mt-8 grid gap-4 sm:grid-cols-2">
             {boardCareProducts.map((item) => (
               <div
@@ -2046,7 +2238,7 @@ function CareGuidePage() {
             ))}
           </div>
           <div className="mt-8 rounded-2xl border border-amber-300/20 bg-amber-200/8 p-5 text-sm leading-7 text-amber-50">
-            Avoid dishwashers, prolonged soaking, and direct heat exposure.
+            {t('careGuidePage.avoidNote')}
           </div>
         </Card>
       </div>
@@ -2054,12 +2246,11 @@ function CareGuidePage() {
         <div className="flex flex-col gap-6">
           <div className="max-w-2xl">
             <p className="text-xs uppercase tracking-[0.35em] text-amber-200/80">
-              Board care add-on
+              {t('careGuidePage.addonEyebrow')}
             </p>
-            <h2 className="mt-3 font-serif text-3xl text-white">Need board care?</h2>
+            <h2 className="mt-3 font-serif text-3xl text-white">{t('careGuidePage.needCare')}</h2>
             <p className="mt-4 leading-8 text-stone-300">
-              Add Dom&apos;s Concepts wood butter or wax to any board order and save{' '}
-              {boardCarePricing.discountLabel}.
+              {t('careGuidePage.addonBody', { discount: boardCarePricing.discountLabel })}
             </p>
           </div>
           <BoardCareProductsGrid />
@@ -2072,11 +2263,12 @@ function CareGuidePage() {
 }
 
 function PartnersPage() {
+  const { t } = useLocale()
   return (
     <PageShell
-      eyebrow="Workshop Partners"
-      title="Trusted workshop brands and collaborators"
-      intro="Materials, finish systems, abrasives, and workshop tools used in the Dom&apos;s Concepts studio — shared with respect for the brands behind the craft."
+      eyebrow={t('partnersPage.eyebrow')}
+      title={t('partnersPage.title')}
+      intro={t('partnersPage.intro')}
     >
       <div className="grid gap-5 md:grid-cols-2 xl:grid-cols-4">
         {partnerItems.map((partner) => (
@@ -2088,13 +2280,13 @@ function PartnersPage() {
           <div className="flex flex-col gap-5 lg:flex-row lg:items-center lg:justify-between">
             <div>
               <p className="text-xs uppercase tracking-[0.35em] text-amber-200/80">
-                Partnership Enquiries
+                {t('partnersPage.partnershipEyebrow')}
               </p>
               <h2 className="mt-3 font-serif text-3xl text-white">
-                Interested in partnering with Dom&apos;s Concepts?
+                {t('partnersPage.partnershipTitle')}
               </h2>
             </div>
-            <PrimaryLink to="/contact">Start the conversation</PrimaryLink>
+            <PrimaryLink to="/contact">{t('partnersPage.startConversation')}</PrimaryLink>
           </div>
         </Card>
       </div>
@@ -2103,6 +2295,7 @@ function PartnersPage() {
 }
 
 function AboutMeetTheMaker() {
+  const { t } = useLocale()
   return (
     <div className="mb-14 border-b border-[rgba(212,170,86,0.14)] pb-14 sm:mb-16 sm:pb-16">
       <div className="grid items-center gap-10 sm:gap-12 lg:grid-cols-[minmax(0,0.9fr)_minmax(0,1.1fr)] lg:gap-16 xl:gap-20">
@@ -2110,7 +2303,7 @@ function AboutMeetTheMaker() {
           <div className="about-maker-portrait relative aspect-[4/5] overflow-hidden rounded-[1.35rem] border border-[rgba(212,170,86,0.38)] bg-[#1a1511] shadow-[0_0_32px_-10px_rgba(212,170,86,0.42),0_18px_40px_-28px_rgba(0,0,0,0.7)]">
             <img
               src={aboutMakerPortraitPath}
-              alt="Dominick Carzoli, maker behind Dom’s Concepts, in his Prague workshop"
+              alt={t('about.maker.portraitAlt')}
               loading="eager"
               className="h-full w-full object-cover object-[center_18%]"
             />
@@ -2119,32 +2312,19 @@ function AboutMeetTheMaker() {
 
         <div className="mx-auto max-w-xl space-y-5 text-center lg:mx-0 lg:max-w-none lg:text-left">
           <p className="text-[11px] uppercase tracking-[0.38em] text-amber-200/80">
-            MEET THE MAKER
+            {t('about.maker.eyebrow')}
           </p>
           <h2 className="font-display text-3xl text-[#f7efe3] sm:text-4xl">
-            Dominick Carzoli
+            {t('about.maker.name')}
           </h2>
           <div className="space-y-4 text-base leading-8 text-stone-300">
-            <p>I&apos;m Dominick, the maker behind Dom&apos;s Concepts.</p>
-            <p>
-              Dom&apos;s Concepts began in a small 3 × 3 metre workshop at home,
-              where limited space never limited the ideas. What started as a
-              passion for woodworking grew into a place where cutting boards,
-              furniture and completely one-of-one pieces are designed and built
-              by hand.
-            </p>
-            <p>
-              From a simple serving board to a fully custom table, the goal has
-              always been the same: if you can imagine it, we can work together
-              to make it a reality.
-            </p>
-            <p>
-              Every piece is made with care, honest materials and close
-              attention to the details that make it truly personal.
-            </p>
+            <p>{t('about.maker.p1')}</p>
+            <p>{t('about.maker.p2')}</p>
+            <p>{t('about.maker.p3')}</p>
+            <p>{t('about.maker.p4')}</p>
           </div>
           <p className="font-display text-lg text-stone-200 sm:text-xl">
-            Handmade in Prague. Built from an idea into something real.
+            {t('about.maker.tagline')}
           </p>
         </div>
       </div>
@@ -2153,22 +2333,17 @@ function AboutMeetTheMaker() {
 }
 
 function AboutPage() {
+  const { t } = useLocale()
   return (
     <>
-      <PageMeta title={pageSeo.about.title} description={pageSeo.about.description} />
+      <PageMeta title={t('seo.aboutTitle')} description={t('seo.aboutDescription')} />
       <PageShell
-      eyebrow="About"
-      title="A Prague woodworking brand centered on material, function, and finish."
+      eyebrow={t('about.eyebrow')}
+      title={t('about.title')}
       intro={
         <>
-          Dom&apos;s Concepts began in a small 3 × 3 metre workshop at home,
-          built around one simple idea: anything you can imagine can be turned
-          into something real.
-          <span className="mt-3 block">
-            From premium kitchen and serving pieces to furniture and completely
-            custom creations, every project is designed and handcrafted in
-            Prague.
-          </span>
+          {t('about.introP1')}
+          <span className="mt-3 block">{t('about.introP2')}</span>
         </>
       }
     >
@@ -2176,35 +2351,21 @@ function AboutPage() {
       <div className="grid gap-8 lg:grid-cols-[1fr_0.9fr]">
         <Card>
           <p className="text-xs uppercase tracking-[0.35em] text-amber-200/80">
-            Slow wood. Honest craft. Handmade wood and epoxy pieces from Prague.
+            {t('about.brand.eyebrow')}
           </p>
           <div className="space-y-5 leading-8 text-stone-300">
-            <p>
-              Dom&apos;s Concepts is a small handmade woodworking brand based in
-              Prague. Since 2016, the workshop has focused on premium wooden
-              pieces, cutting boards, butcher blocks, serving boards, coasters,
-              wood care products, and selected epoxy projects.
-            </p>
-            <p>
-              The brand also sells through Etsy under {etsyShopName} and has
-              been on Etsy since 2019. Dom&apos;s Concepts values durable
-              materials, premium finishing, balanced proportions, and practical
-              use across kitchen pieces, corporate gifts, restaurant boards,
-              and custom logo work.
-            </p>
-            <p className="text-stone-200">
-              Custom sizes, wood combinations, logo engraving, and special
-              pieces are available on request.
-            </p>
+            <p>{t('about.brand.p1')}</p>
+            <p>{t('about.brand.p2', { shop: etsyShopName })}</p>
+            <p className="text-stone-200">{t('about.brand.p3')}</p>
           </div>
         </Card>
         <div className="space-y-6">
           <WorkshopAboutImage className="aspect-[5/4] w-full" priority />
           <div className="grid gap-4 sm:grid-cols-2">
-            <Stat value="2016" label="Handmade brand active since" />
-            <Stat value="Prague, Czechia" label="Workshop location" />
-            <Stat value="5-star Etsy shop" label="Trusted by Etsy customers" />
-            <Stat value="Since 2019" label="On Etsy" />
+            <Stat value="2016" label={t('about.stats.since')} />
+            <Stat value={t('about.stats.locationValue')} label={t('about.stats.location')} />
+            <Stat value={t('about.stats.trustedValue')} label={t('about.stats.trusted')} />
+            <Stat value={t('about.stats.onEtsyValue')} label={t('about.stats.onEtsy')} />
           </div>
         </div>
       </div>
@@ -2213,12 +2374,10 @@ function AboutPage() {
           <div className="flex flex-col gap-5 lg:flex-row lg:items-center lg:justify-between">
             <div>
               <p className="text-xs uppercase tracking-[0.35em] text-amber-200/80">
-                Trusted by Etsy customers
+                {t('about.etsyStrip.eyebrow')}
               </p>
               <p className="mt-3 max-w-3xl leading-8 text-stone-300">
-                Dom&apos;s Concepts also sells handmade pieces through Etsy and
-                has received 5-star customer feedback for craftsmanship,
-                service, and wood care products.
+                {t('about.etsyStrip.body')}
               </p>
             </div>
             <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
@@ -2228,7 +2387,7 @@ function AboutPage() {
                 rel="noopener noreferrer"
                 className="inline-flex items-center justify-center rounded-full border border-amber-200/35 bg-stone-900 px-6 py-3 text-sm font-medium text-amber-50 transition hover:border-amber-200 hover:bg-stone-800"
               >
-                View Etsy Shop
+                {t('about.etsyStrip.viewShop')}
               </a>
               {import.meta.env.DEV ? (
                 <a
@@ -2248,16 +2407,17 @@ function AboutPage() {
 }
 
 function ReviewsPage() {
+  const { t, messages } = useLocale()
   return (
     <>
-      <PageMeta title={pageSeo.reviews.title} description={pageSeo.reviews.description} />
+      <PageMeta title={t('seo.reviewsTitle')} description={t('seo.reviewsDescription')} />
       <PageShell
-        eyebrow="Customer Stories"
-        title="Craftsmanship customers remember."
-        intro="Real feedback from customers who have ordered boards, gifts and workshop care products from Dom's Concepts."
+        eyebrow={t('reviews.eyebrow')}
+        title={t('reviews.title')}
+        intro={t('reviews.intro')}
       >
         <div className="mb-10 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-          {reviewTrustPoints.map((point) => (
+          {(messages.reviewsPage?.trustPoints || []).map((point) => (
             <div
               key={point}
               className="rounded-2xl border border-amber-200/20 bg-black/25 px-5 py-4 text-center text-sm text-stone-200"
@@ -2280,7 +2440,7 @@ function ReviewsPage() {
             rel="noopener noreferrer"
             className={outlineButtonLightClassName}
           >
-            Read more reviews on Etsy
+            {t('reviewsPage.readMore')}
           </a>
         </div>
       </PageShell>
@@ -2289,21 +2449,22 @@ function ReviewsPage() {
 }
 
 function FaqPage() {
+  const { t, messages } = useLocale()
   return (
     <>
-      <PageMeta title={pageSeo.faq.title} description={pageSeo.faq.description} />
+      <PageMeta title={t('seo.faqTitle')} description={t('seo.faqDescription')} />
       <PageShell
-        eyebrow="FAQ"
-        title="Questions about custom work, shipping, and care."
-        intro="Short answers to the most common enquiries. For anything more specific, send a message through the contact form."
+        eyebrow={t('faq.eyebrow')}
+        title={t('faq.title')}
+        intro={t('faq.intro')}
       >
         <div className="grid gap-4 md:grid-cols-2">
-          {faqItems.map((item) => (
+          {(messages.faqItems || []).map((item) => (
             <FaqCard key={item.question} item={item} />
           ))}
         </div>
         <div className="mt-10">
-          <PrimaryLink to="/contact">Ask a question</PrimaryLink>
+          <PrimaryLink to="/contact">{t('faqPage.askQuestion')}</PrimaryLink>
         </div>
       </PageShell>
     </>
@@ -2311,16 +2472,17 @@ function FaqPage() {
 }
 
 function LegalDocumentPage({ slug }) {
+  const { t } = useLocale()
   const page = legalPages.find((item) => item.slug === slug)
 
   if (!page) {
     return (
       <PageShell
-        eyebrow="Legal"
-        title="Page not found"
-        intro="This legal page could not be found."
+        eyebrow={t('brand.legal')}
+        title={t('common.pageNotFound')}
+        intro={t('common.pageNotFoundIntro')}
       >
-        <PrimaryLink to="/">Back to home</PrimaryLink>
+        <PrimaryLink to="/">{t('nav.home')}</PrimaryLink>
       </PageShell>
     )
   }
@@ -2331,7 +2493,7 @@ function LegalDocumentPage({ slug }) {
         title={`${page.title} | Dom's Concepts`}
         description={page.intro}
       />
-      <PageShell eyebrow="Legal" title={page.title} intro={page.intro}>
+      <PageShell eyebrow={t('brand.legal')} title={page.title} intro={page.intro}>
         <div className="max-w-3xl space-y-5">
           {page.body.map((paragraph) => (
             <p key={paragraph} className="leading-8 text-stone-300">
@@ -2395,7 +2557,8 @@ function isExternalHttpUrl(url) {
 
 function PartnerCard({ partner, compact = false }) {
   const hasUrl = isExternalHttpUrl(partner.url)
-  const visitLabel = hasUrl ? 'Visit partner ↗' : 'Workshop partner'
+  const { t } = useLocale()
+  const visitLabel = hasUrl ? t('partnersPage.visitPartner') : t('partnersPage.workshopPartner')
 
   if (compact) {
     const className =
@@ -2457,17 +2620,19 @@ function FaqCard({ item }) {
 }
 
 function InstagramWorkshopSection() {
+  const { t, locale } = useLocale()
+  const videos = getInstagramVideos(locale)
   return (
     <section id="follow-the-workshop" className="dark-section scroll-mt-28 w-full py-14 sm:py-20">
       <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
         <SectionHeading
-          eyebrow="Instagram"
-          title="Follow the Workshop"
-          intro="See new builds, behind-the-scenes moments, finishing techniques and completed pieces from the Dom’s Concepts workshop."
+          eyebrow={t('home.instagram.eyebrow')}
+          title={t('home.instagram.title')}
+          intro={t('home.instagram.intro')}
           compact
         />
         <div className="grid gap-5 md:grid-cols-3">
-          {instagramVideos.map((video) => (
+          {videos.map((video) => (
             <InstagramVideoCard key={video.id} video={video} />
           ))}
         </div>
@@ -2478,7 +2643,7 @@ function InstagramWorkshopSection() {
             rel="noopener noreferrer"
             className={goldButtonClassName}
           >
-            Follow @doms_concepts on Instagram
+            {t('home.instagram.followCta')}
           </a>
         </div>
       </div>
@@ -2487,6 +2652,7 @@ function InstagramWorkshopSection() {
 }
 
 function InstagramVideoCard({ video }) {
+  const { t } = useLocale()
   const [hasError, setHasError] = useState(false)
   const reelUrl =
     video.instagramUrl && video.instagramUrl !== placeholderInstagramReelUrl
@@ -2521,7 +2687,7 @@ function InstagramVideoCard({ video }) {
         )}
         <div className="pointer-events-none absolute inset-0 bg-gradient-to-t from-black/70 via-black/10 to-black/20" />
         <p className="pointer-events-none absolute left-4 top-4 text-[10px] uppercase tracking-[0.22em] text-amber-200/90">
-          Instagram Reel
+          {t('home.instagram.reelLabel')}
         </p>
         <div className="pointer-events-none absolute inset-0 flex items-center justify-center">
           <span className="flex h-11 w-11 items-center justify-center rounded-full border border-amber-200/35 bg-black/50 text-amber-50 opacity-80 backdrop-blur-sm transition group-hover:opacity-100">
@@ -2540,7 +2706,7 @@ function InstagramVideoCard({ video }) {
           rel="noopener noreferrer"
           className={goldButtonClassNameCompact}
         >
-          Watch on Instagram
+          {t('home.instagram.watchCta')}
         </a>
       </div>
     </article>
@@ -2548,27 +2714,25 @@ function InstagramVideoCard({ video }) {
 }
 
 function ContactPage() {
+  const { t } = useLocale()
   return (
     <PageShell
-      eyebrow="Contact"
-      title="Start a reservation, custom order, or workshop enquiry."
-      intro="For available pieces, custom sizing, engraving, or care product questions, get in touch directly."
+      eyebrow={t('contact.eyebrow')}
+      title={t('contact.title')}
+      intro={t('contact.intro')}
     >
       <div className="grid gap-8 lg:grid-cols-[0.85fr_1.15fr]">
         <Card>
-          <h2 className="font-serif text-3xl text-white">Direct contact</h2>
+          <h2 className="font-serif text-3xl text-white">{t('forms.directContact')}</h2>
           <div className="mt-6 space-y-4 text-stone-300">
-            <p>Email:</p>
+            <p>{t('forms.emailLabel')}</p>
             <a
               href={`mailto:${contactEmail}`}
               className="inline-block text-lg text-amber-200 transition hover:text-amber-100"
             >
               {contactEmail}
             </a>
-            <p className="pt-4 leading-8">
-              Based in Prague, Czechia. Pickup and shipping options can be
-              discussed per order request.
-            </p>
+            <p className="pt-4 leading-8">{t('forms.basedInPrague')}</p>
             <a
               href={etsyShopUrl}
               target="_blank"
@@ -2579,7 +2743,7 @@ function ContactPage() {
             </a>
           </div>
         </Card>
-        <OrderForm title="Send an enquiry" />
+        <OrderForm title={t('forms.sendEnquiry')} />
       </div>
     </PageShell>
   )
@@ -2596,6 +2760,7 @@ function BoardCareProductsGrid({ compact = false, luxury = false }) {
 }
 
 function BoardCareProductCard({ product, compact = false, luxury = false }) {
+  const { t } = useLocale()
   const action = getBoardCareButtonAction(product)
 
   return (
@@ -2613,11 +2778,11 @@ function BoardCareProductCard({ product, compact = false, luxury = false }) {
         </h3>
         <div className="text-sm text-stone-300">
           <p>
-            Normal price:{' '}
+            {t('boardCare.normalPrice')}{' '}
             <FormattedPrice price={boardCarePricing.normalPrice} className="text-stone-200" />
           </p>
           <p className="mt-1">
-            Board add-on price:{' '}
+            {t('boardCare.addonPrice')}{' '}
             <FormattedPrice
               price={boardCarePricing.addonPrice}
               className="font-medium text-amber-100"
@@ -2643,21 +2808,22 @@ function BoardCareProductCard({ product, compact = false, luxury = false }) {
 }
 
 function BoardCareUpsell({ product }) {
+  const { t } = useLocale()
   const etsyHref = getProductEtsyHref(product)
   const purchaseOptions = [
-    { label: 'Choose Wood Butter on Etsy', href: etsyHref },
-    { label: 'Choose Wood Wax on Etsy', href: etsyHref },
-    { label: 'Buy without add-on on Etsy', href: etsyHref },
+    { label: t('boardCare.chooseButter'), href: etsyHref, outline: false },
+    { label: t('boardCare.chooseWax'), href: etsyHref, outline: false },
+    { label: t('boardCare.buyWithout'), href: etsyHref, outline: true },
   ]
 
   return (
     <div className="mt-8 rounded-[1.4rem] border border-amber-200/20 bg-gradient-to-br from-[#1c1511] via-stone-950 to-black p-5 sm:p-6">
       <p className="text-xs uppercase tracking-[0.3em] text-amber-200/80">
-        Workshop recommendation
+        {t('boardCare.workshopRecommendation')}
       </p>
-      <h2 className="mt-3 font-serif text-2xl text-white">Add board care and save 30%</h2>
+      <h2 className="mt-3 font-serif text-2xl text-white">{t('boardCare.addBoardCare')}</h2>
       <p className="mt-3 text-sm leading-7 text-stone-300">
-        Choose Wood Butter or Wood Wax as a discounted add-on on the Etsy listing.
+        {t('boardCare.addBoardCareBody')}
       </p>
       <div className="mt-6 flex flex-col gap-3">
         {purchaseOptions.map((option) => (
@@ -2666,7 +2832,7 @@ function BoardCareUpsell({ product }) {
             href={option.href}
             target="_blank"
             rel="noopener noreferrer"
-            className={option.label === 'Buy without add-on on Etsy' ? outlineButtonLightClassName : goldButtonClassName}
+            className={option.outline ? outlineButtonLightClassName : goldButtonClassName}
           >
             {option.label}
           </a>
@@ -2699,6 +2865,10 @@ function ProductCardImage({ src, alt }) {
 }
 
 function ProductActionButton({ action, className = goldButtonClassNameCompact }) {
+  const { t, localize } = useLocale()
+  const label = translateActionLabel(action.label, t)
+  const href = action.href.startsWith('/') ? localize(action.href) : action.href
+
   if (action.external) {
     return (
       <a
@@ -2707,31 +2877,32 @@ function ProductActionButton({ action, className = goldButtonClassNameCompact })
         rel="noopener noreferrer"
         className={className}
       >
-        {action.label}
+        {label}
       </a>
     )
   }
 
   if (action.href.startsWith('/')) {
     return (
-      <Link to={action.href} className={className}>
-        {action.label}
+      <Link to={href} className={className}>
+        {label}
       </Link>
     )
   }
 
   return (
     <a href={action.href} className={className}>
-      {action.label}
+      {label}
     </a>
   )
 }
 
 function ProductCard({ piece, variant = 'luxury' }) {
+  const { t, localize } = useLocale()
   const { isCzechia, shippingMessage } = useCurrency()
   const isLuxury = variant === 'luxury'
-  const badgeLabel = productBadgeLabels[piece.badge] ?? piece.badge
-  const detailHref = getProductDetailHref(piece)
+  const badgeLabel = translateBadgeLabel(piece.badge || 'Available', t)
+  const detailHref = localize(getProductDetailHref(piece))
   // Same helper as Available Pieces + detail: Etsy-first when catalogue mode is on.
   const cardImage = getProductRealImages(piece)[0] || piece.image || piece.mainImage
 
@@ -2785,6 +2956,8 @@ function ProductCard({ piece, variant = 'luxury' }) {
         <div className="mt-auto space-y-3">
           <FormattedPrice
             price={piece.priceFrom || piece.price}
+            amount={piece.priceAmount}
+            sourceCurrency={piece.priceCurrency}
             className="text-base font-medium text-stone-200"
             as="p"
           />
@@ -2795,14 +2968,18 @@ function ProductCard({ piece, variant = 'luxury' }) {
                 isCzechia ? 'text-emerald-400/85' : 'text-stone-500',
               ].join(' ')}
             >
-              {shippingMessage}
+              {shippingMessage
+                ? isCzechia
+                  ? t('shipping.freeCz')
+                  : t('shipping.calculatedShort')
+                : null}
             </p>
           ) : null}
           <Link
             to={detailHref}
             className="product-card-view-link text-xs uppercase tracking-[0.18em] text-amber-200/80 transition duration-300"
           >
-            View piece →
+            {t('common.viewPiece')}
           </Link>
         </div>
       </div>
@@ -2811,13 +2988,14 @@ function ProductCard({ piece, variant = 'luxury' }) {
 }
 
 function ReviewCard({ review, luxury = false }) {
+  const { t } = useLocale()
   const cardClassName = luxury ? 'luxury-review-card' : 'premium-card h-full p-6'
 
   return (
     <article className={cardClassName}>
       <div
         className="flex gap-1 text-amber-200/90"
-        aria-label={`${review.rating} out of 5 stars`}
+        aria-label={`${review.rating} ${t('socialProof.outOfFive')}`}
       >
         {Array.from({ length: review.rating }).map((_, index) => (
           <span key={index} aria-hidden="true">
@@ -2842,33 +3020,43 @@ function ReviewCard({ review, luxury = false }) {
 }
 
 function ProductSocialProof({ review }) {
+  const { t } = useLocale()
+  if (!review || typeof review !== 'object') return null
+  const rating = Number.isFinite(Number(review.rating)) ? Number(review.rating) : 0
+  const quote = review.shortQuote || review.quote || ''
+  const name = review.name || ''
+
   return (
     <div className="product-social-proof mt-6">
       <p className="text-sm leading-7 text-stone-200">
-        <span className="text-amber-200/90" aria-label={`${review.rating} out of 5 stars`}>
-          {Array.from({ length: review.rating })
+        <span
+          className="text-amber-200/90"
+          aria-label={`${rating} ${t('socialProof.outOfFive')}`}
+        >
+          {Array.from({ length: Math.max(0, Math.min(5, rating)) })
             .map(() => '★')
             .join('')}
         </span>{' '}
-        &ldquo;{review.shortQuote || review.quote}&rdquo; — {review.name}, verified Etsy review
+        &ldquo;{quote}&rdquo; — {name}, {t('socialProof.verifiedReview')}
       </p>
     </div>
   )
 }
 
 function OrderForm({ title, presetProduct = '', presetCareAddon = 'none', defaultMessage = '' }) {
+  const { locale, t } = useLocale()
   const { formatProductPrice, pricesReady } = useCurrency()
   const [formState, setFormState] = useState({
     name: '',
     email: '',
     phone: '',
     product: presetProduct,
-    productType: customProductTypes[0],
-    woodPreference: woodPreferences[0],
+    productType: customProductTypeOptions[0].value,
+    woodPreference: 'none',
     size: '',
-    engraving: engravingOptions[1],
-    shipping: shippingOptions[0],
-    budget: budgetRanges[1],
+    engraving: 'no',
+    shipping: 'pickup',
+    budget: budgetRangeChoices[1].value,
     boardCareAddon: presetCareAddon,
     message: defaultMessage,
     referenceImage: '',
@@ -2899,8 +3087,10 @@ function OrderForm({ title, presetProduct = '', presetCareAddon = 'none', defaul
       formState.boardCareAddon === 'wood-butter' || formState.boardCareAddon === 'wood-wax'
         ? ` (${formattedAddonPrice} board add-on price, normally ${formattedNormalPrice})`
         : ''
+    const localeLabel = locale === 'de' ? 'de' : locale === 'cs' ? 'cs' : 'en'
 
     const body = [
+      `Website language: ${localeLabel}`,
       `Name: ${formState.name}`,
       `Email: ${formState.email}`,
       `Phone: ${formState.phone || 'Not provided'}`,
@@ -2919,7 +3109,7 @@ function OrderForm({ title, presetProduct = '', presetCareAddon = 'none', defaul
     ].join('\n')
 
     return `mailto:${contactEmail}?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`
-  }, [formState, formattedAddonPrice, formattedNormalPrice])
+  }, [formState, formattedAddonPrice, formattedNormalPrice, locale])
 
   function updateField(event) {
     const { name, value } = event.target
@@ -2930,13 +3120,13 @@ function OrderForm({ title, presetProduct = '', presetCareAddon = 'none', defaul
     <Card>
       <h2 className="font-display text-3xl text-stone-100">{title}</h2>
       <p className="mt-4 leading-8 text-stone-300">
-        This form opens your email client to send the request to {contactEmail}.
+        {t('forms.opensEmail', { email: contactEmail })}
       </p>
 
       {presetProduct ? (
         <div className="form-highlight mt-6">
           <p className="text-xs uppercase tracking-[0.28em] text-amber-200/80">
-            Selected Product
+            {t('forms.selectedProduct')}
           </p>
           <p className="mt-2 text-lg text-stone-100">{presetProduct}</p>
         </div>
@@ -2945,7 +3135,7 @@ function OrderForm({ title, presetProduct = '', presetCareAddon = 'none', defaul
       {presetCareAddon !== 'none' ? (
         <div className="form-highlight-muted mt-4">
           <p className="text-xs uppercase tracking-[0.28em] text-emerald-200/85">
-            Board Care Add-on
+            {t('forms.boardCareAddon')}
           </p>
           <p className="mt-2 text-sm text-stone-200">
             {getBoardCareAddonLabel(presetCareAddon)}
@@ -2959,7 +3149,7 @@ function OrderForm({ title, presetProduct = '', presetCareAddon = 'none', defaul
       <form className="mt-8 grid gap-5" action={mailtoHref} method="get">
         <div className="grid gap-5 sm:grid-cols-2">
           <FormField
-            label="Name"
+            label={t('forms.yourName')}
             name="name"
             autoComplete="name"
             value={formState.name}
@@ -2967,7 +3157,7 @@ function OrderForm({ title, presetProduct = '', presetCareAddon = 'none', defaul
             required
           />
           <FormField
-            label="Email"
+            label={t('forms.yourEmail')}
             name="email"
             type="email"
             autoComplete="email"
@@ -2977,31 +3167,33 @@ function OrderForm({ title, presetProduct = '', presetCareAddon = 'none', defaul
           />
         </div>
         <SelectField
-          label="Product type"
+          label={t('forms.productType')}
           name="productType"
           autoComplete="off"
           value={formState.productType}
           onChange={updateField}
-          options={customProductTypes}
+          options={customProductTypeOptions.map((o) => t(o.labelKey))}
+          optionValues={customProductTypeOptions.map((o) => o.value)}
         />
         <FormField
-          label="Product / piece name optional"
+          label={t('forms.productNameOptional')}
           name="product"
           autoComplete="off"
           value={formState.product}
           onChange={updateField}
         />
         <SelectField
-          label="Budget range"
+          label={t('forms.budgetRange')}
           name="budget"
           autoComplete="off"
           value={formState.budget}
           onChange={updateField}
-          options={budgetRanges}
+          options={budgetRangeChoices.map((o) => t(o.labelKey))}
+          optionValues={budgetRangeChoices.map((o) => o.value)}
         />
         <div className="grid gap-2">
           <label className="form-label" htmlFor="message">
-            Message
+            {t('forms.message')}
           </label>
           <textarea
             id="message"
@@ -3013,12 +3205,10 @@ function OrderForm({ title, presetProduct = '', presetCareAddon = 'none', defaul
             className="form-textarea"
           />
         </div>
-        <div className="form-note">
-          Reference image upload placeholder — attach your reference photo in the email after submitting.
-        </div>
+        <div className="form-note">{t('forms.referenceImageNote')}</div>
         <div className="flex flex-col gap-3 pt-2 sm:flex-row">
           <button type="submit" className={goldButtonClassName}>
-            Request Custom Quote
+            {t('forms.requestCustomQuote')}
           </button>
           <a
             href={instagramUrl}
@@ -3026,7 +3216,7 @@ function OrderForm({ title, presetProduct = '', presetCareAddon = 'none', defaul
             rel="noopener noreferrer"
             className={outlineButtonLightClassName}
           >
-            Message on Instagram
+            {t('forms.messageOnInstagram')}
           </a>
         </div>
       </form>
@@ -3093,12 +3283,19 @@ function SelectField({ label, name, value, onChange, options, optionValues, auto
   )
 }
 
-function ProductPriceMeta({ priceFrom, price }) {
+function ProductPriceMeta({ priceFrom, price, priceAmount, priceCurrency }) {
   const label = priceFrom || price
   return (
     <ProductMeta
       label="Price"
-      value={<FormattedPrice price={label} className="text-stone-100" />}
+      value={
+        <FormattedPrice
+          price={label}
+          amount={priceAmount}
+          sourceCurrency={priceCurrency}
+          className="text-stone-100"
+        />
+      }
     />
   )
 }
@@ -3176,6 +3373,7 @@ function GalleryThumbnail({ image, alt, isActive, onSelect }) {
         src={image}
         alt={alt}
         loading="lazy"
+        referrerPolicy="no-referrer"
         onError={() => setHasError(true)}
         className="h-full w-full object-cover object-center"
       />
@@ -3193,10 +3391,12 @@ function PhotoFrame({
   showLabels = true,
   imageFit = 'cover',
   placeholderMessage = 'Photo coming soon',
+  onClick,
 }) {
   const [hasError, setHasError] = useState(false)
   const isContained = imageFit === 'contain'
   const hasUsableSrc = typeof src === 'string' && src.trim().length > 0
+  const isClickable = typeof onClick === 'function' && hasUsableSrc && !hasError
 
   useEffect(() => {
     setHasError(false)
@@ -3209,14 +3409,30 @@ function PhotoFrame({
         isContained
           ? 'bg-[#0d0b09] shadow-[inset_0_1px_0_rgba(251,191,36,0.07),0_18px_40px_-28px_rgba(0,0,0,0.85)]'
           : 'bg-stone-900',
+        isClickable ? 'cursor-zoom-in' : '',
         className,
       ].join(' ')}
+      role={isClickable ? 'button' : undefined}
+      tabIndex={isClickable ? 0 : undefined}
+      aria-label={isClickable ? `Open larger view of ${alt}` : undefined}
+      onClick={isClickable ? onClick : undefined}
+      onKeyDown={
+        isClickable
+          ? (event) => {
+              if (event.key === 'Enter' || event.key === ' ') {
+                event.preventDefault()
+                onClick()
+              }
+            }
+          : undefined
+      }
     >
       {!hasError && hasUsableSrc ? (
         <img
           src={src}
           alt={alt}
           loading={priority ? 'eager' : 'lazy'}
+          referrerPolicy="no-referrer"
           onError={() => setHasError(true)}
           className={[
             isContained
@@ -3269,9 +3485,10 @@ function Stat({ value, label }) {
 }
 
 function PrimaryLink({ to, children, className = '' }) {
+  const { localize } = useLocale()
   return (
     <Link
-      to={to}
+      to={localize(to)}
       className={[goldButtonClassName, className].join(' ')}
     >
       {children}
@@ -3280,13 +3497,14 @@ function PrimaryLink({ to, children, className = '' }) {
 }
 
 function SecondaryLink({ to, children, className = '', variant = 'text' }) {
+  const { localize } = useLocale()
   const baseClassName =
     variant === 'button'
       ? outlineButtonClassName
       : 'inline-flex items-center text-sm font-medium text-amber-200/90 transition hover:text-amber-100'
 
   return (
-    <Link to={to} className={[baseClassName, className].join(' ')}>
+    <Link to={localize(to)} className={[baseClassName, className].join(' ')}>
       {children}
       {variant === 'text' ? ' →' : ''}
     </Link>

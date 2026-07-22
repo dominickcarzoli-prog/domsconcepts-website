@@ -49,12 +49,12 @@ const COUNTRY_CURRENCY = {
 }
 
 function countryToCurrency(countryCode) {
-  if (!countryCode || typeof countryCode !== 'string') return 'USD'
+  if (!countryCode || typeof countryCode !== 'string') return 'EUR'
   const cc = countryCode.trim().toUpperCase()
-  if (cc === 'XX' || cc === 'T1') return 'USD'
+  if (cc === 'XX' || cc === 'T1') return 'EUR'
   if (COUNTRY_CURRENCY[cc]) return COUNTRY_CURRENCY[cc]
   if (EUROZONE.has(cc)) return 'EUR'
-  return 'USD'
+  return 'EUR'
 }
 
 function resolveCountry(request) {

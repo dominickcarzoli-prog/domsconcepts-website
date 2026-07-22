@@ -33,6 +33,10 @@ export async function onRequestGet(context) {
     )
   }
 
+  const url = new URL(context.request.url)
+  const localeParam = url.searchParams.get('locale')
+  const locale = localeParam === 'de' || localeParam === 'cs' ? localeParam : 'en'
+
   try {
     const row = await db
       .prepare(
@@ -53,7 +57,7 @@ export async function onRequestGet(context) {
     }
 
     return jsonResponse(
-      { ok: true, product: mapPublicProductRow(row) },
+      { ok: true, product: mapPublicProductRow(row, { locale }), locale },
       { headers: CACHE_HEADERS },
     )
   } catch (error) {

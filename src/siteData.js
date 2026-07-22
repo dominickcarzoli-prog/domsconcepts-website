@@ -101,86 +101,12 @@ export const workshopAboutImagePath = '/images/workshop-placeholder.png'
 export const makerAboutImagePath = '/images/about/dominick-maker.jpg'
 export const aboutMakerPortraitPath = '/images/about/dominick-maker.jpg'
 
-export const signaturePieces = [
-  {
-    id: 'american-walnut-media-console',
-    name: 'American Walnut Media Console',
-    subtitle: 'TV Table / Media Console',
-    description:
-      'A custom media console featuring a solid American walnut top and steamed European walnut drawer fronts. The drawers use soft-close, push-to-open hardware for a clean exterior without visible handles.',
-    image: '/images/signature/signature-tv-console.jpg',
-    objectPosition: 'center center',
-    imageScale: 0.92,
-    galleryHash: 'american-walnut-media-console',
-    featured: false,
-  },
-  {
-    id: 'solid-oak-bed',
-    name: 'Solid Oak Bed',
-    description:
-      'A 2 × 2 metre bed built around a custom-designed steel frame, fabricated and powder-coated before being clad in solid oak slabs. Selected live edges were preserved to add natural character and contrast to the clean steel structure.',
-    image: '/images/signature/signature-oak-bed.jpg',
-    objectPosition: 'center 42%',
-    imageScale: 0.92,
-    galleryHash: 'solid-oak-bed',
-    featured: true,
-  },
-  {
-    id: 'solid-black-walnut-dining-table',
-    name: 'Solid Black Walnut Dining Table',
-    description:
-      'A solid black walnut dining table paired with custom powder-coated steel legs, designed to showcase the natural grain and warmth of the timber.',
-    image: '/images/signature/signature-walnut-dining-table.jpg',
-    objectPosition: 'center 55%',
-    imageScale: 0.92,
-    galleryHash: 'solid-black-walnut-dining-table',
-    featured: true,
-  },
-  {
-    id: 'walnut-maple-chessboard',
-    name: 'Walnut & Maple Chessboard',
-    description:
-      'A handcrafted walnut and maple board-game piece with contrasting hardwoods, precise grid work, and a refined edge profile — built as a display piece and heirloom gift.',
-    image: '/images/signature/signature-walnut-maple-chessboard.jpg',
-    objectPosition: 'center center',
-    imageScale: 1,
-    galleryHash: 'walnut-maple-chessboard',
-    featured: true,
-  },
-  {
-    id: 'sakuro-knife-table',
-    name: 'Custom Knife Table for Sakuro.cz',
-    description:
-      'A one-of-one knife display table created for Sakuro.cz. A knife and sharpening tool were suspended inside an epoxy river running through a dark brown stained oak tabletop.',
-    image: '/images/signature/signature-knife-table.jpg',
-    objectPosition: 'center 58%',
-    imageScale: 0.9,
-    galleryHash: 'custom-knife-table-sakuro',
-    featured: true,
-  },
-  {
-    id: 'whiskey-wednesday-serving-tray',
-    name: 'Whiskey Wednesday Serving Tray',
-    subtitle: "Max's Steakhouse",
-    description:
-      "A custom serving tray made for Max's Steakhouse and its Whiskey Wednesday club. The finished piece remains in use and can be seen in person at the restaurant.",
-    image: '/images/signature/signature-maxs-whiskey-tray.jpg',
-    objectPosition: 'center center',
-    imageScale: 0.92,
-    galleryHash: 'whiskey-wednesday-serving-tray',
-    featured: false,
-  },
-]
-
-/** Homepage Signature Work — four permanent featured projects (no carousel). */
-export const featuredSignaturePieces = [
-  'solid-black-walnut-dining-table',
-  'solid-oak-bed',
-  'walnut-maple-chessboard',
-  'sakuro-knife-table',
-]
-  .map((id) => signaturePieces.find((piece) => piece.id === id))
-  .filter(Boolean)
+export {
+  signaturePieces,
+  featuredSignaturePieces,
+  getFeaturedSignaturePieces,
+  localizeSignaturePiece,
+} from './data/signaturePieces.js'
 
 export const pastCustomPieces = [
   {
@@ -212,19 +138,23 @@ export const etsyTrustPoints = [
   'Secure Etsy checkout',
   'Verified reviews',
   'Handmade in Prague',
-  'Custom orders available',
+  'Custom commissions welcome',
 ]
 
-export const customProductTypes = [
-  'Cutting board',
-  'Butcher block',
-  'Serving board / tray',
-  'Epoxy piece',
-  'Furniture / table',
-  'Corporate gift',
-  'Restaurant boards',
-  'Other custom piece',
+/** Stable form option values (English IDs). Labels come from i18n dictionaries. */
+export const customProductTypeOptions = [
+  { value: 'cuttingBoard', labelKey: 'forms.productTypes.cuttingBoard' },
+  { value: 'butcherBlock', labelKey: 'forms.productTypes.butcherBlock' },
+  { value: 'servingBoard', labelKey: 'forms.productTypes.servingBoard' },
+  { value: 'epoxyPiece', labelKey: 'forms.productTypes.epoxyPiece' },
+  { value: 'furniture', labelKey: 'forms.productTypes.furniture' },
+  { value: 'corporateGift', labelKey: 'forms.productTypes.corporateGift' },
+  { value: 'restaurantBoards', labelKey: 'forms.productTypes.restaurantBoards' },
+  { value: 'other', labelKey: 'forms.productTypes.other' },
 ]
+
+/** @deprecated Use customProductTypeOptions — kept for mailto fallback labels */
+export const customProductTypes = customProductTypeOptions.map((o) => o.value)
 
 export const customOrderSteps = [
   'Choose the piece',
@@ -374,25 +304,35 @@ export const careGuidePoints = [
   },
 ]
 
-export const shippingOptions = ['Pickup in Prague', 'Shipping']
-
-export const woodPreferences = [
-  'No preference yet',
-  'Walnut',
-  'Oak',
-  'Maple',
-  'Ash',
-  'Mixed hardwoods',
+export const shippingOptionChoices = [
+  { value: 'pickup', labelKey: 'forms.shippingOptions.pickup' },
+  { value: 'shipping', labelKey: 'forms.shippingOptions.shipping' },
 ]
+export const shippingOptions = shippingOptionChoices.map((o) => o.value)
 
-export const engravingOptions = ['Yes', 'No']
-
-export const budgetRanges = [
-  'Under 2 500 CZK',
-  '2 500 - 5 000 CZK',
-  '5 000 - 10 000 CZK',
-  '10 000 CZK+',
+export const woodPreferenceChoices = [
+  { value: 'none', labelKey: 'forms.woodPreferences.none' },
+  { value: 'walnut', labelKey: 'forms.woodPreferences.walnut' },
+  { value: 'oak', labelKey: 'forms.woodPreferences.oak' },
+  { value: 'maple', labelKey: 'forms.woodPreferences.maple' },
+  { value: 'ash', labelKey: 'forms.woodPreferences.ash' },
+  { value: 'mixed', labelKey: 'forms.woodPreferences.mixed' },
 ]
+export const woodPreferences = woodPreferenceChoices.map((o) => o.value)
+
+export const engravingOptionChoices = [
+  { value: 'yes', labelKey: 'forms.engravingOptions.yes' },
+  { value: 'no', labelKey: 'forms.engravingOptions.no' },
+]
+export const engravingOptions = engravingOptionChoices.map((o) => o.value)
+
+export const budgetRangeChoices = [
+  { value: 'under2500', labelKey: 'forms.budgetOptions.under2500' },
+  { value: 'r2500_5000', labelKey: 'forms.budgetOptions.r2500_5000' },
+  { value: 'r5000_10000', labelKey: 'forms.budgetOptions.r5000_10000' },
+  { value: 'over10000', labelKey: 'forms.budgetOptions.over10000' },
+]
+export const budgetRanges = budgetRangeChoices.map((o) => o.value)
 
 export const faqItems = [
   {

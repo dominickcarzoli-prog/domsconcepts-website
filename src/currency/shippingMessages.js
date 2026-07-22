@@ -4,7 +4,8 @@
  */
 
 export const SHIPPING_MESSAGE_CZ = 'Free shipping within Czechia'
-export const SHIPPING_MESSAGE_INTL_SHORT = 'Shipping calculated on Etsy'
+/** Fallback English — UI should prefer t('shipping.calculatedShort') */
+export const SHIPPING_MESSAGE_INTL_SHORT = 'Shipping calculated at Etsy checkout'
 export const SHIPPING_MESSAGE_INTL_DETAIL =
   'International shipping calculated at checkout on Etsy'
 

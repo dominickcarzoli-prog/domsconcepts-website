@@ -768,6 +768,13 @@ export async function fetchAllShopListings(
  * @param {ReturnType<typeof mapListingToProductRow>} row
  * @returns {Promise<'created'|'updated'>}
  */
+/**
+ * Upsert one listing. Website-managed columns are preserved on conflict:
+ * website_category, website_featured, website_hidden, website_approved,
+ * custom_title, custom_description, custom_title_de, custom_description_de,
+ * seo_title_de, seo_description_de, custom_title_cs, custom_description_cs,
+ * seo_title_cs, seo_description_cs, local_images_json, website_use_local_images, slug.
+ */
 async function upsertProduct(db, row) {
   const existing = await db
     .prepare(`SELECT listing_id FROM etsy_products WHERE listing_id = ?`)

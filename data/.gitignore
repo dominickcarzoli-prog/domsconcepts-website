@@ -1,0 +1,4 @@
+# Generated / local translation worksheets (keep examples tracked)
+product-translation-template.json
+product-translations.json
+.import-product-translations.tmp.sql

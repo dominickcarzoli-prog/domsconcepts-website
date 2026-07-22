@@ -13,6 +13,7 @@ import {
   matchSectionHeading,
   parseEtsyDescription,
   resolveMaterialsLabel,
+  sanitizeDimensionsText,
   stripHtmlToText,
 } from '../src/data/parseEtsyDescription.js'
 
@@ -73,6 +74,12 @@ describe('matchSectionHeading', () => {
     assert.equal(matchSectionHeading('Important')?.key, 'importantNotes')
     assert.equal(matchSectionHeading('Materials')?.key, 'materials')
     assert.equal(matchSectionHeading('✨ Features')?.key, 'features')
+    assert.equal(matchSectionHeading('Merkmale')?.key, 'features')
+    assert.equal(matchSectionHeading('Vlastnosti')?.key, 'features')
+    assert.equal(matchSectionHeading('Ungefähre Größe')?.key, 'dimensions')
+    assert.equal(matchSectionHeading('Přibližná velikost')?.key, 'dimensions')
+    assert.equal(matchSectionHeading('Pflegehinweise')?.key, 'careInstructions')
+    assert.equal(matchSectionHeading('Péče')?.key, 'careInstructions')
   })
 })
 
@@ -144,6 +151,29 @@ describe('parseEtsyDescription', () => {
   })
 })
 
+describe('sanitizeDimensionsText', () => {
+  it('keeps measurement-only dimensions', () => {
+    const result = sanitizeDimensionsText('40 × 30 × 4 cm')
+    assert.equal(result.dimensions, '40 × 30 × 4 cm')
+    assert.equal(result.battery, '')
+  })
+
+  it('extracts battery and strips gift marketing copy', () => {
+    const result = sanitizeDimensionsText(
+      '29 cm diameter. 1 × AA battery included. A thoughtful gift for foodies.',
+    )
+    assert.match(result.dimensions, /29 cm/)
+    assert.doesNotMatch(result.dimensions, /thoughtful gift|foodies|battery/i)
+    assert.match(result.battery, /AA/i)
+  })
+
+  it('moves custom sizing into options', () => {
+    const result = sanitizeDimensionsText('45 x 30 cm. Custom sizing available on request.')
+    assert.match(result.dimensions, /45 x 30/)
+    assert.match(result.options, /Custom sizing/i)
+  })
+})
+
 describe('extractMaterialsFromTitle', () => {
   it('maps walnut/maple and oak titles to polished labels', () => {
     assert.equal(
@@ -180,6 +210,20 @@ describe('resolveMaterialsLabel', () => {
       'Solid oak',
     )
   })
+
+  it('prefers specific woodType over generic Wood and epoxy resin', () => {
+    assert.equal(
+      resolveMaterialsLabel(
+        {
+          materials: 'Wood and epoxy resin',
+          woodType: 'American black walnut with black epoxy resin',
+          slug: 'walnut-live-edge-charcuterie-board',
+        },
+        { materials: '' },
+      ),
+      'Black walnut and epoxy resin',
+    )
+  })
 })
 
 describe('product detail display safety', () => {
@@ -198,19 +242,25 @@ describe('product detail display safety', () => {
     const detailStart = app.indexOf('function ProductDetailPage()')
     const detailEnd = app.indexOf('function GalleryPage()')
     const detail = app.slice(detailStart, detailEnd)
-    assert.match(detail, /<ProductDetailInfo/)
-    assert.doesNotMatch(detail, /intro=\{/)
+    assert.match(detail, /<ProductDetailPurchaseInfo/)
+    assert.match(detail, /<ProductDetailInfoGrid/)
     assert.doesNotMatch(detail, /intro=\{shortIntro/)
     assert.doesNotMatch(detail, /intro=\{product\.shortDescription/)
     assert.doesNotMatch(detail, /Selected materials/)
-    assert.equal((detail.match(/<ProductDetailInfo/g) || []).length, 1)
+    assert.equal((detail.match(/<ProductDetailPurchaseInfo/g) || []).length, 1)
+    assert.equal((detail.match(/<ProductDetailInfoGrid/g) || []).length, 1)
+    assert.match(
+      detail,
+      /<PageShell\n\s*variant="product"\n\s*eyebrow=\{t\('product\.availablePieces'\)\}\n\s*title=\{product\.name\}\n\s*>/,
+    )
   })
 
   it('defines restrained product title typography below the fixed header', async () => {
     const css = await readFile(new URL('../src/index.css', import.meta.url), 'utf8')
     const app = await readFile(new URL('../src/App.jsx', import.meta.url), 'utf8')
     assert.match(css, /product-detail-title/)
-    assert.match(css, /clamp\(2\.5rem,\s*5vw,\s*5rem\)/)
+    assert.match(css, /clamp\(3rem,\s*6vw,\s*6\.5rem\)/)
+    assert.match(css, /text-wrap:\s*balance/)
     assert.match(app, /variant="product"/)
     assert.match(app, /page-shell--product/)
     assert.match(app, /pt-24/)

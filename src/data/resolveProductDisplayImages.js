@@ -49,9 +49,22 @@ function getFolder(product) {
  */
 function galleryCandidates(product) {
   const gallery = Array.isArray(product.galleryImages) ? product.galleryImages : []
-  const main = typeof product.mainImage === 'string' ? product.mainImage : ''
-  const candidates = gallery.length > 0 ? gallery : main ? [main] : []
-  return candidates.filter((image) => typeof image === 'string' && image && !isLikelyPlaceholderPath(image))
+  const main = product.mainImage
+  const raw = gallery.length > 0 ? gallery : main != null && main !== '' ? [main] : []
+  /** @type {string[]} */
+  const candidates = []
+  for (const entry of raw) {
+    const url =
+      typeof entry === 'string'
+        ? entry
+        : entry && typeof entry === 'object' && typeof /** @type {{ url?: unknown }} */ (entry).url === 'string'
+          ? /** @type {{ url: string }} */ (entry).url
+          : null
+    if (typeof url === 'string' && url && !isLikelyPlaceholderPath(url)) {
+      candidates.push(url)
+    }
+  }
+  return candidates
 }
 
 /**

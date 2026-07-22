@@ -23,7 +23,9 @@ export const WEBSITE_CATEGORIES = [
 export const DEFAULT_LIST_LIMIT = 50
 export const MAX_LIST_LIMIT = 200
 
-export const PRODUCT_SELECT_COLUMNS = `listing_id, title, custom_title, custom_description,
+export const PRODUCT_SELECT_COLUMNS = `listing_id, title, description, custom_title, custom_description,
+  custom_title_de, custom_description_de, seo_title_de, seo_description_de,
+  custom_title_cs, custom_description_cs, seo_title_cs, seo_description_cs,
   etsy_state, website_status, quantity,
   price_amount, price_divisor, price_currency,
   website_approved, website_hidden, website_category, website_featured, website_use_local_images,
@@ -55,8 +57,29 @@ export function mapProductRow(row) {
   return {
     listingId: Number(row.listing_id),
     title: row.title,
+    description: row.description || null,
     customTitle: row.custom_title || null,
     customDescription: row.custom_description || null,
+    customTitleDe: row.custom_title_de || null,
+    customDescriptionDe: row.custom_description_de || null,
+    seoTitleDe: row.seo_title_de || null,
+    seoDescriptionDe: row.seo_description_de || null,
+    customTitleCs: row.custom_title_cs || null,
+    customDescriptionCs: row.custom_description_cs || null,
+    seoTitleCs: row.seo_title_cs || null,
+    seoDescriptionCs: row.seo_description_cs || null,
+    germanComplete: Boolean(
+      row.custom_title_de &&
+        String(row.custom_title_de).trim() &&
+        row.custom_description_de &&
+        String(row.custom_description_de).trim(),
+    ),
+    czechComplete: Boolean(
+      row.custom_title_cs &&
+        String(row.custom_title_cs).trim() &&
+        row.custom_description_cs &&
+        String(row.custom_description_cs).trim(),
+    ),
     etsyState: row.etsy_state,
     websiteStatus: row.website_status,
     quantity: Number(row.quantity) || 0,
@@ -212,6 +235,14 @@ export function validateUpdateBody(body) {
     'website_featured',
     'custom_title',
     'custom_description',
+    'custom_title_de',
+    'custom_description_de',
+    'seo_title_de',
+    'seo_description_de',
+    'custom_title_cs',
+    'custom_description_cs',
+    'seo_title_cs',
+    'seo_description_cs',
     'slug',
     'local_images_json',
     'website_use_local_images',
@@ -283,6 +314,94 @@ export function validateUpdateBody(body) {
       fields.custom_description = desc
     } else {
       return { ok: false, error: 'invalid_field', message: 'custom_description too long.' }
+    }
+  }
+
+  if ('custom_title_de' in input) {
+    const title = input.custom_title_de
+    if (title === null || title === '') {
+      fields.custom_title_de = null
+    } else if (typeof title === 'string' && title.trim().length <= 200) {
+      fields.custom_title_de = title.trim()
+    } else {
+      return { ok: false, error: 'invalid_field', message: 'custom_title_de too long.' }
+    }
+  }
+
+  if ('custom_description_de' in input) {
+    const desc = input.custom_description_de
+    if (desc === null || desc === '') {
+      fields.custom_description_de = null
+    } else if (typeof desc === 'string' && desc.length <= 5000) {
+      fields.custom_description_de = desc
+    } else {
+      return { ok: false, error: 'invalid_field', message: 'custom_description_de too long.' }
+    }
+  }
+
+  if ('seo_title_de' in input) {
+    const title = input.seo_title_de
+    if (title === null || title === '') {
+      fields.seo_title_de = null
+    } else if (typeof title === 'string' && title.trim().length <= 200) {
+      fields.seo_title_de = title.trim()
+    } else {
+      return { ok: false, error: 'invalid_field', message: 'seo_title_de too long.' }
+    }
+  }
+
+  if ('seo_description_de' in input) {
+    const desc = input.seo_description_de
+    if (desc === null || desc === '') {
+      fields.seo_description_de = null
+    } else if (typeof desc === 'string' && desc.length <= 500) {
+      fields.seo_description_de = desc.trim()
+    } else {
+      return { ok: false, error: 'invalid_field', message: 'seo_description_de too long.' }
+    }
+  }
+
+  if ('custom_title_cs' in input) {
+    const title = input.custom_title_cs
+    if (title === null || title === '') {
+      fields.custom_title_cs = null
+    } else if (typeof title === 'string' && title.trim().length <= 200) {
+      fields.custom_title_cs = title.trim()
+    } else {
+      return { ok: false, error: 'invalid_field', message: 'custom_title_cs too long.' }
+    }
+  }
+
+  if ('custom_description_cs' in input) {
+    const desc = input.custom_description_cs
+    if (desc === null || desc === '') {
+      fields.custom_description_cs = null
+    } else if (typeof desc === 'string' && desc.length <= 5000) {
+      fields.custom_description_cs = desc
+    } else {
+      return { ok: false, error: 'invalid_field', message: 'custom_description_cs too long.' }
+    }
+  }
+
+  if ('seo_title_cs' in input) {
+    const title = input.seo_title_cs
+    if (title === null || title === '') {
+      fields.seo_title_cs = null
+    } else if (typeof title === 'string' && title.trim().length <= 200) {
+      fields.seo_title_cs = title.trim()
+    } else {
+      return { ok: false, error: 'invalid_field', message: 'seo_title_cs too long.' }
+    }
+  }
+
+  if ('seo_description_cs' in input) {
+    const desc = input.seo_description_cs
+    if (desc === null || desc === '') {
+      fields.seo_description_cs = null
+    } else if (typeof desc === 'string' && desc.length <= 500) {
+      fields.seo_description_cs = desc.trim()
+    } else {
+      return { ok: false, error: 'invalid_field', message: 'seo_description_cs too long.' }
     }
   }
 
